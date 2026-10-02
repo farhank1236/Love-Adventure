@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Love Adventure</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        nunito: ['Nunito', 'sans-serif']
+                    },
+                    colors: {
+                        rose: { 50: '#fff1f2', 100: '#ffe4e6', 300: '#fda4af', 500: '#f43f5e', 600: '#e11d48' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #31103f 100%);
+            touch-action: manipulation;
+            user-select: none;
+            color: #f8fafc;
+        }
+
+        .chibi-card {
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .chibi-card:hover {
+            transform: translateY(-6px) scale(1.03);
+        }
+        .chibi-card.selected {
+            border-color: #f43f5e !important;
+            background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%) !important;
+            box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.5);
+            transform: translateY(-4px);
+            color: #0f172a !important;
+        }
+
+        #gameCanvas {
+            background: linear-gradient(to bottom, #1e293b 0%, #0f172a 100%);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            border-radius: 1.25rem;
+        }
+
+        #touchPad button {
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; transform: scale(1); filter: drop-shadow(0 0 15px rgba(244, 63, 94, 0.6)); }
+            50% { opacity: 1; transform: scale(1.04); filter: drop-shadow(0 0 25px rgba(244, 63, 94, 0.9)); }
+        }
+        .pulse-glow { animation: pulseGlow 2.5s infinite ease-in-out; }
+
+        @keyframes floatText {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .float-anim { animation: floatText 3s infinite ease-in-out; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #f43f5e; border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-6 overflow-x-hidden">
+
+    <!-- =========================================================================
+         STAGE 1: WELCOME SCREEN (SPLASH PAGE)
+         Anchor ID: #welcomeScreen
+    ========================================================================== -->
+    <div id="welcomeScreen" onclick="transitionToStep(1)" class="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 bg-slate-950/90 backdrop-blur-md cursor-pointer transition-opacity duration-700">
+        <!-- STAGE 1.1: Animated Canvas Background -->
+        <canvas id="bgHeartsCanvas" class="absolute inset-0 pointer-events-none"></canvas>
+
+        <!-- STAGE 1.2: Title & Branding Header -->
+        <div class="my-auto text-center z-10 flex flex-col items-center gap-6">
+            <div class="w-28 h-28 md:w-36 md:h-36 bg-gradient-to-tr from-rose-500 to-pink-500 rounded-full flex items-center justify-center shadow-2xl pulse-glow border-4 border-white/20">
+                <i class="fa-solid fa-heart text-5xl md:text-7xl text-white"></i>
+            </div>
+            
+            <div class="space-y-2">
+                <h1 class="font-fredoka text-4xl md:text-6xl font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-300 to-amber-200 drop-shadow-lg float-anim">
+                    Welcome to Love Adventure
+                </h1>
+                <p class="text-rose-200 font-semibold text-base md:text-xl max-w-lg mx-auto">
+                    A Single-Player Journey of Devotion & Heroism
+                </p>
+            </div>
+
+            <!-- STAGE 1.3: Call-To-Action Button -->
+            <div class="mt-8 px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-full font-fredoka font-bold text-lg md:text-xl shadow-lg hover:shadow-rose-500/50 transform hover:scale-105 transition flex items-center gap-3">
+                <i class="fa-solid fa-play"></i> CLICK ANYWHERE TO START
+            </div>
+        </div>
+
+        <p class="text-xs text-slate-400 z-10 font-semibold pb-2">Single Player 3D Chibi Platformer &bull; Touch & Keyboard Ready</p>
+    </div>
+
+    <!-- =========================================================================
+         STAGE 2: SETUP CONTAINER (MULTI-STEP FLOW)
+         Anchor ID: #setupContainer
+    ========================================================================== -->
+    <main id="setupContainer" class="hidden w-full max-w-4xl bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl p-4 md:p-8 border border-slate-800 transition-all duration-500 my-auto">
+        
+        <!-- STAGE 2 HEADER: Progress Bar & Step Tracker -->
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+            <h2 class="font-fredoka text-xl md:text-2xl font-bold text-rose-400 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-rose-500"></i> <span id="setupStepTitle">Step 1: Choose Roles</span>
+            </h2>
+            <div class="flex items-center gap-2">
+                <span id="stepBadge1" class="w-8 h-8 rounded-full bg-rose-500 text-white font-bold flex items-center justify-center text-xs">1</span>
+                <div class="w-8 h-1 bg-slate-800 rounded" id="stepLine1"></div>
+                <span id="stepBadge2" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-xs">2</span>
+                <div class="w-8 h-1 bg-slate-800 rounded" id="stepLine2"></div>
+                <span id="stepBadge3" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-xs">3</span>
+            </div>
+        </div>
+
+        <!-- ---------------------------------------------------------------------
+             STAGE 2.1: HERO & PARTNER ROLE SELECTION (STEP 1)
+             Anchor ID: #setupStep1
+        ---------------------------------------------------------------------- -->
+        <div id="setupStep1" class="space-y-6">
+            <div class="text-center space-y-1">
+                <h3 class="font-fredoka text-2xl font-bold text-white">Who will you play as?</h3>
+                <p class="text-sm text-slate-400">Select your active adventurer and who you will rescue.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- STAGE 2.1A: Play as Male Hero Card -->
+                <div onclick="selectHeroGender('male')" id="genderOptMale" class="cursor-pointer bg-slate-800/80 border-2 border-slate-700 hover:border-blue-400 p-6 rounded-2xl transition flex flex-col items-center text-center gap-3">
+                    <div class="w-16 h-16 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-3xl">
+                        <i class="fa-solid fa-mars"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-fredoka text-lg font-bold text-white">Play as Male Hero</h4>
+                        <p class="text-xs text-slate-400 mt-1">Navigate obstacles to reach your Wife / Girlfriend waiting at the end.</p>
+                    </div>
+                    <span id="badgeMale" class="mt-2 text-xs font-bold px-3 py-1 bg-blue-500 text-white rounded-full opacity-0">SELECTED</span>
+                </div>
+
+                <!-- STAGE 2.1B: Play as Female Hero Card -->
+                <div onclick="selectHeroGender('female')" id="genderOptFemale" class="cursor-pointer bg-slate-800/80 border-2 border-slate-700 hover:border-pink-400 p-6 rounded-2xl transition flex flex-col items-center text-center gap-3">
+                    <div class="w-16 h-16 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-3xl">
+                        <i class="fa-solid fa-venus"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-fredoka text-lg font-bold text-white">Play as Female Hero</h4>
+                        <p class="text-xs text-slate-400 mt-1">Cross the hazards to reunite with your Husband / Boyfriend waiting at the end.</p>
+                    </div>
+                    <span id="badgeFemale" class="mt-2 text-xs font-bold px-3 py-1 bg-pink-500 text-white rounded-full opacity-0">SELECTED</span>
+                </div>
+            </div>
+
+            <!-- STAGE 2.1C: Step 1 Navigation Button -->
+            <div class="flex justify-end">
+                <button onclick="transitionToStep(2)" class="px-6 py-3 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-fredoka font-bold rounded-xl shadow-lg transition flex items-center gap-2">
+                    NEXT: SELECT CHARACTERS <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ---------------------------------------------------------------------
+             STAGE 2.2: 3D CHIBI LOOK & NAME CUSTOMIZATION (STEP 2)
+             Anchor ID: #setupStep2
+        ---------------------------------------------------------------------- -->
+        <div id="setupStep2" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- STAGE 2.2A: Active Hero Customization Box -->
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-700 pb-2">
+                        <span class="font-fredoka font-bold text-rose-400 text-sm md:text-base flex items-center gap-2">
+                            <i class="fa-solid fa-user-shield"></i> <span id="heroCustomLabel">Hero Selection</span>
+                        </span>
+                        <select id="heroRoleSelect" class="bg-slate-900 border border-slate-700 text-xs font-bold text-rose-300 rounded px-2 py-1 outline-none">
+                            <option value="Husband">Husband</option>
+                            <option value="Boyfriend">Boyfriend</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Hero Name</label>
+                        <input type="text" id="heroNameInput" value="Kenji" class="w-full mt-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-semibold focus:border-rose-400 outline-none text-sm">
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Choose 3D Chibi Look</label>
+                        <div class="grid grid-cols-2 gap-2 mt-2" id="heroAvatarGrid">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAGE 2.2B: Target Partner Customization Box -->
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-700 pb-2">
+                        <span class="font-fredoka font-bold text-pink-400 text-sm md:text-base flex items-center gap-2">
+                            <i class="fa-solid fa-heart text-pink-500"></i> <span id="partnerCustomLabel">Partner Waiting at Goal</span>
+                        </span>
+                        <select id="partnerRoleSelect" class="bg-slate-900 border border-slate-700 text-xs font-bold text-pink-300 rounded px-2 py-1 outline-none">
+                            <option value="Wife">Wife</option>
+                            <option value="Girlfriend">Girlfriend</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Partner Name</label>
+                        <input type="text" id="partnerNameInput" value="Fatima" class="w-full mt-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-semibold focus:border-pink-400 outline-none text-sm">
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Choose 3D Chibi Look</label>
+                        <div class="grid grid-cols-2 gap-2 mt-2" id="partnerAvatarGrid">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STAGE 2.2C: Step 2 Navigation Buttons -->
+            <div class="flex justify-between items-center pt-2">
+                <button onclick="transitionToStep(1)" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-sm transition">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> BACK
+                </button>
+                <button onclick="transitionToStep(3)" class="px-6 py-3 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-fredoka font-bold rounded-xl shadow-lg transition flex items-center gap-2">
+                    CONFIRM & PREVIEW <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ---------------------------------------------------------------------
+             STAGE 2.3: QUEST BRIEFING & CONFIRMATION (STEP 3)
+             Anchor ID: #setupStep3
+        ---------------------------------------------------------------------- -->
+        <div id="setupStep3" class="hidden space-y-6 text-center">
+            <div class="bg-slate-800/70 p-6 rounded-2xl border border-rose-500/30 space-y-4 max-w-xl mx-auto">
+                <!-- STAGE 2.3A: Character Preview Display -->
+                <div class="flex items-center justify-center gap-6">
+                    <div class="text-center">
+                        <canvas id="confirmHeroCv" width="70" height="70" class="mx-auto rounded-full bg-slate-900 border-2 border-rose-400"></canvas>
+                        <span id="confirmHeroText" class="font-fredoka font-bold text-sm text-white mt-1 block">Kenji</span>
+                    </div>
+                    <div class="text-rose-500 text-2xl pulse-glow"><i class="fa-solid fa-arrow-right-long"></i></div>
+                    <div class="text-center">
+                        <canvas id="confirmPartnerCv" width="70" height="70" class="mx-auto rounded-full bg-slate-900 border-2 border-pink-400"></canvas>
+                        <span id="confirmPartnerText" class="font-fredoka font-bold text-sm text-white mt-1 block">Fatima</span>
+                    </div>
+                </div>
+
+                <!-- STAGE 2.3B: Mission Objective Details -->
+                <div class="border-t border-slate-700/60 pt-4 text-slate-300 text-sm space-y-1">
+                    <p class="font-fredoka text-lg font-bold text-rose-300" id="briefingTitle">Mission: Reach Fatima!</p>
+                    <p id="briefingDesc" class="text-xs text-slate-400">Navigate the treacherous platforms, pull levers to open path barriers, and overcome hazards to reach your partner!</p>
+                </div>
+            </div>
+
+            <div class="max-w-xl mx-auto text-center space-y-2"><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Choose your weapon</p><div id="weaponPickA" class="flex flex-wrap gap-2 justify-center"></div></div>
+            <!-- STAGE 2.3C: Step 3 Start Game Buttons -->
+            <div class="flex justify-between items-center max-w-xl mx-auto">
+                <button onclick="transitionToStep(2)" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-sm transition">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> BACK
+                </button>
+                <button onclick="startGame()" class="px-8 py-3.5 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:scale-105 text-white font-fredoka font-bold text-lg rounded-xl shadow-xl transition flex items-center gap-2">
+                    <i class="fa-solid fa-gamepad"></i> START ADVENTURE
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- =========================================================================
+         STAGE 3: MAIN GAMEPLAY STAGE
+         Anchor ID: #gameScreen
+    ========================================================================== -->
+    <main id="gameScreen" class="hidden w-full max-w-5xl flex-col items-center">
+        <!-- STAGE 3.1: Top HUD Status Bar -->
+        <div class="w-full bg-slate-900/90 backdrop-blur-md p-3 md:p-4 rounded-xl border border-slate-800 mb-3 flex flex-wrap items-center justify-between gap-2 text-xs md:text-sm">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-1.5 font-bold text-rose-400 bg-rose-950/50 px-3 py-1 rounded-lg border border-rose-800/50">
+                    <i class="fa-solid fa-heart text-rose-500"></i>
+                    <span id="hudHearts">0</span> / 6
+                </div>
+                <div class="flex items-center gap-1.5 font-bold text-red-300 bg-red-950/50 px-3 py-1 rounded-lg border border-red-800/50">
+                    <i class="fa-solid fa-shield-heart text-red-400"></i>
+                    <span id="hudLives">5</span> / 5 LIVES
+                </div>
+                <div class="flex items-center gap-1.5 font-bold text-slate-300 bg-slate-800/60 px-3 py-1 rounded-lg">
+                    <i class="fa-regular fa-clock text-amber-400"></i>
+                    <span id="hudTimer">00:00</span>
+                </div>
+            </div>
+
+            <div class="font-fredoka font-bold text-slate-200 flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                <span id="hudHeroName" class="text-rose-400">Kenji</span>
+                <i class="fa-solid fa-arrow-right text-xs text-slate-500"></i>
+                <span id="hudPartnerName" class="text-pink-400">Fatima</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSettings()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 font-semibold transition"><i class="fa-solid fa-gear"></i></button>
+                <button onclick="toggleAudio()" id="audioBtn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 font-semibold transition">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <button onclick="returnToSetup()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition flex items-center gap-1">
+                    <i class="fa-solid fa-rotate-left"></i> RESTART
+                </button>
+            </div>
+        </div>
+
+        <!-- STAGE 3.2: Platformer Game Canvas & Instruction Overlay -->
+        <div class="relative w-full flex justify-center items-center">
+            <canvas id="gameCanvas" width="900" height="500" class="w-full h-auto border-2 border-slate-800"></canvas>
+            
+            <div id="instructionOverlay" class="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-950/80 text-white px-4 py-2 rounded-full text-xs md:text-sm font-semibold pointer-events-none transition-opacity duration-1000 flex items-center gap-2 border border-slate-800">
+                <i class="fa-solid fa-gamepad text-amber-400"></i>
+                [←/A] Left | [→/D] Right | [Shift] Jump | [Space] Attack | [E] Lever | [1-4] Weapon
+            </div>
+        </div>
+
+        <!-- STAGE 3.3: Mobile Touch Controls Layout -->
+        <div id="touchPad" class="w-full grid grid-cols-2 gap-4 mt-3 sm:hidden">
+            <div class="flex gap-2">
+                <button id="btnUp" type="button" aria-label="Aim Up" title="Aim Up" class="px-4 py-3 bg-slate-700 rounded-xl shadow font-bold text-white active:bg-slate-600 select-none"><i class="fa-solid fa-crosshairs"></i></button>
+                <button id="btnLeft" class="flex-1 py-3 bg-slate-800 rounded-xl shadow font-bold text-white active:bg-slate-700"><i class="fa-solid fa-arrow-left text-xl"></i></button>
+                <button id="btnRight" class="flex-1 py-3 bg-slate-800 rounded-xl shadow font-bold text-white active:bg-slate-700"><i class="fa-solid fa-arrow-right text-xl"></i></button>
+            </div>
+            <div class="flex gap-2">
+                <button id="btnAttack" class="flex-1 py-3 bg-red-600 text-white rounded-xl shadow font-bold active:bg-red-700"><i class="fa-solid fa-burst"></i> ATTACK</button>
+                <button id="btnJump" type="button" aria-label="Jump" title="Jump" class="flex-1 py-3 bg-rose-600 text-white rounded-xl shadow font-bold active:bg-rose-700 select-none"><i class="fa-solid fa-arrow-up text-xl"></i> JUMP</button>
+                <button id="btnAction" class="py-3 px-4 bg-amber-600 text-white rounded-xl shadow font-bold active:bg-amber-700"><i class="fa-solid fa-hand"></i></button>
+            </div>
+        </div>
+    </main>
+
+    <!-- =========================================================================
+         STAGE 4: VICTORY REUNION MODAL
+         Anchor ID: #victoryModal
+    ========================================================================== -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 rounded-2xl max-w-sm w-full p-5 border-2 border-rose-500/40 space-y-4 text-sm">
+            <h3 class="font-fredoka text-xl font-bold text-white"><i class="fa-solid fa-gear text-rose-400"></i> Settings (game paused)</h3>
+            <div class="space-y-2">
+                <p class="text-slate-300 font-semibold">Keyboard Controls</p>
+                <div class="flex justify-between items-center gap-3"><span>Move Left</span><button id="keyLeft" onclick="remap('left')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
+                <div class="flex justify-between items-center gap-3"><span>Move Right</span><button id="keyRight" onclick="remap('right')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
+                <div class="flex justify-between items-center gap-3"><span>Jump</span><button id="keyJmp" onclick="remap('jump')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
+                <div class="flex justify-between items-center gap-3"><span>Attack</span><button id="keyAtk" onclick="remap('attack')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
+                <div class="flex justify-between items-center gap-3"><span>Action / Lever</span><button id="keyAction" onclick="remap('action')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
+                <p id="remapHint" class="text-xs text-slate-400">Click a control, then press any keyboard key.</p>
+            </div>
+            <div class="flex justify-between items-center"><span>On-screen touch controls</span><button onclick="toggleTouchUI()" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-rose-300">Show / Hide</button></div>
+            <div><p class="mb-1">Weapon</p><div id="weaponPickB" class="flex flex-wrap gap-2"></div></div>
+            <div class="flex gap-2">
+                <button onclick="resetKeyBinds()" class="flex-1 py-2 bg-slate-800 text-slate-200 rounded-xl font-semibold">RESET KEYS</button>
+                <button onclick="toggleSettings()" class="flex-1 py-2.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-fredoka font-bold rounded-xl">RESUME</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameOverModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 text-center border-2 border-red-500/50 shadow-2xl">
+            <div class="w-20 h-20 bg-gradient-to-tr from-red-600 to-orange-500 text-white rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
+                <i class="fa-solid fa-skull-crossbones"></i>
+            </div>
+            <h2 class="font-fredoka text-3xl font-extrabold text-white mb-2">Game Over</h2>
+            <p id="gameOverText" class="text-red-300 font-bold text-sm mb-6">You lost all 5 lives. Restart and try again!</p>
+            <button onclick="restartLevel()" class="w-full py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-fredoka font-bold rounded-xl shadow-lg transition">
+                <i class="fa-solid fa-rotate-right mr-1"></i> RESTART GAME
+            </button>
+        </div>
+    </div>
+
+    <div id="victoryModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 text-center border-2 border-rose-500/40 shadow-2xl transform transition-all scale-95 opacity-0" id="victoryModalCard">
+            <div class="w-20 h-20 bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-full flex items-center justify-center text-4xl mx-auto mb-4 pulse-glow">
+                <i class="fa-solid fa-heart"></i>
+            </div>
+            <h2 class="font-fredoka text-3xl font-extrabold text-white mb-1">Reunited at Last!</h2>
+            <p id="victorySubtitle" class="text-rose-400 font-bold text-sm mb-3">You reached your partner!</p>
+            <div class="relative rounded-2xl overflow-hidden border border-pink-400/30 bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 mb-4">
+                <canvas id="victoryCelebrationCanvas" width="760" height="260" class="w-full h-auto"></canvas>
+                <div class="absolute inset-x-0 bottom-2 text-center text-white/90 font-fredoka font-bold text-sm">Together at last ❤️</div>
+            </div>
+            
+            <!-- STAGE 4.1: Game End Performance Stats -->
+            <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 mb-6 text-left space-y-2 text-sm text-slate-300">
+                <div class="flex justify-between">
+                    <span>Hearts Collected:</span>
+                    <span id="vicHearts" class="font-bold text-rose-400">6 / 6</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Time Taken:</span>
+                    <span id="vicTime" class="font-bold text-amber-400">01:15</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Love Status:</span>
+                    <span class="font-bold text-pink-400">Eternal Harmony ❤️</span>
+                </div>
+            </div>
+
+            <!-- STAGE 4.2: Victory Options & Replay Buttons -->
+            <div class="flex flex-col gap-2">
+                <button onclick="restartLevel()" class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-fredoka font-bold rounded-xl shadow-lg transition">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> PLAY AGAIN
+                </button>
+                <button onclick="returnToSetup()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition">
+                    <i class="fa-solid fa-sliders text-slate-400 mr-1"></i> CHANGE CHARACTERS
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         STAGE 5: JAVASCRIPT LOGIC & GAME ENGINE
+    ========================================================================== -->
+    <script>
+        /* ---------------------------------------------------------------------
+           STAGE 5.1: AVATAR CONFIGURATIONS (CHIBI CHARACTER PRESETS)
+        --------------------------------------------------------------------- */
+        const MALE_AVATARS = [
+            { id: 'm_jp', name: 'Kenji', country: 'Japan 🇯🇵', skin: '#ffe0bd', hair: '#1a1a1a', hairStyle: 'ninja_topknot', outfit: '#3b82f6', outfitDark: '#1d4ed8' },
+            { id: 'm_es', name: 'Mateo', country: 'Spain 🇪🇸', skin: '#f3c193', hair: '#3b2314', hairStyle: 'wavy_short', outfit: '#ef4444', outfitDark: '#b91c1c' },
+            { id: 'm_eg', name: 'Tariq', country: 'Egypt 🇪🇬', skin: '#c68642', hair: '#0f0f0f', hairStyle: 'curly_crop', outfit: '#10b981', outfitDark: '#047857' },
+            { id: 'm_uk', name: 'Liam', country: 'UK 🇬🇧', skin: '#ffd8b5', hair: '#d97706', hairStyle: 'side_part', outfit: '#8b5cf6', outfitDark: '#6d28d9' }
+        ];
+
+        const FEMALE_AVATARS = [
+            { id: 'f_eg', name: 'Fatima', country: 'Egypt 🇪🇬 (Hijab)', skin: '#d69d65', hair: null, hijab: '#ec4899', hijabDark: '#be185d', outfit: '#f43f5e', outfitDark: '#be123c' },
+            { id: 'f_cn', name: 'Mei', country: 'China 🇨🇳', skin: '#ffe5c4', hair: '#1e1e1e', hairStyle: 'twin_buns', outfit: '#ef4444', outfitDark: '#b91c1c' },
+            { id: 'f_it', name: 'Sofia', country: 'Italy 🇮🇹', skin: '#f8d5b1', hair: '#7c2d12', hairStyle: 'long_wavy', outfit: '#06b6d4', outfitDark: '#0e7490' },
+            { id: 'f_in', name: 'Priya', country: 'India 🇮🇳', skin: '#b27a4b', hair: '#0f0f0f', hairStyle: 'braid', outfit: '#a855f7', outfitDark: '#7e22ce' }
+        ];
+
+        // Active Player Selections
+        let playerGender = 'male'; // 'male' or 'female'
+        let selectedHeroAvatar = MALE_AVATARS[0];
+        let selectedPartnerAvatar = FEMALE_AVATARS[0];
+
+        /* ---------------------------------------------------------------------
+           STAGE 5.2: AUDIO SYNTHESIZER (WEB AUDIO API)
+        --------------------------------------------------------------------- */
+        let audioCtx = null;
+        let audioMuted = false;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(type) {
+            if (audioMuted) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'jump') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(420, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'heart') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523, now);
+                osc.frequency.setValueAtTime(659, now + 0.08);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now); osc.stop(now + 0.25);
+            } else if (type === 'switch') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(330, now + 0.06);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                osc.start(now); osc.stop(now + 0.12);
+            } else if (type === 'win') {
+                [440, 554, 659, 880].forEach((f, idx) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(f, now + idx * 0.1);
+                    g.gain.setValueAtTime(0.2, now + idx * 0.1);
+                    g.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.3);
+                    o.start(now + idx * 0.1); o.stop(now + idx * 0.1 + 0.3);
+                });
+            }
+        }
+
+        function toggleAudio() {
+            audioMuted = !audioMuted;
+            document.getElementById('audioBtn').innerHTML = audioMuted ? `<i class="fa-solid fa-volume-xmark text-rose-500"></i>` : `<i class="fa-solid fa-volume-high"></i>`;
+        }
+
+        /* ---------------------------------------------------------------------
+           STAGE 5.3: 3D CHIBI ENGINE (CANVAS SHADED AVATAR RENDERER)
+        --------------------------------------------------------------------- */
+        function drawChibi3D(ctx, x, y, charData, state = {}) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            if (state.facing === 'left') ctx.scale(-1, 1);
+
+            const walkOffset = state.isMoving ? Math.sin((state.animFrame || 0) * 0.3) * 3 : 0;
+            const jumpOffset = state.isJumping ? -4 : 0;
+
+            // Ambient Drop Shadow
+            const shadowGrad = ctx.createRadialGradient(0, 18, 2, 0, 18, 14);
+            shadowGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
+            shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = shadowGrad;
+            ctx.beginPath(); ctx.ellipse(0, 18, 14, 5, 0, 0, Math.PI * 2); ctx.fill();
+
+            ctx.translate(0, jumpOffset);
+
+            // 1. Feet (Sphere 3D gradient)
+            const draw3DSphere = (cx, cy, r, baseColor) => {
+                const g = ctx.createRadialGradient(cx - r*0.3, cy - r*0.3, r*0.1, cx, cy, r);
+                g.addColorStop(0, '#ffffff');
+                g.addColorStop(0.3, baseColor);
+                g.addColorStop(1, '#000000');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+            };
+
+            draw3DSphere(-5 + walkOffset, 14, 4, '#334155');
+            draw3DSphere(5 - walkOffset, 14, 4, '#334155');
+
+            // 2. Torso (3D Cylinder Gradient)
+            const bodyGrad = ctx.createLinearGradient(-8, 0, 8, 0);
+            bodyGrad.addColorStop(0, charData.outfitDark || '#1d4ed8');
+            bodyGrad.addColorStop(0.4, charData.outfit || '#3b82f6');
+            bodyGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath(); ctx.roundRect(-8, 0, 16, 15, [5, 5, 3, 3]); ctx.fill();
+
+            // Arms
+            draw3DSphere(-9, 6 + walkOffset, 3.5, charData.skin);
+            draw3DSphere(9, 6 - walkOffset, 3.5, charData.skin);
+
+            // 3. Head (Large 3D Shaded Sphere)
+            const headY = -14;
+            const headR = 14;
+            const headGrad = ctx.createRadialGradient(-3, headY - 4, 2, 0, headY, headR);
+            headGrad.addColorStop(0, '#fff3e0');
+            headGrad.addColorStop(0.4, charData.skin);
+            headGrad.addColorStop(1, '#a0522d');
+            ctx.fillStyle = headGrad;
+            ctx.beginPath(); ctx.arc(0, headY, headR, 0, Math.PI * 2); ctx.fill();
+
+            // 4. Hijab / Hair 3D Shading
+            if (charData.hijab) {
+                // Outer Hood
+                const hGrad = ctx.createRadialGradient(-4, headY - 6, 3, 0, headY, headR + 2.5);
+                hGrad.addColorStop(0, '#ffffff');
+                hGrad.addColorStop(0.3, charData.hijab);
+                hGrad.addColorStop(1, charData.hijabDark || '#be185d');
+                ctx.fillStyle = hGrad;
+                ctx.beginPath(); ctx.arc(0, headY - 1, headR + 2.5, 0, Math.PI * 2); ctx.fill();
+
+                // Face Cutout
+                ctx.fillStyle = headGrad;
+                ctx.beginPath(); ctx.ellipse(0, headY + 1, 9.5, 10.5, 0, 0, Math.PI * 2); ctx.fill();
+
+                // Draped Scarf Base
+                ctx.fillStyle = hGrad;
+                ctx.beginPath(); ctx.ellipse(0, headY + 13, 11, 5, 0, 0, Math.PI * 2); ctx.fill();
+            }
+
+            // Eyes
+            draw3DSphere(-4, headY, 3, '#0f172a');
+            draw3DSphere(4, headY, 3, '#0f172a');
+
+            // Eye specular highlight
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(-5, headY - 1, 1, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(3, headY - 1, 1, 0, Math.PI * 2); ctx.fill();
+
+            // Blush
+            ctx.fillStyle = 'rgba(244, 63, 94, 0.4)';
+            ctx.beginPath(); ctx.arc(-7, headY + 4, 2.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(7, headY + 4, 2.5, 0, Math.PI * 2); ctx.fill();
+
+            // Hair Styles (if no Hijab)
+            if (!charData.hijab && charData.hair) {
+                const hairGrad = ctx.createRadialGradient(-2, headY - 10, 2, 0, headY - 5, 15);
+                hairGrad.addColorStop(0, '#555555');
+                hairGrad.addColorStop(0.5, charData.hair);
+                hairGrad.addColorStop(1, '#000000');
+                ctx.fillStyle = hairGrad;
+
+                if (charData.hairStyle === 'ninja_topknot') {
+                    ctx.beginPath(); ctx.arc(0, headY - 10, 13, Math.PI, Math.PI * 2); ctx.fill();
+                    draw3DSphere(0, headY - 22, 5, charData.hair);
+                } else if (charData.hairStyle === 'twin_buns') {
+                    ctx.beginPath(); ctx.arc(0, headY - 8, 14, Math.PI, Math.PI * 2); ctx.fill();
+                    draw3DSphere(-11, headY - 12, 5.5, charData.hair);
+                    draw3DSphere(11, headY - 12, 5.5, charData.hair);
+                } else {
+                    ctx.beginPath(); ctx.arc(0, headY - 7, 14.5, Math.PI * 0.8, Math.PI * 2.2); ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        /* ---------------------------------------------------------------------
+           STAGE 5.4: SETUP & STATE FLOW (STEP TRANSITION LOGIC)
+        --------------------------------------------------------------------- */
+        function selectHeroGender(gender) {
+            playerGender = gender;
+            const borderM = document.getElementById('genderOptMale');
+            const borderF = document.getElementById('genderOptFemale');
+            const bM = document.getElementById('badgeMale');
+            const bF = document.getElementById('badgeFemale');
+
+            if (gender === 'male') {
+                borderM.classList.add('border-blue-500', 'bg-slate-800');
+                borderF.classList.remove('border-pink-500');
+                bM.classList.remove('opacity-0');
+                bF.classList.add('opacity-0');
+                selectedHeroAvatar = MALE_AVATARS[0];
+                selectedPartnerAvatar = FEMALE_AVATARS[0];
+            } else {
+                borderF.classList.add('border-pink-500', 'bg-slate-800');
+                borderM.classList.remove('border-blue-500');
+                bF.classList.remove('opacity-0');
+                bM.classList.add('opacity-0');
+                selectedHeroAvatar = FEMALE_AVATARS[0];
+                selectedPartnerAvatar = MALE_AVATARS[0];
+            }
+        }
+
+        function transitionToStep(stepNum) {
+            initAudio();
+            playSound('switch');
+
+            document.getElementById('welcomeScreen').classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => { document.getElementById('welcomeScreen').classList.add('hidden'); }, 700);
+
+            document.getElementById('setupContainer').classList.remove('hidden');
+
+            // Update Header Title
+            document.getElementById('setupStepTitle').innerText = stepNum === 1 ? 'Step 1: Choose Roles' : stepNum === 2 ? 'Step 2: Choose 3D Characters' : 'Step 3: Ready to Adventure!';
+            
+            // Update Badges
+            [1, 2, 3].forEach(n => {
+                const b = document.getElementById(`stepBadge${n}`);
+                if (n <= stepNum) {
+                    b.classList.add('bg-rose-500', 'text-white');
+                    b.classList.remove('bg-slate-800', 'text-slate-400');
+                } else {
+                    b.classList.remove('bg-rose-500', 'text-white');
+                    b.classList.add('bg-slate-800', 'text-slate-400');
+                }
+            });
+
+            // Toggle Step View
+            document.getElementById('setupStep1').classList.toggle('hidden', stepNum !== 1);
+            document.getElementById('setupStep2').classList.toggle('hidden', stepNum !== 2);
+            document.getElementById('setupStep3').classList.toggle('hidden', stepNum !== 3);
+
+            if (stepNum === 2) renderStep2Grids();
+            if (stepNum === 3) renderStep3Briefing();
+        }
+
+        function renderStep2Grids() {
+            const isMaleHero = playerGender === 'male';
+            const heroAvatars = isMaleHero ? MALE_AVATARS : FEMALE_AVATARS;
+            const partnerAvatars = isMaleHero ? FEMALE_AVATARS : MALE_AVATARS;
+
+            document.getElementById('heroCustomLabel').innerText = isMaleHero ? 'Hero (Male)' : 'Hero (Female)';
+            document.getElementById('partnerCustomLabel').innerText = isMaleHero ? 'Partner (Female)' : 'Partner (Male)';
+
+            document.getElementById('heroNameInput').value = selectedHeroAvatar.name;
+            document.getElementById('partnerNameInput').value = selectedPartnerAvatar.name;
+
+            const renderGrid = (containerId, avatars, isHero) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = avatars.map(a => `
+                    <div onclick="selectChibiAvatar('${a.id}', ${isHero})" id="card_${a.id}" class="chibi-card cursor-pointer border-2 border-slate-700 bg-slate-900 rounded-xl p-2 flex flex-col items-center text-center">
+                        <canvas id="cv_${a.id}" width="50" height="50"></canvas>
+                        <span class="font-fredoka font-bold text-xs text-white mt-1">${a.name}</span>
+                        <span class="text-[10px] text-slate-400">${a.country}</span>
+                    </div>
+                `).join('');
+
+                setTimeout(() => {
+                    avatars.forEach(a => {
+                        const cv = document.getElementById(`cv_${a.id}`);
+                        if (cv) drawChibi3D(cv.getContext('2d'), 25, 30, a, { facing: 'right' });
+                    });
+                    updateCardSelectionStyles();
+                }, 40);
+            };
+
+            renderGrid('heroAvatarGrid', heroAvatars, true);
+            renderGrid('partnerAvatarGrid', partnerAvatars, false);
+        }
+
+        function selectChibiAvatar(id, isHero) {
+            playSound('switch');
+            const isMaleHero = playerGender === 'male';
+            const heroList = isMaleHero ? MALE_AVATARS : FEMALE_AVATARS;
+            const partnerList = isMaleHero ? FEMALE_AVATARS : MALE_AVATARS;
+
+            if (isHero) {
+                selectedHeroAvatar = heroList.find(a => a.id === id);
+                document.getElementById('heroNameInput').value = selectedHeroAvatar.name;
+            } else {
+                selectedPartnerAvatar = partnerList.find(a => a.id === id);
+                document.getElementById('partnerNameInput').value = selectedPartnerAvatar.name;
+            }
+            updateCardSelectionStyles();
+        }
+
+        function updateCardSelectionStyles() {
+            [...MALE_AVATARS, ...FEMALE_AVATARS].forEach(a => {
+                const el = document.getElementById(`card_${a.id}`);
+                if (el) {
+                    const isSel = a.id === selectedHeroAvatar.id || a.id === selectedPartnerAvatar.id;
+                    el.classList.toggle('selected', isSel);
+                }
+            });
+        }
+
+        function renderStep3Briefing() {
+            const heroName = document.getElementById('heroNameInput').value || selectedHeroAvatar.name;
+            const partnerName = document.getElementById('partnerNameInput').value || selectedPartnerAvatar.name;
+
+            document.getElementById('confirmHeroText').innerText = heroName;
+            document.getElementById('confirmPartnerText').innerText = partnerName;
+
+            const hCv = document.getElementById('confirmHeroCv').getContext('2d');
+            const pCv = document.getElementById('confirmPartnerCv').getContext('2d');
+            hCv.clearRect(0,0,70,70); pCv.clearRect(0,0,70,70);
+
+            drawChibi3D(hCv, 35, 45, selectedHeroAvatar, { facing: 'right' });
+            drawChibi3D(pCv, 35, 45, selectedPartnerAvatar, { facing: 'left' });
+
+            document.getElementById('briefingTitle').innerText = `Mission: Reach ${partnerName}!`;
+            document.getElementById('briefingDesc').innerText = `Guide ${heroName} safely through platform hazards, avoid traps, and pull switches to reunite with ${partnerName}!`;
+        }
+
+        /* ---------------------------------------------------------------------
+           STAGE 5.5: SCROLLING STAGE ENGINE (CAMERA, ARENAS, WEAPONS, ENEMIES, BOSS)
+        --------------------------------------------------------------------- */
+        const $ = id => document.getElementById(id);
+        let canvas, ctx, gameRunning = false, paused = false, levelTimeSeconds = 0, timerInterval = null, collectedHearts = 0;
+        const TOTAL_HEARTS = 6, VW = 900, GROUND = 430, WORLD_W = 5400;
+        const keys = { left: false, right: false, up: false, jump: false, action: false, attack: false };
+        const DEFAULT_BINDS = { left: 'ArrowLeft', right: 'ArrowRight', jump: 'ShiftLeft', attack: 'Space', action: 'KeyE' };
+        let binds = { ...DEFAULT_BINDS };
+        try {
+            const savedBinds = JSON.parse(localStorage.getItem('loveAdventureKeyBinds') || 'null');
+            if (savedBinds && typeof savedBinds === 'object') binds = { ...DEFAULT_BINDS, ...savedBinds };
+        } catch (_) {}
+        const WEAPONS = ['sword', 'wand', 'gun', 'bow'];
+        const WINFO = { sword: { icon: '🗡️', cd: 24 }, wand: { icon: '🪄', cd: 30, sp: 5.5 }, gun: { icon: '🔫', cd: 14, sp: 11 }, bow: { icon: '🏹', cd: 36, sp: 8 } };
+        let weapon = 'sword', remapping = null, last = 0, acc = 0, frame = 0;
+        let heroPlayer, partnerGoal, platforms, bridges, switches, hazards, hearts, particles;
+        let camX, checkpoint, arena, gates, boss, bossDefeated, birds, archers, shots, projs, atkCd, swing, birdTimer, invuln, msgText = '', msgT = 0;
+        let clashBursts = [], victoryCelebrating = false, victoryFrame = 0, victoryRaf = 0, lives = 5, gameOver = false;
+
+        const ov = (ax, ay, aw, ah, bx, by, bw, bh) => Math.abs(ax - bx) < (aw + bw) / 2 && Math.abs(ay - by) < (ah + bh) / 2;
+        const flash = t => { msgText = t; msgT = 200; };
+        const pop = (x, y, n) => createHeartParticles(x, y, n);
+
+        function initStage() {
+            canvas = $('gameCanvas'); ctx = canvas.getContext('2d');
+            const heroName = $('heroNameInput').value || selectedHeroAvatar.name;
+            const partnerName = $('partnerNameInput').value || selectedPartnerAvatar.name;
+
+            heroPlayer = { x: 60, y: 380, vx: 0, vy: 0, w: 28, h: 36, isGrounded: false, facing: 'right', isMoving: false, animFrame: 0, data: selectedHeroAvatar, name: heroName };
+            // Partner now waits at the far end of the scrolling world (behind the boss)
+            partnerGoal = { x: WORLD_W - 70, y: 412, w: 28, h: 36, data: selectedPartnerAvatar, name: partnerName };
+
+            platforms = [
+                { x: 0, y: 430, w: 280, h: 70, style: 'stone' },
+                { x: 350, y: 430, w: WORLD_W - 350, h: 70, style: 'stone' },
+                { x: 140, y: 320, w: 100, h: 18, style: 'wood' },
+                { x: 280, y: 250, w: 120, h: 18, style: 'wood' },
+                { x: 450, y: 310, w: 110, h: 18, style: 'wood' },
+                { x: 600, y: 230, w: 130, h: 18, style: 'stone' },
+                { x: 750, y: 330, w: 130, h: 18, style: 'stone' }
+            ];
+            hazards = [{ x: 420, y: 418, r: 12, angle: 0 }, { x: 520, y: 418, r: 12, angle: 0 }];
+            switches = [
+                { x: 330, y: 232, w: 20, h: 18, activated: false, targetBridgeIndex: 0 },
+                { x: 650, y: 212, w: 20, h: 18, activated: false, targetBridgeIndex: 1 }
+            ];
+            bridges = [{ x: 280, y: 430, w: 70, h: 14, active: false }, { x: 560, y: 310, w: 40, h: 14, active: false }];
+            hearts = [
+                { x: 180, y: 280, collected: false }, { x: 340, y: 210, collected: false }, { x: 310, y: 390, collected: false },
+                { x: 500, y: 270, collected: false }, { x: 660, y: 190, collected: false }, { x: 810, y: 280, collected: false }
+            ];
+            particles = []; birds = []; archers = []; shots = []; projs = []; clashBursts = [];
+            // Rooftop archer stages: stationary enemies on elevated platforms.
+            archers = [
+                { x: 1180, y: 145, platformX: 1080, platformW: 210, hp: 2, max: 2, timer: 80, dead: false, flash: 0, phase: 0 },
+                { x: 2220, y: 125, platformX: 2100, platformW: 240, hp: 2, max: 2, timer: 110, dead: false, flash: 0, phase: 1 },
+                { x: 3340, y: 150, platformX: 3220, platformW: 240, hp: 2, max: 2, timer: 90, dead: false, flash: 0, phase: 2 },
+                { x: 4300, y: 120, platformX: 4180, platformW: 240, hp: 2, max: 2, timer: 100, dead: false, flash: 0, phase: 3 }
+            ];
+            // Elevated archer stages are added without changing the existing platforms.
+            platforms.push(
+                { x: 1080, y: 180, w: 210, h: 16, style: 'wood' },
+                { x: 2100, y: 160, w: 240, h: 16, style: 'wood' },
+                { x: 3220, y: 185, w: 240, h: 16, style: 'wood' },
+                { x: 4180, y: 155, w: 240, h: 16, style: 'wood' }
+            );
+            const pal = ['#a855f7', '#f97316', '#14b8a6', '#eab308', '#ec4899', '#22c55e'];
+            const mk = (type, x) => ({ type, x, y: GROUND - 29, hp: 3, max: 3, dead: false, active: false, timer: 180, aimY: 400, laserActive: false, laserFrames: 0, flash: 0, m: 70, col: pal[Math.random() * pal.length | 0] });
+            gates = [mk('aunty', 1700), mk('uncle', 2800), mk('aunty', 3800)];
+            boss = { type: 'boss', x: 5000, bx: 5000, y: 330, hp: 6, max: 6, dead: false, active: false, st: 'summon', n: 0, t: 90, swords: [], flash: 0, m: 170, proximityTimer: 0 };
+            bossDefeated = false; arena = null; camX = 0; checkpoint = 60; atkCd = 0; swing = null; birdTimer = 150; invuln = 0; frame = 0; victoryCelebrating = false; victoryFrame = 0; clashBursts = []; lives = 5; gameOver = false;
+            last = 0; acc = 0; paused = false; msgT = 0;
+            if (victoryRaf) cancelAnimationFrame(victoryRaf);
+            collectedHearts = 0; levelTimeSeconds = 0;
+            $('hudHearts').innerText = 0; $('hudLives').innerText = lives; $('hudHeroName').innerText = heroPlayer.name; $('hudPartnerName').innerText = partnerGoal.name;
+            $('gameOverModal').classList.add('hidden');
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (gameRunning && !paused) {
+                    levelTimeSeconds++;
+                    $('hudTimer').innerText = `${String(Math.floor(levelTimeSeconds / 60)).padStart(2, '0')}:${String(levelTimeSeconds % 60).padStart(2, '0')}`;
+                }
+            }, 1000);
+            const overlay = $('instructionOverlay');
+            overlay.style.opacity = '1';
+            setTimeout(() => { overlay.style.opacity = '0'; }, 6000);
+        }
+
+        // Fixed 60-step/sec simulation so speed is identical on 60Hz / 120Hz / 144Hz screens
+        function gameLoop(t) {
+            if (!gameRunning) return;
+            if (!last) last = t;
+            acc += Math.min(t - last, 100); last = t;
+            while (acc >= 16.667) { if (!paused) updatePhysics(); acc -= 16.667; }
+            renderCanvas();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function aimDir() {
+            const dx = keys.left ? -1 : keys.right ? 1 : 0;
+            if (keys.up && !dx) return { x: 0, y: -1 };
+            if (keys.up) return { x: dx * Math.SQRT1_2, y: -Math.SQRT1_2 };
+            return { x: dx || (heroPlayer.facing === 'left' ? -1 : 1), y: 0 };
+        }
+
+        function doAttack() {
+            const w = WINFO[weapon]; atkCd = w.cd;
+            playSound('switch');
+            if (weapon === 'sword') { swing = { t: 12, hit: new Set() }; return; } // 12 frames = 0.2s hitbox
+            const d = aimDir();
+            if (d.x) heroPlayer.facing = d.x < 0 ? 'left' : 'right';
+            projs.push({ k: weapon, x: heroPlayer.x + d.x * 18, y: heroPlayer.y - 4 + d.y * 18, vx: d.x * w.sp, vy: d.y * w.sp, r: weapon === 'wand' ? 9 : 5 });
+        }
+
+        function foeBoxes() {
+            const a = [];
+            birds.forEach(b => a.push({ o: b, k: 'bird', x: b.x, y: b.y, w: 28, h: 28 }));
+            archers.forEach(a1 => { if (!a1.dead && Math.abs(a1.x - camX) < VW + 120) a.push({ o: a1, k: 'archer', x: a1.x, y: a1.y, w: 34, h: 46 }); });
+            gates.forEach(g => { if (g.active && !g.dead) a.push({ o: g, k: 'gate', x: g.x, y: g.y - 6, w: 50, h: 96 }); });
+            if (boss.active && !bossDefeated) a.push({ o: boss, k: 'boss', x: boss.x, y: boss.y, w: 90, h: 130 });
+            return a;
+        }
+
+        function damage(t) {
+            const o = t.o;
+            if (t.k === 'bird') { o.dead = true; pop(o.x, o.y, 8); playSound('heart'); return; }
+            if (t.k === 'archer') {
+                if (o.flash > 0) return;
+                o.hp--; o.flash = 12; pop(o.x, o.y, 6); playSound('heart');
+                if (o.hp <= 0) { o.dead = true; pop(o.x, o.y, 24); flash('Archer defeated!'); }
+                return;
+            }
+            if (o.flash > 0 && t.k === 'boss') return;
+            o.hp--; o.flash = t.k === 'boss' ? 40 : 10; pop(o.x, o.y, 8); playSound('heart');
+            if (o.hp > 0) return;
+            if (t.k === 'gate') {
+                o.dead = true; pop(o.x, o.y, 30);
+                if (arena === o) { arena = null; checkpoint = heroPlayer.x; flash('Path clear! Go right →'); }
+            } else {
+                bossDefeated = true; boss.dead = true; arena = null; boss.swords = []; birds = []; shots = []; pop(o.x, o.y, 60);
+                flash(`Devil defeated! Reach ${partnerGoal.name}!`);
+            }
+        }
+
+        function kill() {
+            if (invuln > 0 || gameOver || !gameRunning) return;
+            lives--;
+            $('hudLives').innerText = lives;
+            pop(heroPlayer.x, heroPlayer.y, 20);
+            playSound('switch');
+
+            if (lives <= 0) {
+                gameOver = true;
+                gameRunning = false;
+                clearInterval(timerInterval);
+                $('gameOverText').innerText = `${heroPlayer.name} lost all 5 lives. Restart the game to try again!`;
+                $('gameOverModal').classList.remove('hidden');
+                return;
+            }
+
+            birds = []; shots = []; projs = []; boss.swords = [];
+            if (boss.active && !bossDefeated) { boss.st = 'summon'; boss.n = 0; boss.t = 90; boss.proximityTimer = 60; }
+            gates.forEach(g => { if (g.active) g.timer = 180; g.laserActive = false; g.laserFrames = 0; });
+            heroPlayer.x = arena ? camX + 70 : Math.max(60, checkpoint);
+            heroPlayer.y = 350; heroPlayer.vx = 0; heroPlayer.vy = 0; invuln = 100; birdTimer = 150;
+            flash(`${lives} ${lives === 1 ? 'life' : 'lives'} remaining!`);
+        }
+
+        function updateBoss() {
+            const b = boss;
+            b.y = 330 + Math.sin(frame * 0.03) * 20; b.x = b.bx + Math.sin(frame * 0.015) * 70;
+            if (b.flash > 0) b.flash--;
+            if (!b.active || bossDefeated) return;
+            if (b.proximityTimer > 0) b.proximityTimer--;
+            // When the hero gets close to the winged boss, it can strike once every second.
+            if (Math.abs(heroPlayer.x - b.x) < 520 && Math.abs(heroPlayer.y - b.y) < 150 && b.proximityTimer <= 0) {
+                const dx = heroPlayer.x - b.x, dy = heroPlayer.y - b.y, d = Math.hypot(dx, dy) || 1;
+                b.swords.push({ slot: 9, x: b.x, y: b.y, a: Math.atan2(dy, dx), s: 'fly', vx: dx / d * 4.1, vy: dy / d * 4.1 });
+                b.proximityTimer = 60;
+                clashBursts.push({ x: b.x, y: b.y, t: 10, max: 10, r: 8, kind: 'boss' });
+            }
+            b.t--;
+            if (b.st === 'summon') {                       // spawn 4 swords sequentially
+                if (b.n < 4 && b.t <= 0) { b.swords.push({ slot: b.n, x: b.x, y: b.y - 95, a: 0, s: 'hover', vx: 0, vy: 0 }); b.n++; b.t = 40; }
+                else if (b.n >= 4 && b.t <= 0) { b.st = 'throw'; b.t = 50; }
+            } else if (b.st === 'throw') {                  // hurl one-by-one at hero's current position
+                if (b.t <= 0) {
+                    const s = b.swords.find(q => q.s === 'hover');
+                    if (s) {
+                        const dx = heroPlayer.x - s.x, dy = heroPlayer.y - s.y, d = Math.hypot(dx, dy) || 1;
+                        s.s = 'fly'; s.vx = dx / d * 3.4; s.vy = dy / d * 3.4; s.a = Math.atan2(dy, dx); b.t = 50;
+                    }
+                    if (!b.swords.some(q => q.s === 'hover')) { b.st = 'cool'; b.t = 300; } // 5s recharge
+                }
+            } else if (b.t <= 0) { b.st = 'summon'; b.n = 0; b.t = 40; }
+            for (const s of b.swords.slice()) {
+                if (s.dead) continue;
+                if (s.s === 'hover') {
+                    s.x = b.x - 60 + s.slot * 40; s.y = b.y - 95 + Math.sin(frame * 0.1 + s.slot) * 5;
+                    s.a = Math.atan2(heroPlayer.y - s.y, heroPlayer.x - s.x);
+                } else { s.x += s.vx; s.y += s.vy; if (s.y > GROUND + 10 || s.x < camX - 60 || s.x > camX + VW + 60 || s.y < -60) s.dead = true; }
+                if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < 22) kill();
+            }
+            b.swords = b.swords.filter(s => !s.dead);
+        }
+
+        function updateGate(g) {
+            if (!g.active || g.dead) return;
+            if (g.flash > 0) g.flash--;
+            g.timer--;
+            if (g.type === 'aunty') {
+                // Aunty fires a small eye laser every 3 seconds.
+                if (g.timer <= 0) {
+                    const eyeY = g.y - 42;
+                    const dir = heroPlayer.x < g.x ? -1 : 1;
+                    shots.push({ k: 'laser', x: g.x + dir * 18, y: eyeY, vx: dir * 7.2, vy: 0, r: 5, age: 0, life: 110 });
+                    g.timer = 180; // 3 seconds at 60 FPS
+                    g.aimY = eyeY;
+                }
+            } else if (g.timer <= 0) {
+                const dx = heroPlayer.x - g.x, dy = heroPlayer.y - (g.y - 20), d = Math.hypot(dx, dy) || 1;
+                shots.push({ k: 'wave', x: g.x - 24, y: g.y - 20, vx: dx / d * 2.3, vy: dy / d * 2.3, r: 12, age: 0 });
+                g.timer = 180;
+            }
+        }
+
+        function updateArchers() {
+            archers.forEach(a => {
+                if (a.dead) return;
+                if (a.flash > 0) a.flash--;
+                if (a.timer > 0) a.timer--;
+                a.phase += 0.04;
+                if (a.timer <= 0 && Math.abs(a.x - camX) < VW + 160) {
+                    const dx = heroPlayer.x - a.x, dy = heroPlayer.y - a.y, d = Math.hypot(dx, dy) || 1;
+                    shots.push({ k: 'arrow', x: a.x - 18, y: a.y - 12, vx: dx / d * 5.0, vy: dy / d * 5.0, r: 6, age: 0 });
+                    a.timer = 90;
+                }
+            });
+        }
+
+        function makeClash(x, y) {
+            clashBursts.push({ x, y, t: 14, max: 14, r: 7 });
+            for (let i = 0; i < 7; i++) particles.push({ x, y, vx: (Math.random() - .5) * 5, vy: (Math.random() - .5) * 5, size: Math.random() * 3 + 2, alpha: 1 });
+            playSound('switch');
+        }
+
+        function pointNearSwing(x, y) {
+            if (!swing) return false;
+            const f = heroPlayer.facing === 'left' ? -1 : 1;
+            return ov(heroPlayer.x + f * 34, heroPlayer.y - 4, 72, 58, x, y, 18, 18);
+        }
+
+        function updatePhysics() {
+            const gravity = 0.55, moveSpeed = 4.0, jumpForce = -10.8;
+            frame++;
+            if (invuln > 0) invuln--; if (msgT > 0) msgT--; if (atkCd > 0) atkCd--;
+
+            // Player movement (unchanged values)
+            if (keys.left) { heroPlayer.vx = -moveSpeed; heroPlayer.facing = 'left'; heroPlayer.isMoving = true; }
+            else if (keys.right) { heroPlayer.vx = moveSpeed; heroPlayer.facing = 'right'; heroPlayer.isMoving = true; }
+            else { heroPlayer.vx *= 0.7; heroPlayer.isMoving = Math.abs(heroPlayer.vx) > 0.2; }
+            if (keys.jump && heroPlayer.isGrounded) {
+                heroPlayer.vy = jumpForce;
+                heroPlayer.isGrounded = false;
+                playSound('jump');
+            }
+            heroPlayer.vy += gravity; heroPlayer.x += heroPlayer.vx; heroPlayer.y += heroPlayer.vy; heroPlayer.animFrame++;
+
+            // World bounds + ARENA GATE (cannot pass a locked enemy)
+            let hi = WORLD_W - 20;
+            if (arena) hi = arena.type === 'boss' ? camX + VW - 20 : Math.min(camX + VW - 20, arena.x - 45);
+            heroPlayer.x = Math.max(arena ? camX + 16 : 20, Math.min(hi, heroPlayer.x));
+
+            // Camera: follows the hero on X, frozen while an arena is active
+            if (!arena) { const tgt = Math.max(0, Math.min(WORLD_W - VW, heroPlayer.x - 320)); camX += (tgt - camX) * 0.12; }
+            if (!arena) for (const o of [...gates, boss]) {
+                if (!o.dead && !o.active && o.x <= camX + VW - o.m) { arena = o; o.active = true; flash(o.type === 'boss' ? 'BOSS: The Winged Horned Devil!' : 'Defeat her/him to move on!'); break; }
+            }
+
+            // Platform collision
+            heroPlayer.isGrounded = false;
+            [...platforms, ...bridges.filter(b => b.active)].forEach(plat => {
+                if (heroPlayer.x + heroPlayer.w / 2 > plat.x && heroPlayer.x - heroPlayer.w / 2 < plat.x + plat.w &&
+                    heroPlayer.y + heroPlayer.h / 2 >= plat.y && heroPlayer.y + heroPlayer.h / 2 <= plat.y + plat.h + 10 && heroPlayer.vy >= 0) {
+                    heroPlayer.y = plat.y - heroPlayer.h / 2; heroPlayer.vy = 0; heroPlayer.isGrounded = true;
+                }
+            });
+
+            hazards.forEach(hz => { hz.angle += 0.1; if (Math.hypot(heroPlayer.x - hz.x, heroPlayer.y - hz.y) < hz.r + 12) kill(); });
+            if (heroPlayer.y > canvas.height + 50) { invuln = 0; kill(); }
+
+            if (keys.action) {
+                switches.forEach(sw => {
+                    if (Math.hypot(heroPlayer.x - sw.x, heroPlayer.y - sw.y) < 35 && !sw.activated) {
+                        sw.activated = true; bridges[sw.targetBridgeIndex].active = true; playSound('switch'); pop(sw.x, sw.y, 10);
+                    }
+                });
+                keys.action = false;
+            }
+            hearts.forEach(h => {
+                if (!h.collected && Math.hypot(heroPlayer.x - h.x, heroPlayer.y - h.y) < 25) {
+                    h.collected = true; collectedHearts++; $('hudHearts').innerText = collectedHearts; playSound('heart'); pop(h.x, h.y, 10);
+                }
+            });
+
+            // Direct contact with an enemy also costs one life.
+            if (invuln <= 0) {
+                for (const t of foeBoxes()) {
+                    if (ov(heroPlayer.x, heroPlayer.y, heroPlayer.w, heroPlayer.h, t.x, t.y, t.w, t.h)) { kill(); break; }
+                }
+            }
+
+            // Attack input
+            if (keys.attack && atkCd <= 0) doAttack();
+            if (swing) {
+                const f = heroPlayer.facing === 'left' ? -1 : 1;
+                // Sword is also a shield: enemy attacks that enter the swing are cancelled.
+                shots.forEach(s => { if (!s.dead && pointNearSwing(s.x, s.y)) { s.dead = true; makeClash(s.x, s.y); } });
+                boss.swords.forEach(s => { if (!s.dead && pointNearSwing(s.x, s.y)) { s.dead = true; makeClash(s.x, s.y); } });
+                foeBoxes().forEach(t => { if (!swing.hit.has(t.o) && ov(heroPlayer.x + f * 34, heroPlayer.y - 4, 60, 50, t.x, t.y, t.w, t.h)) { swing.hit.add(t.o); damage(t); } });
+                if (--swing.t <= 0) swing = null;
+            }
+            // Hero projectiles and enemy attacks cancel each other on impact.
+            projs.forEach(p => {
+                const n = Math.ceil(Math.hypot(p.vx, p.vy) / 5);
+                for (let i = 0; i < n && !p.dead; i++) {
+                    p.x += p.vx / n; p.y += p.vy / n;
+                    for (const s of shots) {
+                        if (!s.dead && Math.hypot(p.x - s.x, p.y - s.y) < (p.r + (s.r || 7) + 4)) { p.dead = true; s.dead = true; makeClash(p.x, p.y); break; }
+                    }
+                    if (p.dead) break;
+                    for (const s of boss.swords) {
+                        if (!s.dead && s.s === 'fly' && Math.hypot(p.x - s.x, p.y - s.y) < p.r + 12) { p.dead = true; s.dead = true; makeClash(p.x, p.y); break; }
+                    }
+                    if (p.dead) break;
+                    for (const t of foeBoxes()) if (ov(p.x, p.y, p.r * 2, p.r * 2, t.x, t.y, t.w, t.h)) { damage(t); p.dead = true; break; }
+                }
+                if (p.x < camX - 40 || p.x > camX + VW + 40 || p.y < -40 || p.y > GROUND + 20) p.dead = true;
+            });
+            projs = projs.filter(p => !p.dead);
+
+            // Round Birds: drop from the sky, gently home in on the hero (slow enough to dodge)
+            if (!bossDefeated && --birdTimer <= 0 && birds.length < 3) {
+                const x = camX + 60 + Math.random() * (VW - 120), dx = heroPlayer.x - x, dy = heroPlayer.y + 20, d = Math.hypot(dx, dy);
+                birds.push({ x, y: -20, vx: dx / d * 1.5, vy: dy / d * 1.5, age: 0 });
+                birdTimer = (arena === boss ? 170 : 210) + Math.random() * 80;
+            }
+            birds.forEach(b => {
+                const dx = heroPlayer.x - b.x, dy = heroPlayer.y - b.y, d = Math.hypot(dx, dy) || 1;
+                b.vx += (dx / d * 1.6 - b.vx) * 0.015; b.vy += (dy / d * 1.6 - b.vy) * 0.015;
+                b.x += b.vx; b.y += b.vy; b.age++;
+                if (b.age > 600 || b.y > GROUND + 30) b.dead = true;
+                if (Math.hypot(dx, dy) < 22) kill();
+            });
+            birds = birds.filter(b => !b.dead);
+
+            updateArchers();
+            gates.forEach(updateGate);
+            updateBoss();
+            shots.forEach(s => {
+                if (s.k === 'laser') {
+                    // Aunty's eye laser homes toward the hero while it travels.
+                    const dx = heroPlayer.x - s.x, dy = heroPlayer.y - s.y;
+                    const d = Math.hypot(dx, dy) || 1;
+                    const speed = 7.2;
+                    const targetVx = dx / d * speed, targetVy = dy / d * speed;
+                    s.vx += (targetVx - s.vx) * 0.18;
+                    s.vy += (targetVy - s.vy) * 0.18;
+                    const currentSpeed = Math.hypot(s.vx, s.vy) || speed;
+                    s.vx = s.vx / currentSpeed * speed;
+                    s.vy = s.vy / currentSpeed * speed;
+                }
+                s.x += s.vx; s.y += s.vy;
+                if (s.k === 'laser') {
+                    s.age++;
+                    if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < 20) kill();
+                    if (s.age > (s.life || 110) || s.x < camX - 120 || s.x > camX + VW + 120 || s.y < -80 || s.y > GROUND + 80) s.dead = true;
+                    return;
+                }
+                if (s.k === 'arrow') {
+                    s.age++;
+                    if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < 18) kill();
+                } else {
+                    s.age++; s.r = Math.min(40, 12 + s.age * 0.18); if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < s.r + 8) kill();
+                }
+                if (s.x < camX - 80 || s.x > camX + VW + 80 || s.y > GROUND + 40 || s.y < -40) s.dead = true;
+            });
+            shots = shots.filter(s => !s.dead);
+
+            clashBursts.forEach(b => { b.t--; b.r += 2.2; });
+            clashBursts = clashBursts.filter(b => b.t > 0);
+
+            if (bossDefeated && Math.hypot(heroPlayer.x - partnerGoal.x, heroPlayer.y - partnerGoal.y) < 32) triggerVictory();
+
+            particles.forEach((pt, i) => { pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.04; pt.alpha -= 0.02; });
+            particles = particles.filter(p => p.alpha > 0);
+        }
+
+        /* ---- 3D-shaded rendering helpers ---- */
+        function sph(c, x, y, r, col) {
+            const g = c.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r);
+            g.addColorStop(0, '#fff'); g.addColorStop(.3, col); g.addColorStop(1, '#000');
+            c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+        }
+        function drawBird(b) {
+            ctx.save(); ctx.translate(b.x, b.y);
+            const f = Math.sin(frame * .25 + b.x) * .6; ctx.fillStyle = '#0369a1';
+            [-1, 1].forEach(s => { ctx.save(); ctx.scale(s, 1); ctx.rotate(-f); ctx.beginPath(); ctx.ellipse(17, -4, 14, 6, -.3, 0, 7); ctx.fill(); ctx.restore(); });
+            sph(ctx, 0, 0, 13, '#f43f5e');
+            ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.moveTo(-3, 3); ctx.lineTo(3, 3); ctx.lineTo(0, 10); ctx.fill();
+            sph(ctx, -5, -3, 3.5, '#fff'); sph(ctx, 5, -3, 3.5, '#fff');
+            ctx.fillStyle = '#000'; ctx.fillRect(-6, -3, 2, 3); ctx.fillRect(4, -3, 2, 3);
+            ctx.restore();
+        }
+        function drawGate(g) {
+            if (g.dead) return;
+            const u = g.type === 'uncle';
+            if (!u && g.timer < 40 && g.timer > 0) { ctx.strokeStyle = 'rgba(239,68,68,.55)'; ctx.setLineDash([8, 8]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(g.x - 14, g.aimY); ctx.lineTo(camX, g.aimY); ctx.stroke(); ctx.setLineDash([]); }
+            ctx.save(); ctx.translate(g.x, g.y); ctx.scale(1.6, 1.6);
+            if (g.flash > 0 && frame % 4 < 2) ctx.globalAlpha = .5;
+            drawChibi3D(ctx, 0, 0, u ? { skin: '#d9a273', hair: '#e5e7eb', hairStyle: 'side_part', outfit: g.col, outfitDark: '#1e293b' }
+                : { skin: '#e8b48a', hair: '#6b7280', hairStyle: 'twin_buns', outfit: g.col, outfitDark: '#4c1d95' }, { facing: 'left' });
+            if (u && g.timer < 30) { ctx.fillStyle = '#450a0a'; ctx.beginPath(); ctx.ellipse(0, -5, 4, 5, 0, 0, 7); ctx.fill(); }
+            if (!u && g.timer < 40) { ctx.fillStyle = 'rgba(239,68,68,.85)'; [-4, 4].forEach(x => { ctx.beginPath(); ctx.arc(x, -14, 4.5, 0, 7); ctx.fill(); }); }
+            ctx.restore();
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(g.x - 25, g.y - 66, 50, 6); ctx.fillStyle = '#f43f5e'; ctx.fillRect(g.x - 25, g.y - 66, 50 * g.hp / g.max, 6);
+        }
+        function drawArcher(a) {
+            if (a.dead) return;
+            ctx.save(); ctx.translate(a.x, a.y);
+            if (a.flash > 0 && frame % 4 < 2) ctx.globalAlpha = .45;
+            drawChibi3D(ctx, 0, 0, { skin: '#c98d62', hair: '#3f2a1d', hairStyle: 'side_part', outfit: '#7c3aed', outfitDark: '#4c1d95' }, { facing: 'left' });
+            ctx.strokeStyle = '#92400e'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(-17, -3, 14, -1.15, 1.15); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-17, -16); ctx.lineTo(-17, 10); ctx.stroke();
+            ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-17, -3); ctx.lineTo(9, -3); ctx.stroke();
+            ctx.restore();
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(a.x - 22, a.y - 52, 44, 5); ctx.fillStyle = '#a78bfa'; ctx.fillRect(a.x - 22, a.y - 52, 44 * a.hp / a.max, 5);
+        }
+
+        function drawBoss() {
+            const b = boss; if (bossDefeated) return;
+            ctx.save(); ctx.translate(b.x, b.y);
+            if (b.flash > 0 && frame % 4 < 2) ctx.globalAlpha = .5;
+            const fl = Math.sin(frame * .1) * .25;
+            [-1, 1].forEach(s => {
+                ctx.save(); ctx.scale(s, 1); ctx.rotate(fl);
+                const g = ctx.createLinearGradient(20, 0, 110, -40); g.addColorStop(0, '#991b1b'); g.addColorStop(1, '#1c0a0a'); ctx.fillStyle = g;
+                ctx.beginPath(); ctx.moveTo(20, -10); ctx.quadraticCurveTo(70, -90, 125, -50); ctx.lineTo(100, -35); ctx.lineTo(108, -15); ctx.lineTo(80, -10); ctx.lineTo(80, 10); ctx.lineTo(50, 15); ctx.closePath(); ctx.fill(); ctx.restore();
+            });
+            ctx.strokeStyle = '#991b1b'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(0, 40); ctx.quadraticCurveTo(-40, 70, -60, 50 + Math.sin(frame * .1) * 8); ctx.stroke();
+            sph(ctx, 0, 18, 34, '#dc2626'); sph(ctx, 0, -22, 30, '#ef4444');
+            [-1, 1].forEach(s => { ctx.fillStyle = '#fde68a'; ctx.beginPath(); ctx.moveTo(s * 14, -44); ctx.quadraticCurveTo(s * 34, -62, s * 30, -88); ctx.quadraticCurveTo(s * 14, -66, s * 6, -48); ctx.fill(); });
+            sph(ctx, -11, -26, 6, '#fde047'); sph(ctx, 11, -26, 6, '#fde047');
+            ctx.fillStyle = '#000'; ctx.fillRect(-12, -29, 3, 7); ctx.fillRect(9, -29, 3, 7);
+            ctx.fillStyle = '#450a0a'; ctx.beginPath(); ctx.arc(0, -12, 10, 0, Math.PI); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.fillRect(-6, -12, 3, 4); ctx.fillRect(3, -12, 3, 4);
+            ctx.restore();
+            b.swords.forEach(s => {
+                ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a); ctx.shadowColor = '#a78bfa'; ctx.shadowBlur = 14;
+                const g = ctx.createLinearGradient(0, -5, 0, 5); g.addColorStop(0, '#e9d5ff'); g.addColorStop(1, '#7c3aed'); ctx.fillStyle = g;
+                ctx.beginPath(); ctx.moveTo(34, 0); ctx.lineTo(8, -5); ctx.lineTo(-16, -5); ctx.lineTo(-16, 5); ctx.lineTo(8, 5); ctx.fill();
+                ctx.fillStyle = '#fbbf24'; ctx.fillRect(-20, -10, 5, 20); ctx.restore();
+            });
+        }
+        function drawWeapon() {
+            const h = heroPlayer, f = h.facing === 'left' ? -1 : 1;
+            ctx.save(); ctx.translate(h.x + f * 10, h.y + 4); ctx.scale(f, 1);
+            if (weapon === 'sword') {
+                const p = swing ? 1 - swing.t / 12 : 0; ctx.rotate(swing ? -1.4 + p * 2.2 : -.5);
+                ctx.fillStyle = '#e2e8f0'; ctx.fillRect(0, -2, 30, 4); ctx.fillStyle = '#fbbf24'; ctx.fillRect(-2, -5, 4, 10);
+                if (swing) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(0, 0, 30, -1.4, -1.4 + p * 2.2); ctx.stroke(); }
+            } else if (weapon === 'wand') { ctx.rotate(-.6); ctx.fillStyle = '#92400e'; ctx.fillRect(0, -1.5, 22, 3); sph(ctx, 24, 0, 5, '#f59e0b'); }
+            else if (weapon === 'gun') { ctx.fillStyle = '#475569'; ctx.fillRect(0, -3, 20, 6); ctx.fillRect(0, 2, 6, 8); }
+            else { ctx.strokeStyle = '#b45309'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(8, 0, 16, -1.2, 1.2); ctx.stroke(); ctx.lineWidth = 1; ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.moveTo(15, -14.5); ctx.lineTo(15, 14.5); ctx.stroke(); }
+            ctx.restore();
+        }
+
+        function renderCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Parallax clouds
+            ctx.fillStyle = 'rgba(255,255,255,0.08)';
+            for (let i = -1; i < 5; i++) { const cx = ((i * 420 - camX * 0.3) % 2100 + 2100) % 2100 - 200; ctx.beginPath(); ctx.arc(cx, 90 + (i % 2) * 40, 40, 0, 7); ctx.arc(cx + 40, 80 + (i % 2) * 40, 50, 0, 7); ctx.fill(); }
+
+            ctx.save(); ctx.translate(-Math.round(camX), 0);
+            platforms.forEach(p => {
+                if (p.x > camX + VW || p.x + p.w < camX) return;
+                ctx.fillStyle = p.style === 'wood' ? '#d97706' : '#334155'; ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, p.h, 6); ctx.fill();
+                ctx.strokeStyle = '#475569'; ctx.stroke();
+                ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(p.x + 4, p.y + 2, p.w - 8, 3);
+            });
+            bridges.forEach(br => { ctx.fillStyle = br.active ? '#f59e0b' : 'rgba(245,158,11,0.2)'; ctx.beginPath(); ctx.roundRect(br.x, br.y, br.w, br.h, 4); ctx.fill(); });
+            hazards.forEach(hz => { ctx.save(); ctx.translate(hz.x, hz.y); ctx.rotate(hz.angle); ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(0, 0, hz.r, 0, 7); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore(); });
+            switches.forEach(sw => { ctx.fillStyle = sw.activated ? '#10b981' : '#f43f5e'; ctx.fillRect(sw.x, sw.y, sw.w, sw.h); });
+            hearts.forEach(h => { if (!h.collected) { ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(h.x, h.y, 8, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '10px FontAwesome'; ctx.fillText('♥', h.x - 3.5, h.y + 3.5); } });
+
+            gates.forEach(drawGate);
+            drawBoss();
+            birds.forEach(drawBird);
+            archers.forEach(drawArcher);
+            shots.forEach(s => {
+                if (s.k === 'laser') {
+                    ctx.save();
+                    const a = Math.atan2(s.vy, s.vx);
+                    ctx.translate(s.x, s.y); ctx.rotate(a);
+                    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10;
+                    ctx.strokeStyle = '#fee2e2'; ctx.lineWidth = 5;
+                    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(12, 0); ctx.stroke();
+                    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(15, 0); ctx.stroke();
+                    ctx.restore();
+                    return;
+                }
+                const a = Math.atan2(s.vy, s.vx);
+                if (s.k === 'arrow') {
+                    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(a);
+                    ctx.strokeStyle = '#92400e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(12, 0); ctx.stroke();
+                    ctx.fillStyle = '#e5e7eb'; ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(6, -4); ctx.lineTo(6, 4); ctx.closePath(); ctx.fill();
+                    ctx.restore();
+                } else {
+                    ctx.strokeStyle = 'rgba(125,211,252,.9)'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, a + Math.PI - .9, a + Math.PI + .9); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(s.x, s.y, s.r * .65, a + Math.PI - .9, a + Math.PI + .9); ctx.stroke();
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 13px Fredoka'; ctx.textAlign = 'center'; ctx.fillText('BLAH!', s.x, s.y + 4); ctx.textAlign = 'left';
+                }
+            });
+            clashBursts.forEach(b => {
+                ctx.save(); ctx.globalAlpha = b.t / b.max; ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; ctx.beginPath(); ctx.moveTo(b.x + Math.cos(a) * b.r, b.y + Math.sin(a) * b.r); ctx.lineTo(b.x + Math.cos(a) * (b.r + 8), b.y + Math.sin(a) * (b.r + 8)); ctx.stroke(); }
+                ctx.restore();
+            });
+            drawChibi3D(ctx, partnerGoal.x, partnerGoal.y, partnerGoal.data, { facing: 'left', isActive: false });
+            if (!(invuln > 0 && frame % 6 < 3)) {
+                drawChibi3D(ctx, heroPlayer.x, heroPlayer.y, heroPlayer.data, { facing: heroPlayer.facing, isMoving: heroPlayer.isMoving, isJumping: !heroPlayer.isGrounded, animFrame: heroPlayer.animFrame, isActive: true });
+                drawWeapon();
+            }
+            projs.forEach(p => {
+                ctx.save(); ctx.translate(p.x, p.y);
+                if (p.k === 'wand') { ctx.fillStyle = 'rgba(250,204,21,.4)'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, 7); ctx.fill(); sph(ctx, 0, 0, 9, '#f97316'); }
+                else { ctx.rotate(Math.atan2(p.vy, p.vx)); if (p.k === 'gun') { ctx.fillStyle = '#fde047'; ctx.fillRect(-8, -2, 16, 4); } else { ctx.fillStyle = '#d6d3d1'; ctx.fillRect(-14, -1.5, 24, 3); ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.moveTo(10, -5); ctx.lineTo(18, 0); ctx.lineTo(10, 5); ctx.fill(); } }
+                ctx.restore();
+            });
+            particles.forEach(pt => { ctx.fillStyle = `rgba(244, 63, 94, ${pt.alpha})`; ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, 7); ctx.fill(); });
+            ctx.restore();
+
+            // Screen-space HUD
+            ctx.fillStyle = 'rgba(15,23,42,.7)'; ctx.fillRect(10, 10, 110, 28); ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Fredoka';
+            ctx.fillText(`${WINFO[weapon].icon} ${weapon.toUpperCase()}`, 18, 29);
+            if (arena === boss && !bossDefeated) {
+                ctx.fillStyle = '#1e293b'; ctx.fillRect(300, 14, 300, 14); ctx.fillStyle = '#ef4444'; ctx.fillRect(300, 14, 300 * boss.hp / boss.max, 14);
+                ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText('WINGED HORNED DEVIL', 450, 44); ctx.textAlign = 'left';
+            }
+            if (msgT > 0) { ctx.globalAlpha = Math.min(1, msgT / 40); ctx.fillStyle = '#fde68a'; ctx.font = 'bold 22px Fredoka'; ctx.textAlign = 'center'; ctx.fillText(msgText, 450, 90); ctx.textAlign = 'left'; ctx.globalAlpha = 1; }
+            if (!arena && gates.some(g => g.active) && frame % 60 < 40 && camX < WORLD_W - VW - 5) { ctx.fillStyle = '#fff'; ctx.font = 'bold 26px Fredoka'; ctx.fillText('GO ➜', 800, 250); }
+        }
+
+        function createHeartParticles(x, y, count) {
+            for (let i = 0; i < count; i++) particles.push({ x, y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.8) * 4, size: Math.random() * 4 + 2, alpha: 1.0 });
+        }
+
+        /* ---------------------------------------------------------------------
+           STAGE 5.6: CONTROLS, WEAPON PICKER & SETTINGS (REMAPPABLE)
+        --------------------------------------------------------------------- */
+        function setWeapon(w) { weapon = w; renderWeapons(); }
+        function renderWeapons() {
+            ['weaponPickA', 'weaponPickB'].forEach(id => {
+                $(id).innerHTML = WEAPONS.map(w => `<button class="px-3 py-2 bg-slate-800 rounded-lg text-sm font-bold text-white ${w === weapon ? 'ring-2 ring-rose-400' : ''}" onclick="setWeapon('${w}')">${WINFO[w].icon} ${w[0].toUpperCase() + w.slice(1)}</button>`).join('');
+            });
+        }
+        const KEY_LABELS = {
+            ArrowLeft: '← Left', ArrowRight: '→ Right', ArrowUp: '↑ Up', ArrowDown: '↓ Down',
+            Space: 'Space', ShiftLeft: 'Left Shift', ShiftRight: 'Right Shift',
+            ControlLeft: 'Left Ctrl', ControlRight: 'Right Ctrl', AltLeft: 'Left Alt', AltRight: 'Right Alt',
+            Enter: 'Enter', Escape: 'Esc', Tab: 'Tab', Backspace: 'Backspace',
+            KeyA: 'A', KeyB: 'B', KeyC: 'C', KeyD: 'D', KeyE: 'E', KeyF: 'F', KeyG: 'G', KeyH: 'H',
+            KeyI: 'I', KeyJ: 'J', KeyK: 'K', KeyL: 'L', KeyM: 'M', KeyN: 'N', KeyO: 'O', KeyP: 'P',
+            KeyQ: 'Q', KeyR: 'R', KeyS: 'S', KeyT: 'T', KeyU: 'U', KeyV: 'V', KeyW: 'W', KeyX: 'X',
+            KeyY: 'Y', KeyZ: 'Z',
+            Digit0: '0', Digit1: '1', Digit2: '2', Digit3: '3', Digit4: '4', Digit5: '5', Digit6: '6',
+            Digit7: '7', Digit8: '8', Digit9: '9'
+        };
+
+        function keyLabel(code) {
+            return KEY_LABELS[code] || code.replace(/^Numpad/, 'Num ').replace(/^F(\d+)$/, 'F$1');
+        }
+
+        function saveBinds() {
+            try { localStorage.setItem('loveAdventureKeyBinds', JSON.stringify(binds)); } catch (_) {}
+        }
+
+        function resetKeyBinds() {
+            binds = { ...DEFAULT_BINDS };
+            saveBinds();
+            remapping = null;
+            refreshSettings();
+        }
+
+        function refreshSettings() {
+            $('keyLeft').innerText = keyLabel(binds.left);
+            $('keyRight').innerText = keyLabel(binds.right);
+            $('keyJmp').innerText = keyLabel(binds.jump);
+            $('keyAtk').innerText = keyLabel(binds.attack);
+            $('keyAction').innerText = keyLabel(binds.action);
+            $('remapHint').innerText = remapping ? `Press a key to assign ${remapping.toUpperCase()}…` : 'Click a control, then press any keyboard key.';
+        }
+
+        function remap(w) {
+            remapping = w;
+            refreshSettings();
+        }
+
+        function toggleTouchUI() {
+            const p = $('touchPad');
+            p.style.display = getComputedStyle(p).display === 'none' ? 'grid' : 'none';
+        }
+
+        function toggleSettings() {
+            const m = $('settingsModal');
+            m.classList.toggle('hidden');
+            m.classList.toggle('flex');
+            paused = !m.classList.contains('hidden');
+            remapping = null;
+            refreshSettings();
+        }
+
+        function resetKeys() {
+            keys.left = keys.right = keys.up = keys.jump = keys.action = keys.attack = false;
+        }
+
+        function bindControls() {
+            window.addEventListener('keydown', e => {
+                const k = e.code;
+
+                // Settings: click a control, then press any key to assign it.
+                if (remapping) {
+                    // Prevent accidental duplicate bindings by moving the previous action off this key.
+                    Object.keys(binds).forEach(action => {
+                        if (action !== remapping && binds[action] === k) binds[action] = '';
+                    });
+                    binds[remapping] = k;
+                    saveBinds();
+                    remapping = null;
+                    refreshSettings();
+                    e.preventDefault();
+                    return;
+                }
+
+                if (!gameRunning) return;
+                if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(k)) e.preventDefault();
+
+                if (k === binds.left) keys.left = true;
+                if (k === binds.right) keys.right = true;
+                if (k === binds.jump) keys.jump = true;
+                if (k === binds.attack) keys.attack = true;
+                if (k === binds.action) keys.action = true;
+
+                // Up remains an aim/look-up control only. It is NOT jump.
+                if (k === 'ArrowUp' || k === 'KeyW') keys.up = true;
+                if (/^Digit[1-4]$/.test(k)) setWeapon(WEAPONS[+k.slice(5) - 1]);
+            });
+
+            window.addEventListener('keyup', e => {
+                const k = e.code;
+                if (k === binds.left) keys.left = false;
+                if (k === binds.right) keys.right = false;
+                if (k === binds.jump) keys.jump = false;
+                if (k === binds.attack) keys.attack = false;
+                if (k === binds.action) keys.action = false;
+                if (k === 'ArrowUp' || k === 'KeyW') keys.up = false;
+            });
+
+            // Touch / mouse / pen controls. The screen UP button is aim/look-up only.
+            const bindPointer = (id, stateKey) => {
+                const b = $(id);
+                if (!b) return;
+                const press = e => {
+                    e.preventDefault();
+                    b.setPointerCapture?.(e.pointerId);
+                    keys[stateKey] = true;
+                };
+                const release = e => {
+                    e.preventDefault();
+                    keys[stateKey] = false;
+                    if (b.hasPointerCapture?.(e.pointerId)) b.releasePointerCapture(e.pointerId);
+                };
+                b.addEventListener('pointerdown', press);
+                b.addEventListener('pointerup', release);
+                b.addEventListener('pointercancel', release);
+                b.addEventListener('lostpointercapture', () => { keys[stateKey] = false; });
+            };
+
+            bindPointer('btnLeft', 'left');
+            bindPointer('btnRight', 'right');
+            bindPointer('btnJump', 'jump');
+            bindPointer('btnAction', 'action');
+            bindPointer('btnUp', 'up');
+            bindPointer('btnAttack', 'attack');
+
+            window.addEventListener('blur', resetKeys);
+        }
+
+        function startGame() {
+            document.getElementById('setupContainer').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            document.getElementById('gameScreen').classList.add('flex');
+
+            initStage();
+            gameRunning = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function triggerVictory() {
+            if (victoryCelebrating) return;
+            gameRunning = false;
+            clearInterval(timerInterval);
+            playSound('win');
+            victoryCelebrating = true; victoryFrame = 0;
+
+            const modal = document.getElementById('victoryModal');
+            const card = document.getElementById('victoryModalCard');
+            modal.classList.remove('hidden');
+
+            setTimeout(() => {
+                card.classList.remove('scale-95', 'opacity-0');
+                card.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            document.getElementById('victorySubtitle').innerText = `${heroPlayer.name} and ${partnerGoal.name} are happy together!`;
+            document.getElementById('vicHearts').innerText = `${collectedHearts} / ${TOTAL_HEARTS}`;
+            document.getElementById('vicTime').innerText = document.getElementById('hudTimer').innerText;
+            runVictoryCelebration();
+        }
+
+        function runVictoryCelebration() {
+            const cv = document.getElementById('victoryCelebrationCanvas');
+            if (!cv || !victoryCelebrating) return;
+            const c = cv.getContext('2d');
+            victoryFrame++;
+            c.clearRect(0, 0, cv.width, cv.height);
+            const w = cv.width, h = cv.height;
+            const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#111a4a'); g.addColorStop(1, '#160b24'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+            // Fireworks in the sky.
+            for (let f = 0; f < 7; f++) {
+                const cx = 55 + ((f * 137) % (w - 110));
+                const cy = 35 + ((f * 47) % 75);
+                const pulse = ((victoryFrame + f * 17) % 70) / 70;
+                c.globalAlpha = Math.sin(pulse * Math.PI);
+                c.strokeStyle = ['#fb7185','#fbbf24','#60a5fa','#a78bfa','#34d399','#f472b6','#fde68a'][f];
+                c.lineWidth = 2;
+                for (let r = 0; r < 10; r++) { const a = r * Math.PI / 5; c.beginPath(); c.moveTo(cx + Math.cos(a) * 5, cy + Math.sin(a) * 5); c.lineTo(cx + Math.cos(a) * (16 + pulse * 28), cy + Math.sin(a) * (16 + pulse * 28)); c.stroke(); }
+            }
+            c.globalAlpha = 1;
+            // Couple standing together, with a large heart between them.
+            const left = w / 2 - 75, right = w / 2 + 75, ground = h - 34;
+            drawChibi3D(c, left, ground, heroPlayer.data, { facing: 'right', isActive: true });
+            drawChibi3D(c, right, ground, partnerGoal.data, { facing: 'left', isActive: true });
+            const heartY = ground - 92 + Math.sin(victoryFrame * .08) * 5;
+            c.save(); c.translate(w / 2, heartY); c.scale(1.8, 1.8); c.fillStyle = '#f43f5e'; c.beginPath(); c.moveTo(0, 10); c.bezierCurveTo(-28, -8, -16, -26, 0, -13); c.bezierCurveTo(16, -26, 28, -8, 0, 10); c.fill(); c.restore();
+            c.fillStyle = 'rgba(255,255,255,.9)'; c.font = 'bold 18px Fredoka'; c.textAlign = 'center'; c.fillText('❤️  TOGETHER  ❤️', w / 2, h - 8); c.textAlign = 'left';
+            victoryRaf = requestAnimationFrame(runVictoryCelebration);
+        }
+
+        function restartLevel() {
+            gameOver = false;
+            victoryCelebrating = false;
+            if (victoryRaf) cancelAnimationFrame(victoryRaf);
+            document.getElementById('victoryModal').classList.add('hidden');
+            document.getElementById('gameOverModal').classList.add('hidden');
+            initStage();
+            gameRunning = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function returnToSetup() {
+            victoryCelebrating = false;
+            if (victoryRaf) cancelAnimationFrame(victoryRaf);
+            gameRunning = false;
+            clearInterval(timerInterval);
+            document.getElementById('victoryModal').classList.add('hidden');
+            document.getElementById('gameOverModal').classList.add('hidden');
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('flex');
+            document.getElementById('setupContainer').classList.remove('hidden');
+        }
+
+        // Splash Screen Background Hearts Animation
+        function initSplashBgCanvas() {
+            const bgCv = document.getElementById('bgHeartsCanvas');
+            if (!bgCv) return;
+            const bgCtx = bgCv.getContext('2d');
+            bgCv.width = window.innerWidth;
+            bgCv.height = window.innerHeight;
+
+            const floatingHearts = Array.from({ length: 25 }, () => ({
+                x: Math.random() * bgCv.width,
+                y: Math.random() * bgCv.height,
+                size: Math.random() * 12 + 8,
+                speed: Math.random() * 1 + 0.5,
+                opacity: Math.random() * 0.5 + 0.2
+            }));
+
+            function drawBg() {
+                bgCtx.clearRect(0,0,bgCv.width,bgCv.height);
+                floatingHearts.forEach(h => {
+                    h.y -= h.speed;
+                    if (h.y < -20) h.y = bgCv.height + 20;
+                    bgCtx.fillStyle = `rgba(244, 63, 94, ${h.opacity})`;
+                    bgCtx.font = `${h.size}px FontAwesome`;
+                    bgCtx.fillText('♥', h.x, h.y);
+                });
+                requestAnimationFrame(drawBg);
+            }
+            drawBg();
+        }
+
+        window.onload = function() {
+            selectHeroGender('male');
+            bindControls();
+            refreshSettings();
+            renderWeapons();
+            initSplashBgCanvas();
+        };
+    </script>
+</body>
+</html>
