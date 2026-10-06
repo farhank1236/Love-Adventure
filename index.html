@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Love Adventure — Female Warrior V8</title>
+    <title>Love Adventure — Female Warrior V9</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -196,7 +196,7 @@
             
             <div id="instructionOverlay" class="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-950/80 text-white px-4 py-2 rounded-full text-xs md:text-sm font-semibold pointer-events-none transition-opacity duration-1000 flex items-center gap-2 border border-slate-800">
                 <i class="fa-solid fa-gamepad text-amber-400"></i>
-                [←/A] Left | [→/D] Right | [Shift] Jump | [Space] Attack | [E] Lever | [1-4] Weapon
+                [←/A] Left | [→/D] Right | [Shift] Jump | [R] Run (hold) | [Space] Attack | [E] Lever | [1-4] Weapon
             </div>
         </div>
 
@@ -251,6 +251,7 @@
                 <div class="flex justify-between items-center gap-3"><span>Move Left</span><button id="keyLeft" onclick="remap('left')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
                 <div class="flex justify-between items-center gap-3"><span>Move Right</span><button id="keyRight" onclick="remap('right')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
                 <div class="flex justify-between items-center gap-3"><span>Move Down</span><button id="keyDown" onclick="remap('down')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div><div class="flex justify-between items-center gap-3"><span>Jump</span><button id="keyJmp" onclick="remap('jump')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
+                <div class="flex justify-between items-center gap-3"><span>Run (hold)</span><button id="keyRun" onclick="remap('run')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
                 <div class="flex justify-between items-center gap-3"><span>Attack</span><button id="keyAtk" onclick="remap('attack')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
                 <div class="flex justify-between items-center gap-3"><span>Special / Ultimate</span><button id="keySpecial" onclick="remap('special')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div><div class="flex justify-between items-center gap-3"><span>Action / Lever</span><button id="keyAction" onclick="remap('action')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
                 <p id="remapHint" class="text-xs text-slate-400">Click a control, then press any keyboard key.</p>
@@ -661,8 +662,8 @@
         const $ = id => document.getElementById(id);
         let canvas, ctx, gameRunning = false, paused = false, levelTimeSeconds = 0, timerInterval = null, collectedHearts = 0;
         const TOTAL_HEARTS = 6, VW = 900, GROUND = 430, WORLD_W = 5400;
-        const keys = { left: false, right: false, up: false, down:false, jump: false, action: false, attack: false, special:false };
-        const DEFAULT_BINDS = { left: 'ArrowLeft', right: 'ArrowRight', up:'ArrowUp', down:'ArrowDown', jump: 'ShiftLeft', attack: 'Space', action: 'KeyE', special:'KeyQ' };
+        const keys = { left: false, right: false, up: false, down:false, jump: false, run: false, action: false, attack: false, special:false };
+        const DEFAULT_BINDS = { left: 'ArrowLeft', right: 'ArrowRight', up:'ArrowUp', down:'ArrowDown', jump: 'ShiftLeft', run: 'KeyR', attack: 'Space', action: 'KeyE', special:'KeyQ' };
         let binds = { ...DEFAULT_BINDS };
         try {
             const savedBinds = JSON.parse(localStorage.getItem('loveAdventureKeyBinds') || 'null');
@@ -889,7 +890,8 @@
                     s.x = b.x - 60 + s.slot * 40; s.y = b.y - 95 + Math.sin(frame * 0.1 + s.slot) * 5;
                     s.a = Math.atan2(heroPlayer.y - s.y, heroPlayer.x - s.x);
                 } else { s.x += s.vx; s.y += s.vy; if (s.y > GROUND + 10 || s.x < camX - 60 || s.x > camX + VW + 60 || s.y < -60) s.dead = true; }
-                if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < 22) kill();
+                if (s.s === 'fly' && pointNearSwing(s.x, s.y, 10)) { s.dead = true; makeClash(s.x, s.y); }
+                else if (!s.dead && Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < 22) kill();
             }
             b.swords = b.swords.filter(s => !s.dead);
         }
@@ -942,7 +944,9 @@
 
         function updatePhysicsBase() {
             if(stage2){ updateStage2(); return; }
-            const gravity = 0.55, moveSpeed = 4.0, jumpForce = -10.8;
+            const gravity = 0.55, moveSpeed = keys.run ? 7.0 : 4.0, jumpForce = -10.8;
+            heroPlayer.isRunning = !!keys.run && !!(keys.left || keys.right);
+            heroPlayer.moveSpeed = moveSpeed;
             frame++;
             if (invuln > 0) invuln--; if (msgT > 0) msgT--; if (atkCd > 0) atkCd--;
 
@@ -1006,8 +1010,8 @@
             if (swing) {
                 const f = heroPlayer.facing === 'left' ? -1 : 1;
                 // Sword is also a shield: enemy attacks that enter the swing are cancelled.
-                shots.forEach(s => { if (!s.dead && pointNearSwing(s.x, s.y)) { s.dead = true; makeClash(s.x, s.y); } });
-                boss.swords.forEach(s => { if (!s.dead && pointNearSwing(s.x, s.y)) { s.dead = true; makeClash(s.x, s.y); } });
+                shots.forEach(s => { if (!s.dead && pointNearSwing(s.x, s.y, s.r || 7)) { s.dead = true; makeClash(s.x, s.y); } });
+                boss.swords.forEach(s => { if (!s.dead && pointNearSwing(s.x, s.y, s.r || 7)) { s.dead = true; makeClash(s.x, s.y); } });
                 const meleeTarget=nearestMeleeTarget(swing.dir||aimDir());if(meleeTarget&&swing.hit.size===0){swing.hit.add(meleeTarget.o);damage(meleeTarget);}
                 if (--swing.t <= 0) swing = null;
             }
@@ -1050,6 +1054,7 @@
             gates.forEach(updateGate);
             updateBoss();
             shots.forEach(s => {
+                if (s.dead) return;
                 if (s.k === 'laser') {
                     // Aunty's eye laser homes toward the hero while it travels.
                     const dx = heroPlayer.x - s.x, dy = heroPlayer.y - s.y;
@@ -1065,15 +1070,15 @@
                 s.x += s.vx; s.y += s.vy;
                 if (s.k === 'laser') {
                     s.age++;
-                    if (pointNearSwing(s.x,s.y)) { s.dead=true; makeClash(s.x,s.y); } else if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < 20) kill();
+                    if (pointNearSwing(s.x,s.y,s.r||7)) { s.dead=true; makeClash(s.x,s.y); } else if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < 20) kill();
                     if (s.age > (s.life || 110) || s.x < camX - 120 || s.x > camX + VW + 120 || s.y < -80 || s.y > GROUND + 80) s.dead = true;
                     return;
                 }
                 if (s.k === 'arrow') {
                     s.age++;
-                    if (pointNearSwing(s.x,s.y)) { s.dead=true; makeClash(s.x,s.y); } else if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < 18) kill();
+                    if (pointNearSwing(s.x,s.y,s.r||7)) { s.dead=true; makeClash(s.x,s.y); } else if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < 18) kill();
                 } else {
-                    s.age++; s.r = Math.min(40, 12 + s.age * 0.18); if (pointNearSwing(s.x,s.y)) { s.dead=true; makeClash(s.x,s.y); } else if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < s.r + 8) kill();
+                    s.age++; s.r = Math.min(40, 12 + s.age * 0.18); if (pointNearSwing(s.x,s.y,s.r||7)) { s.dead=true; makeClash(s.x,s.y); } else if (Math.hypot(heroPlayer.x - s.x, heroPlayer.y - s.y) < s.r + 8) kill();
                 }
                 if (s.x < camX - 80 || s.x > camX + VW + 80 || s.y > GROUND + 40 || s.y < -40) s.dead = true;
             });
@@ -1090,7 +1095,7 @@
 
         function startRescueSequence(){if(rescueState||!bossDefeated)return;const portalX=Math.min(WORLD_W-180,Math.max(heroPlayer.x+120,partnerGoal.x+100));rescueState={phase:'eagle',t:0,eagleX:partnerGoal.x-260,eagleY:180,portalX,portalY:380,portalReady:false};flash(`${partnerGoal.name} has been rescued! The eagle is coming!`);}
         function updateRescue(){if(!rescueState)return;rescueState.t++;if(rescueState.phase==='eagle'){const tx=partnerGoal.x,ty=partnerGoal.y-90;rescueState.eagleX+=(tx-rescueState.eagleX)*.025;rescueState.eagleY+=(ty-rescueState.eagleY)*.025;if(Math.hypot(rescueState.eagleX-tx,rescueState.eagleY-ty)<18){rescueState.phase='carry';rescueState.t=0;flash('The eagle picked up '+partnerGoal.name+'!');}}else if(rescueState.phase==='carry'){rescueState.eagleX+=(rescueState.portalX-rescueState.eagleX)*.018;rescueState.eagleY+=((rescueState.portalY-80)-rescueState.eagleY)*.018;if(Math.hypot(rescueState.eagleX-rescueState.portalX,rescueState.eagleY-(rescueState.portalY-80))<18){rescueState.phase='portal';rescueState.portalReady=true;flash('The portal is open! Walk into it to enter Stage 2.');}}else if(rescueState.phase==='portal'&&Math.hypot(heroPlayer.x-rescueState.portalX,heroPlayer.y-rescueState.portalY)<65)enterStage2TopView();}
-        function updateStage2(){frame++;if(stage2DamageCooldown>0)stage2DamageCooldown--;if(atkCd>0)atkCd--;const speed=4.2;let dx=0,dy=0;if(keys.left)dx--;if(keys.right)dx++;if(keys.up)dy--;if(keys.down)dy++;if(dx||dy){const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;heroPlayer.x+=dx*speed;heroPlayer.y+=dy*speed;heroPlayer.facing=dx<0?'left':dx>0?'right':heroPlayer.facing;heroPlayer.isMoving=true;}else heroPlayer.isMoving=false;heroPlayer.x=Math.max(35,Math.min(stage2.worldW-35,heroPlayer.x));heroPlayer.y=Math.max(35,Math.min(stage2.worldH-35,heroPlayer.y));for(const t of stage2.trees){const dx=heroPlayer.x-t.x,dy=heroPlayer.y-t.y,d=Math.hypot(dx,dy);if(d<34){const nx=dx/(d||1),ny=dy/(d||1);heroPlayer.x=t.x+nx*34;heroPlayer.y=t.y+ny*34;}}stage2.monsters.forEach(m=>{if(m.dead)return;const dx=heroPlayer.x-m.x,dy=heroPlayer.y-m.y,d=Math.hypot(dx,dy)||1;if(d<420){m.x+=dx/d*1.05;m.y+=dy/d*1.05;}if(d<38)damageStage2Player(8);});stage2.cats.forEach(c=>{if(c.dead)return;c.t++;if(!c.targetX||c.t%180===0){c.targetX=c.baseX+(Math.random()-.5)*180;c.targetY=c.baseY+(Math.random()-.5)*180;}let dx=heroPlayer.x-c.x,dy=heroPlayer.y-c.y,d=Math.hypot(dx,dy)||1;if(d<260){c.x+=dx/d*1.7;c.y+=dy/d*1.7;}else{dx=c.targetX-c.x;dy=c.targetY-c.y;d=Math.hypot(dx,dy)||1;c.x+=dx/d*.7;c.y+=dy/d*.7;}if(d<34)damageStage2Player(10);});if(keys.attack&&atkCd<=0)doStage2Attack();stage2.projectiles.forEach(p=>{if(p.dead)return;steerNearbyProjectile(p);recordProjectileTrail(p);const steps=Math.max(1,Math.ceil(Math.hypot(p.vx,p.vy)/5));for(let i=0;i<steps&&!p.dead;i++){p.x+=p.vx/steps;p.y+=p.vy/steps;const t=combatTargets().filter(t=>Math.hypot(p.x-t.o.x,p.y-t.o.y)<(t.k==='cat'?24:28)).sort((a,b)=>Math.hypot(p.x-a.o.x,p.y-a.o.y)-Math.hypot(p.x-b.o.x,p.y-b.o.y))[0];if(t){damage(t,p.power||1);p.dead=true;}}p.age++;if(p.age>100||p.x<0||p.y<0||p.x>stage2.worldW||p.y>stage2.worldH)p.dead=true;});stage2.projectiles=stage2.projectiles.filter(p=>!p.dead);stage2.camX=Math.max(0,Math.min(stage2.worldW-VW,heroPlayer.x-VW/2));stage2.camY=Math.max(0,Math.min(stage2.worldH-500,heroPlayer.y-250));}
+        function updateStage2(){frame++;if(stage2DamageCooldown>0)stage2DamageCooldown--;if(atkCd>0)atkCd--;const speed=keys.run?7.2:4.2;heroPlayer.moveSpeed=speed;heroPlayer.isRunning=!!keys.run&&!!(keys.left||keys.right||keys.up||keys.down);let dx=0,dy=0;if(keys.left)dx--;if(keys.right)dx++;if(keys.up)dy--;if(keys.down)dy++;if(dx||dy){const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;heroPlayer.x+=dx*speed;heroPlayer.y+=dy*speed;heroPlayer.facing=dx<0?'left':dx>0?'right':heroPlayer.facing;heroPlayer.isMoving=true;}else heroPlayer.isMoving=false;heroPlayer.x=Math.max(35,Math.min(stage2.worldW-35,heroPlayer.x));heroPlayer.y=Math.max(35,Math.min(stage2.worldH-35,heroPlayer.y));for(const t of stage2.trees){const dx=heroPlayer.x-t.x,dy=heroPlayer.y-t.y,d=Math.hypot(dx,dy);if(d<34){const nx=dx/(d||1),ny=dy/(d||1);heroPlayer.x=t.x+nx*34;heroPlayer.y=t.y+ny*34;}}stage2.monsters.forEach(m=>{if(m.dead||m.stunned>0)return;const dx=heroPlayer.x-m.x,dy=heroPlayer.y-m.y,d=Math.hypot(dx,dy)||1;if(d<420){m.x+=dx/d*1.05;m.y+=dy/d*1.05;}if(d<38)damageStage2Player(8,m);});stage2.cats.forEach(c=>{if(c.dead||c.stunned>0)return;c.t++;if(!c.targetX||c.t%180===0){c.targetX=c.baseX+(Math.random()-.5)*180;c.targetY=c.baseY+(Math.random()-.5)*180;}let dx=heroPlayer.x-c.x,dy=heroPlayer.y-c.y,d=Math.hypot(dx,dy)||1;if(d<260){c.x+=dx/d*1.7;c.y+=dy/d*1.7;}else{dx=c.targetX-c.x;dy=c.targetY-c.y;d=Math.hypot(dx,dy)||1;c.x+=dx/d*.7;c.y+=dy/d*.7;}if(d<34)damageStage2Player(10,c);});if(keys.attack&&atkCd<=0)doStage2Attack();stage2.projectiles.forEach(p=>{if(p.dead)return;steerNearbyProjectile(p);recordProjectileTrail(p);const steps=Math.max(1,Math.ceil(Math.hypot(p.vx,p.vy)/5));for(let i=0;i<steps&&!p.dead;i++){p.x+=p.vx/steps;p.y+=p.vy/steps;const t=combatTargets().filter(t=>Math.hypot(p.x-t.o.x,p.y-t.o.y)<(t.k==='cat'?24:28)).sort((a,b)=>Math.hypot(p.x-a.o.x,p.y-a.o.y)-Math.hypot(p.x-b.o.x,p.y-b.o.y))[0];if(t){damage(t,p.power||1);p.dead=true;}}p.age++;if(p.age>100||p.x<0||p.y<0||p.x>stage2.worldW||p.y>stage2.worldH)p.dead=true;});stage2.projectiles=stage2.projectiles.filter(p=>!p.dead);stage2.camX=Math.max(0,Math.min(stage2.worldW-VW,heroPlayer.x-VW/2));stage2.camY=Math.max(0,Math.min(stage2.worldH-500,heroPlayer.y-250));}
         function doStage2Attack(){const w=WINFO[weapon];atkCd=w.cd;playSound('switch');const dir=heroPlayer.facing==='left'?-1:1;if(weapon==='sword'){stage2.monsters.forEach(m=>{if(!m.dead&&Math.abs(m.x-heroPlayer.x)<70&&Math.abs(m.y-heroPlayer.y)<55){m.hp--;if(m.hp<=0)m.dead=true;}});stage2.cats.forEach(c=>{if(!c.dead&&Math.abs(c.x-heroPlayer.x)<60&&Math.abs(c.y-heroPlayer.y)<50){c.hp--;if(c.hp<=0)c.dead=true;}});}else stage2.projectiles.push({x:heroPlayer.x+dir*25,y:heroPlayer.y,vx:dir*(w.sp||8),vy:0,age:0});}
         function enterStage2TopViewBase(){stageNumber=2;initStage2();flash('Stage 2 — Explore the open world!');}
         function initStage2(){const worldW=3200,worldH=2200,trees=[],safe=[{x:180,y:180},{x:900,y:500},{x:1500,y:1000},{x:2500,y:1700}];for(let i=0;i<85;i++){let x,y,ok=false;while(!ok){x=60+Math.random()*(worldW-120);y=60+Math.random()*(worldH-120);ok=safe.every(q=>Math.hypot(x-q.x,y-q.y)>150);}trees.push({x,y});}const roads=[{x1:0,y1:420,x2:3200,y2:420},{x1:800,y1:0,x2:800,y2:2200},{x1:800,y1:1450,x2:3200,y2:1450},{x1:2100,y1:420,x2:2100,y2:2200}];const monsters=[{x:550,y:700,hp:3,dead:false},{x:1250,y:300,hp:3,dead:false},{x:1750,y:750,hp:3,dead:false},{x:2700,y:650,hp:3,dead:false},{x:2850,y:1800,hp:3,dead:false},{x:1250,y:1750,hp:3,dead:false},{x:2250,y:1100,hp:3,dead:false}];const cats=[{x:500,y:300,baseX:500,baseY:300,hp:2,t:0},{x:1150,y:900,baseX:1150,baseY:900,hp:2,t:0},{x:1900,y:350,baseX:1900,baseY:350,hp:2,t:0},{x:2550,y:1300,baseX:2550,baseY:1300,hp:2,t:0},{x:2850,y:1950,baseX:2850,baseY:1950,hp:2,t:0}];stage2={phase:'top',worldW,worldH,camX:0,camY:0,trees,roads,monsters,cats,projectiles:[]};heroPlayer.x=180;heroPlayer.y=180;heroPlayer.vx=0;heroPlayer.vy=0;heroPlayer.isGrounded=true;heroPlayer.isMoving=false;stage2Health=100;stage2DamageCooldown=0;updateHealthHUD();rescueState=null;paused=false;gameRunning=true;last=0;acc=0;}
@@ -1287,7 +1292,7 @@
             ctx.restore();
         }
         function updateHealthHUD(){const hp=Math.max(0,Math.min(100,stage2Health));const bar=$('hudHealthBar'),txt=$('hudHealth');if(bar)bar.style.width=hp+'%';if(txt)txt.innerText=Math.round(hp);if(bar)bar.style.backgroundColor=hp<=25?'#ef4444':hp<=50?'#f59e0b':'#22c55e';}
-        function damageStage2Player(amount=10){if(stage2DamageCooldown>0||gameOver)return;stage2Health=Math.max(0,stage2Health-amount);stage2DamageCooldown=45;updateHealthHUD();pop(heroPlayer.x,heroPlayer.y,8);if(stage2Health<=0){stage2Health=100;updateHealthHUD();kill();}}
+        function damageStage2Player(amount=10,attacker=null){if(stage2DamageCooldown>0||gameOver)return;stage2Health=Math.max(0,stage2Health-amount);stage2DamageCooldown=45;updateHealthHUD();pop(heroPlayer.x,heroPlayer.y,8);if(stage2Health<=0){stage2Health=100;updateHealthHUD();kill();}}
         function drawRescueObjects(){
             if(rescueState&&rescueState.portalReady){const px=rescueState.portalX,py=rescueState.portalY;ctx.save();ctx.translate(px,py);ctx.fillStyle='rgba(59,130,246,.22)';ctx.beginPath();ctx.arc(0,0,48+Math.sin(frame*.08)*5,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#38bdf8';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,34+Math.sin(frame*.08)*4,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#e0f2fe';ctx.font='bold 15px Fredoka';ctx.textAlign='center';ctx.fillText('PORTAL → STAGE 2',0,65);ctx.restore();}
             if(rescueState&&(rescueState.phase==='eagle'||rescueState.phase==='carry')){const ex=rescueState.eagleX,ey=rescueState.eagleY;if(rescueState.phase==='carry')drawChibi3D(ctx,ex,ey+28,partnerGoal.data,{facing:'left'});ctx.save();ctx.translate(ex,ey-42);ctx.fillStyle='#e5e7eb';ctx.beginPath();ctx.ellipse(0,0,22,12,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#64748b';ctx.beginPath();ctx.arc(20,-5,8,0,Math.PI*2);ctx.fill();ctx.fillStyle='#60a5fa';ctx.beginPath();ctx.moveTo(-15,0);ctx.lineTo(-58,-20);ctx.lineTo(-25,12);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(15,0);ctx.lineTo(58,-20);ctx.lineTo(25,12);ctx.closePath();ctx.fill();ctx.restore();}
@@ -1351,6 +1356,7 @@
             $('keyLeft').innerText = keyLabel(binds.left);
             $('keyRight').innerText = keyLabel(binds.right);
             $('keyJmp').innerText = keyLabel(binds.jump);
+            $('keyRun').innerText = keyLabel(binds.run);
             $('keyAtk').innerText = keyLabel(binds.attack);
             $('keyAction').innerText = keyLabel(binds.action); if($('keyDown'))$('keyDown').innerText=keyLabel(binds.down); if($('keySpecial'))$('keySpecial').innerText=keyLabel(binds.special);
             $('remapHint').innerText = remapping ? `Press a key to assign ${remapping.toUpperCase()}…` : 'Click a control, then press any keyboard key.';
@@ -1403,6 +1409,7 @@
                 if (k === binds.left) keys.left = true;
                 if (k === binds.right) keys.right = true;
                 if (k === binds.jump) keys.jump = true;
+                if (k === binds.run) keys.run = true;
                 if (k === binds.attack) keys.attack = true;
                 if (k === binds.action) keys.action = true; if (k === binds.special) keys.special=true;
 
@@ -1417,11 +1424,14 @@
                 if (k === binds.left) keys.left = false;
                 if (k === binds.right) keys.right = false;
                 if (k === binds.jump) keys.jump = false;
+                if (k === binds.run) keys.run = false;
                 if (k === binds.attack) keys.attack = false;
                 if (k === binds.action) keys.action = false; if (k === binds.special) keys.special=false;
                 if (k === binds.up || k === 'ArrowUp' || k === 'KeyW') keys.up = false;
                 if (k === binds.down || k === 'ArrowDown' || k === 'KeyS') keys.down = false;
             });
+
+            window.addEventListener('blur', () => Object.keys(keys).forEach(k => keys[k] = false));
 
             // Touch / mouse / pen controls. The screen UP button is aim/look-up only.
             const bindPointer = (id, stateKey) => {
@@ -1619,7 +1629,7 @@
         }
         function syncStoreCounters(){$('storeDiamonds')&&($('storeDiamonds').innerText=progression.diamonds||0);$('storeGems')&&($('storeGems').innerText=progression.gems||0);const rg=document.getElementById('storeRedGems');if(rg)rg.innerText=progression.redGems||0;}
         let storeWasPaused=false;
-        function toggleStore(){const m=$('storeModal'),opening=m.classList.contains('hidden');if(opening){storeWasPaused=paused;paused=true;m.classList.remove('hidden');m.classList.add('flex');$('storeMessage').textContent='Earn money from enemies and diamonds by clearing stages.';syncEconomyUI();}else{m.classList.add('hidden');m.classList.remove('flex');paused=storeWasPaused;}}
+        function toggleStore(){const m=$('storeModal'),opening=m.classList.contains('hidden');if(opening){storeWasPaused=paused;paused=true;Object.keys(keys).forEach(k=>keys[k]=false);m.classList.remove('hidden');m.classList.add('flex');$('storeMessage').textContent='Earn money from enemies and diamonds by clearing stages.';syncEconomyUI();}else{m.classList.add('hidden');m.classList.remove('flex');paused=storeWasPaused;}}
         function toggleSettings(){const m=$('settingsModal');m.classList.toggle('hidden');m.classList.toggle('flex');paused=!m.classList.contains('hidden');refreshSettings();}
         function setSpecialKey(){keys.special=true;}
         function ultimateReady(){return cheatUltimate||ultimateCharge>=100;}
@@ -1730,7 +1740,7 @@
         const combatUpdateV3=updatePhysics;
         updatePhysics=function(){combatUpdateV3();updateUltimateEffects();if(rescueState)updateRescue();for(const t of combatTargets()){if((stage2||t.k==='bird')&&t.o.flash>0)t.o.flash--;if(t.o.burn>0){t.o.burn--;}if(t.o.stunned>0)t.o.stunned--;if(t.o.silenced>0)t.o.silenced--;}const value=cheatUltimate?100:Math.round(ultimateCharge);if($('hudUltimate'))$('hudUltimate').innerText=value;};
         const normalKillV3=kill;kill=function(){if(heroGuard>0)return;normalKillV3();};
-        const stage2DamageV3=damageStage2Player;damageStage2Player=function(n){if(heroGuard>0)return;stage2DamageV3(n);};
+        const stage2DamageV3=damageStage2Player;damageStage2Player=function(n,attacker){if(heroGuard>0)return;stage2DamageV3(n,attacker);};
         function doStage2Attack(){atkCd=WINFO[weapon].cd;const f=heroPlayer.facing==='left'?-1:1;playSound('switch');if(weapon==='sword'){combatTargets().forEach(t=>{if(Math.abs(t.x-heroPlayer.x)<80&&Math.abs(t.y-heroPlayer.y)<60)damage(t);});}else stage2.projectiles.push({x:heroPlayer.x+f*25,y:heroPlayer.y,vx:f*(WINFO[weapon].sp||8),vy:0,age:0});}
         const stage2UpdateV3=updateStage2;updateStage2=function(){const before=combatTargets();stage2UpdateV3();for(const t of before)if(t.o.dead)awardDefeat(t);};
         function startRescueSequence(){if(rescueState||!bossDefeated)return;rescueState={phase:'eagle',t:0,eagleX:partnerGoal.x-300,eagleY:100,portalX:partnerGoal.x-100,portalY:400,portalReady:true};flash('An eagle is taking your partner!');}
@@ -1902,7 +1912,7 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
     const killBeforeParry=kill;
     kill=function(){
         if(parryWindow()&&Array.isArray(boss?.swords)){
-            const blade=boss.swords.find(s=>!s.dead&&s.s==='fly'&&pointNearSwing(s.x,s.y)&&Math.hypot(heroPlayer.x-s.x,heroPlayer.y-s.y)<24);
+            const blade=boss.swords.find(s=>!s.dead&&s.s==='fly'&&pointNearSwing(s.x,s.y,s.r||7)&&Math.hypot(heroPlayer.x-s.x,heroPlayer.y-s.y)<24);
             if(blade){blade.dead=true;makeClash(blade.x,blade.y);return;}
         }
         killBeforeParry();
@@ -1928,13 +1938,13 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
     updatePhysics=function(){physicsBeforeCombo();advanceCombo();};
     if(typeof damageStage2Player==='function'){
         const stage2DamageBeforeParry=damageStage2Player;
-        damageStage2Player=function(amount){
+        damageStage2Player=function(amount,source){
             if(stage2&&parryWindow()){
                 const d=combo.dir;
                 const attacker=combatTargets().filter(t=>!t.o.dead&&Math.hypot(t.o.x-heroPlayer.x,t.o.y-heroPlayer.y)<62&&((t.o.x-heroPlayer.x)*d.x+(t.o.y-heroPlayer.y)*d.y)>0).sort((a,b)=>Math.hypot(a.o.x-heroPlayer.x,a.o.y-heroPlayer.y)-Math.hypot(b.o.x-heroPlayer.x,b.o.y-heroPlayer.y))[0];
                 if(attacker){makeClash(attacker.o.x,attacker.o.y);attacker.o.stunned=Math.max(attacker.o.stunned||0,18);return;}
             }
-            stage2DamageBeforeParry(amount);
+            stage2DamageBeforeParry(amount,source);
         };
     }
 
@@ -2075,7 +2085,7 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 })();
 
 </script>
-<div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">Love Adventure v17 · Female Warrior V8 · Four-press combo</div>
+<div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">Love Adventure v18 · Female Warrior V9 · R to run · Four-press combo</div>
 <script>window.LoveAdventureModelParts={male:[],female:[]};</script>
 <script src="assets/models/male-01.js"></script>
 <script src="assets/models/male-02.js"></script>
@@ -79570,9 +79580,10 @@ function createWarriorAsset(THREE,encoded,{loadTexture=true}={}){
  else{const glow=geometry.clone(),index=[],js=geometry.attributes.skinIndex.array,ws=geometry.attributes.skinWeight.array;const eligible=i=>js[i*4]===bones.indexOf(sword)&&ws[i*4]>.999;for(let i=0;i<geometry.index.count;i+=3){const a=geometry.index.array[i],b=geometry.index.array[i+1],c=geometry.index.array[i+2];if(eligible(a)&&eligible(b)&&eligible(c))index.push(a,b,c)}glow.setIndex(index);mana=new THREE.SkinnedMesh(glow,manaMaterial);mana.bind(skeleton,new THREE.Matrix4());root.add(mana)}
  mana.frustumCulled=false;mana.visible=false;const tip=new THREE.Object3D(),hilt=new THREE.Object3D();tip.position.set(-.253,-.366,.176);sword.add(tip,hilt);
  const channels=Object.fromEntries(g.animations.map(a=>{const ch=a.channels.filter(c=>c.target.node<skin.joints.length).map(c=>{const s=a.samplers[c.sampler];return {node:c.target.node,path:c.target.path,t:acc(s.input),v:acc(s.output)}});return [a.name,{channels:ch,duration:ch[0].t.at(-1)}]}));
+ const restPose=bones.map(b=>({p:b.position.clone(),q:b.quaternion.clone()}));
  const qa=new THREE.Quaternion(),qb=new THREE.Quaternion(),v3=new THREE.Vector3();let textureReady=Promise.resolve();
  if(loadTexture){const image=g.images[0],view=g.bufferViews[image.bufferView],url=URL.createObjectURL(new Blob([new Uint8Array(bytes.buffer,start+view.byteOffset,view.byteLength)],{type:image.mimeType}));textureReady=new Promise((resolve,reject)=>new THREE.TextureLoader().load(url,texture=>{texture.flipY=false;texture.colorSpace=THREE.SRGBColorSpace;material.map=texture;material.needsUpdate=true;URL.revokeObjectURL(url);resolve()},undefined,e=>{URL.revokeObjectURL(url);reject(e)}))}
- function sample(name,time){const clip=channels[name]||channels.Idle,t=Math.max(0,Math.min(time,clip.duration));for(const ch of clip.channels){const a=Math.min(ch.t.length-2,Math.floor(t/clip.duration*(ch.t.length-1))),b=a+1,u=(t-ch.t[a])/(ch.t[b]-ch.t[a]),bone=bones[ch.node];if(ch.path==='rotation'){qa.fromArray(ch.v,a*4);qb.fromArray(ch.v,b*4);bone.quaternion.copy(qa).slerp(qb,u)}else bone.position.fromArray(ch.v,a*3).lerp(v3.fromArray(ch.v,b*3),u)}const attack=name==='Combo'||name.startsWith('Attack'),finisher=name==='Attack4'||name==='Combo'&&t>=2.50;const glow=attack?Math.max(0,Math.min(1,t/.07,(clip.duration-.10-t)/.09))*(finisher?1:.62):0;mana.visible=glow>0;manaMaterial.opacity=.5*glow;root.updateMatrixWorld(true);skeleton.update();return glow}
+ function sample(name,time){bones.forEach((b,i)=>{b.position.copy(restPose[i].p);b.quaternion.copy(restPose[i].q)});const clip=channels[name]||channels.Idle,t=Math.max(0,Math.min(time,clip.duration));for(const ch of clip.channels){const a=Math.min(ch.t.length-2,Math.floor(t/clip.duration*(ch.t.length-1))),b=a+1,u=(t-ch.t[a])/(ch.t[b]-ch.t[a]),bone=bones[ch.node];if(ch.path==='rotation'){qa.fromArray(ch.v,a*4).normalize();qb.fromArray(ch.v,b*4).normalize();bone.quaternion.copy(qa).slerp(qb,u)}else bone.position.fromArray(ch.v,a*3).lerp(v3.fromArray(ch.v,b*3),u)}const attack=name==='Combo'||name.startsWith('Attack'),finisher=name==='Attack4'||name==='Combo'&&t>=2.50;const glow=attack?Math.max(0,Math.min(1,t/.07,(clip.duration-.10-t)/.09))*(finisher?1:.62):0;mana.visible=glow>0;manaMaterial.opacity=.5*glow;root.updateMatrixWorld(true);skeleton.update();return glow}
  sample('Idle',0);return {root,bones,byName,mesh,skeleton,material,mana,tip,hilt,channels,sample,textureReady,bytes,weaponMesh,revision:g.extras?.revision||'OLDER_MODEL'};
 }
 
@@ -79598,27 +79609,47 @@ function createWarriorAsset(THREE,encoded,{loadTexture=true}={}){
  function startCut(index){const dir=aimDir();if(dir.x)heroPlayer.facing=dir.x<0?'left':'right';combo={index,time:SEGMENTS[index].from,hit:false,dir:{...dir},facing:heroPlayer.facing};heroPlayer.attackDir={...dir};heroPlayer.comboPose=-1;heroPlayer.attackMotion=0;swing=null;atkCd=0;heroPlayer.vx=0;playSound('switch')}
  function beginCombo(){if(!isWarrior()||latch)return;chooseRig();latch=true;if(combatClock-lastPress>=1-1e-8){nextCut=0;pendingCuts=[]}if(pendingCuts.length>=3)return;const index=nextCut;nextCut=(nextCut+1)%4;lastPress=combatClock;if(combo)pendingCuts.push(index);else startCut(index)}
  const previousAttack=doAttack,previousStageAttack=doStage2Attack;doAttack=function(){if(isWarrior())beginCombo();else previousAttack()};doStage2Attack=function(){if(isWarrior())beginCombo();else previousStageAttack()};
- const previousParry=pointNearSwing;pointNearSwing=function(x,y){if(!isWarrior())return previousParry(x,y);if(!active())return false;const d=combo.dir,dx=x-heroPlayer.x,dy=y-(heroPlayer.y-8),dist=Math.hypot(dx,dy);return dist<82&&dx*d.x+dy*d.y>0};
+ // A sword sweep protects the space from the grip to the blade, padded down to the feet.
+ // Defence starts with the Space press; only the recovery tail is unprotected.
+ function defending(){return combo&&combo.time<=Math.min(SEGMENTS[combo.index].to,CUTS[combo.index].end+.08)}
+ const previousParry=pointNearSwing;
+ pointNearSwing=function(x,y,radius=0){
+  if(!isWarrior())return previousParry(x,y,radius);
+  if(!defending())return false;
+  const d=stage2?combo.dir:{x:combo.facing==='left'?-1:1,y:0};
+  const dx=x-heroPlayer.x,dy=y-(stage2?heroPlayer.y:heroPlayer.y-12);
+  const along=dx*d.x+dy*d.y,side=dx*(-d.y)+dy*d.x,pad=34+Math.max(0,Math.min(40,radius));
+  if(along < -12)return false; // No defence behind the warrior.
+  const nearest=Math.max(14,Math.min(78,along));
+  return Math.hypot(along-nearest,side)<=pad;
+ };
+ const previousStageDamage=damageStage2Player;
+ damageStage2Player=function(amount,attacker){
+  if(isWarrior()&&attacker&&!attacker.dead&&pointNearSwing(attacker.x,attacker.y,8)){
+   makeClash(attacker.x,attacker.y);attacker.stunned=Math.max(attacker.stunned||0,18);return;
+  }
+  previousStageDamage(amount,attacker);
+ };
  function hit(index){if(!combo)return;const d=combo.dir,limit=index===3?128:112,touched=new Set();const targets=combatTargets().filter(t=>{const dx=t.o.x-heroPlayer.x,dy=t.o.y-heroPlayer.y,dist=Math.hypot(dx,dy);return !t.o.dead&&dist<limit&&(dx*d.x+dy*d.y>dist*.12||dist<36)}).sort((a,b)=>Math.hypot(a.o.x-heroPlayer.x,a.o.y-heroPlayer.y)-Math.hypot(b.o.x-heroPlayer.x,b.o.y-heroPlayer.y));for(const t of targets.slice(0,index===3?3:1)){if(touched.has(t.o))continue;touched.add(t.o);damage(t,index===3?2:1);pop(t.o.x,t.o.y,index===3?7:3)}playSound('switch')}
  const previousPhysics=updatePhysics;updatePhysics=function(){
   if(!isWarrior()){previousPhysics();return}
   chooseRig();
   if(stageRef!==stage2){reset();stageRef=stage2}
-  const requested={left:keys.left,right:keys.right,up:keys.up,down:keys.down,jump:keys.jump,attack:keys.attack};combatClock+=1/60;if(!keys.attack)latch=false;else if(!latch)beginCombo();keys.attack=false;
+  const requested={left:keys.left,right:keys.right,up:keys.up,down:keys.down,jump:keys.jump,run:keys.run,attack:keys.attack};combatClock+=1/60;if(!keys.attack)latch=false;else if(!latch)beginCombo();keys.attack=false;
   if(stage2){const mx=Number(!!requested.right)-Number(!!requested.left),my=Number(!!requested.down)-Number(!!requested.up);if((mx||my)&&!combo){const length=Math.hypot(mx,my);heroPlayer.moveAim3D={x:mx/length,y:my/length}}if(requested.jump&&!jumpLatch&&jumpZ===0){jumpVelocity=9.5;playSound('jump')};jumpLatch=!!requested.jump;keys.jump=false}
   else {keys.jump=!!requested.jump&&!jumpLatch;jumpLatch=!!requested.jump}
-  if(combo){for(const k of ['left','right','up','down'])keys[k]=false;heroPlayer.vx=0;swing=null;if(active()){for(const p of [...shots,...(boss?.swords||[])])if(!p.dead&&pointNearSwing(p.x,p.y)){p.dead=true;makeClash(p.x,p.y)}}}
+  if(combo){for(const k of ['left','right','up','down','run'])keys[k]=false;heroPlayer.vx=0;heroPlayer.isRunning=false;swing=null;if(defending()){for(const p of [...shots,...(boss?.swords||[]).filter(p=>p.s==='fly')])if(!p.dead&&pointNearSwing(p.x,p.y,p.r||7)){p.dead=true;makeClash(p.x,p.y)}}}
   try{previousPhysics()}finally{Object.assign(keys,requested)}
   if(stage2){if(jumpVelocity||jumpZ){jumpZ=Math.max(0,jumpZ+jumpVelocity);jumpVelocity-=.55;if(jumpZ===0)jumpVelocity=0}heroPlayer.jump3D=jumpZ;heroPlayer.isGrounded=jumpZ===0}
   const airborne=stage2?jumpZ>0:!heroPlayer.isGrounded;if(airborne){airTime+=1/60;landTime=0}else{if(wasAir)landTime=.16;airTime=0;landTime=Math.max(0,landTime-1/60)}wasAir=airborne;
-  if(heroPlayer.isMoving&&!combo)walkClock+=1/60*Math.max(.4,Math.abs(heroPlayer.vx||4)/4)*3.5;
+  if(heroPlayer.isMoving&&!combo)walkClock+=1/60*(heroPlayer.isRunning?1.4:3.5);
   if(combo){const oldTime=combo.time;combo.time+=ATTACK_SPEED/60;if(rigGender==='female'){const nextTime=Math.min(combo.time,SEGMENTS[combo.index].to),advance=(rootAt(nextTime)-rootAt(oldTime))*110;heroPlayer.x+=advance*combo.dir.x;if(stage2)heroPlayer.y+=advance*combo.dir.y;heroPlayer.x=Math.max(20,Math.min((stage2?stage2.worldW:WORLD_W)-20,heroPlayer.x));if(stage2)heroPlayer.y=Math.max(20,Math.min(stage2.worldH-20,heroPlayer.y))}if(!combo.hit&&combo.time+1e-8>=CUTS[combo.index].at){hit(combo.index);combo.hit=true}if(combo.time>=SEGMENTS[combo.index].to){combo=null;atkCd=0;if(pendingCuts.length)startCut(pendingCuts.shift())}}
   heroPlayer.attackMotion=0;heroPlayer.comboPose=-1;
  };
  const previousStart=startGame;startGame=function(){reset();previousStart()};const previousBegin=beginSelectedCharacter;beginSelectedCharacter=async function(){if(selectedRole==='warrior'){chooseRig(newGender);const button=document.querySelector('[onclick="beginSelectedCharacter()"]');if(button){button.disabled=true;button.textContent='LOADING 3D WARRIOR…'}await ready;if(rigError){if(button){button.disabled=false;button.textContent='START ADVENTURE'}flash('The 3D warrior could not load. Try Chrome or Edge.');return}}const result=previousBegin();const b=document.querySelector('[onclick="beginSelectedCharacter()"]');if(b){b.disabled=false;b.textContent="START ADVENTURE"}return result};
  const previousKill=kill;kill=function(){const before=lives;previousKill();if(lives<before)reset()};
  function createView(){chooseRig();if(view||rigError||!rig)return view;try{const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setSize(512,512,false);renderer.setPixelRatio(1);renderer.setClearColor(0,0);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;const scene=new THREE.Scene();scene.add(rig.root);scene.add(new THREE.HemisphereLight('#eff7ff','#3e4851',2.3));for(const [c,power,pos] of [['#fff0dc',2.1,[2,3,3]],['#acddff',1.3,[-2,2,-3]]]){const l=new THREE.DirectionalLight(c,power);l.position.set(...pos);scene.add(l)}const camera=new THREE.OrthographicCamera(-.85,.85,.85,-.85,.01,30);camera.position.set(0,.65,3);camera.lookAt(0,.65,0);const trail=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshBasicMaterial({color:'#ff194e',transparent:true,opacity:.32,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));scene.add(trail);view={renderer,scene,camera,trail,trailPoints:[],rendered:false};views[rigGender]=view;return view}catch(e){rigError=e;console.error(e);flash('WebGL is unavailable; the 3D character cannot render.');return null}}
- function animateAsset(){rig.root.position.set(0,0,0);const mode=combo?'Combo':wasAir||landTime>0?'Jump':heroPlayer.isMoving?'Walk':'Idle';let time=combo?combo.time:mode==='Jump'?landTime>0?.86+(.16-landTime)*.8:Math.min(.8,.15+airTime):mode==='Walk'?walkClock%2.4:(frame/60)%3;if(mode!==rigMode){blendFrom=rig.bones.map(b=>({q:b.quaternion.clone(),p:b.position.clone()}));blendClock=0;rigMode=mode}if(combo&&(wasAir||landTime>0)){
+ function animateAsset(){rig.root.position.set(0,0,0);const mode=combo?'Combo':wasAir||landTime>0?'Jump':heroPlayer.isMoving?(heroPlayer.isRunning&&rig.channels.Run?'Run':'Walk'):'Idle';let time=combo?combo.time:mode==='Jump'?landTime>0?.86+(.16-landTime)*.8:Math.min(.8,.15+airTime):mode==='Walk'||mode==='Run'?walkClock%rig.channels[mode].duration:(frame/60)%3;if(mode!==rigMode){blendFrom=rig.bones.map(b=>({q:b.quaternion.clone(),p:b.position.clone()}));blendClock=0;rigMode=mode}if(combo&&(wasAir||landTime>0)){
  const jt=landTime>0?.84+(.16-landTime):Math.min(.72,.16+airTime);rig.sample('Jump',jt);
  const names=['RHip','RKnee','RAnkle','RFoot','LHip','LKnee','LAnkle','LFoot','LShoulder','LElbow','LWrist','LHand'];
  const jumpPose=names.map(name=>({bone:rig.byName[name],q:rig.byName[name].quaternion.clone(),p:rig.byName[name].position.clone()}));const hipY=rig.byName.Hips.position.y;
@@ -79627,8 +79658,8 @@ function createWarriorAsset(THREE,encoded,{loadTexture=true}={}){
  function updateTrail(v,mode){if(mode==='Combo'&&rig.mana.visible){const top=rig.tip.getWorldPosition(new THREE.Vector3()),bottom=rig.hilt.getWorldPosition(new THREE.Vector3());v.trailPoints.push([bottom,top]);if(v.trailPoints.length>7)v.trailPoints.shift()}else v.trailPoints=[];const positions=[];for(let i=1;i<v.trailPoints.length;i++){const [a,b]=v.trailPoints[i-1],[c,d]=v.trailPoints[i];for(const p of [a,b,c,b,d,c])positions.push(...p.toArray())}v.trail.geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));v.trail.visible=positions.length>0;v.trail.material.opacity=rigGender==='female'?(combo?.index===3||mode==='Combo'&&inspectClock>2.5?.72:.45):.32}
  const previousDraw=drawArtEntity;drawArtEntity=function(key,x,y,height,facing='right',state={},context=ctx){const hero=key===playerGender+'_warrior'&&isWarrior()&&(state.isActive||Math.abs(x-heroPlayer.x)<1&&Math.abs(y-heroPlayer.y)<1);if(!hero)return previousDraw(key,x,y,height,facing,state,context);const v=createView();if(!v||!rig.material.map)return previousDraw(key,x,y,height,facing,state,context);if(lastRigFrame!==frame||!v.rendered){lastRigFrame=frame;const mode=animateAsset();updateTrail(v,mode);v.renderer.render(v.scene,v.camera);v.rendered=true}const scale=height/(rigGender==='female'?1.054:.854),size=1.7*scale,groundY=y+18-(stage2?jumpZ:0);context.save();context.globalAlpha=.25;context.fillStyle='#000';context.beginPath();const below=!stage2&&!heroPlayer.isGrounded?[...platforms,...bridges.filter(b=>b.active)].filter(p=>x>=p.x&&x<=p.x+p.w&&p.y>=y+18).sort((a,b)=>a.y-b.y)[0]:null;context.ellipse(x,below?below.y:y+19,height*.20,3.5,0,0,Math.PI*2);context.fill();context.restore();context.drawImage(v.renderer.domElement,x-size/2,groundY-1.5*scale,size,size);return true};
  // Inspect the exact same mesh and clips while gameplay is paused.
- const inspectorStyle=document.createElement('style');inspectorStyle.textContent='#warriorInspector button{background:#2b4c5e;color:#fff;border:1px solid #4b7187;padding:7px 11px;border-radius:7px;cursor:pointer}';document.head.appendChild(inspectorStyle);const inspector=document.createElement('div');inspector.id='warriorInspector';inspector.style.cssText='display:none;position:fixed;inset:0;background:rgba(3,10,17,.95);z-index:100;align-items:center;justify-content:center;color:white';inspector.innerHTML='<div style="width:min(94vw,700px);background:#152d39;border:1px solid #476071;border-radius:16px;padding:15px"><div style="display:flex;justify-content:space-between"><b>Your warrior · Animation view</b><button id="closeWarriorView">Close</button></div><canvas id="warriorViewCanvas" width="512" height="512" style="width:100%;max-height:65vh;object-fit:contain"></canvas><div id="warriorViewButtons" style="display:flex;gap:8px"><button data-clip="Idle">Guard</button><button data-clip="Walk">Walk</button><button data-clip="Jump">Jump</button><button data-clip="Combo">Four-cut combo</button><label>Speed <input id="warriorViewSpeed" type="range" min=".25" max="1.5" step=".05" value="1"></label></div><div id="warriorViewLabel" style="margin-top:10px;color:#e1c98d"></div><p style="font-size:12px;color:#acbfca">Drag to rotate. This is the same model and motion used in gameplay.</p></div>';document.body.appendChild(inspector);let inspecting=false,inspectClip='Idle',inspectClock=0,inspectSpeed=1,inspectYaw=-.35,inspectLast=0,priorPaused=false;
- const openButton=document.createElement('button');openButton.textContent='3D Warrior · Animation view';openButton.style.cssText='margin:8px;padding:8px 13px;border-radius:8px;background:#264958;color:#fff';document.getElementById('gameScreen').appendChild(openButton);openButton.onclick=()=>{if(!isWarrior()){flash('Select a warrior to inspect its 3D animations.');return}chooseRig();priorPaused=paused;paused=true;inspecting=true;inspectClock=0;inspectLast=performance.now();inspector.style.display='flex';inspectFrame()};document.getElementById('closeWarriorView').onclick=()=>{inspecting=false;inspector.style.display='none';paused=priorPaused;lastRigFrame=-1};document.getElementById('warriorViewSpeed').oninput=e=>inspectSpeed=+e.target.value;inspector.querySelectorAll('[data-clip]').forEach(b=>b.onclick=()=>{inspectClip=b.dataset.clip;inspectClock=0});const inspectionCanvas=document.getElementById('warriorViewCanvas');let drag=null;inspectionCanvas.onpointerdown=e=>{inspectionCanvas.setPointerCapture(e.pointerId);drag=e.clientX};inspectionCanvas.onpointerup=inspectionCanvas.onpointercancel=()=>drag=null;inspectionCanvas.onpointermove=e=>{if(drag!==null){inspectYaw+=(e.clientX-drag)*.008;drag=e.clientX}};
+ const inspectorStyle=document.createElement('style');inspectorStyle.textContent='#warriorInspector button{background:#2b4c5e;color:#fff;border:1px solid #4b7187;padding:7px 11px;border-radius:7px;cursor:pointer}';document.head.appendChild(inspectorStyle);const inspector=document.createElement('div');inspector.id='warriorInspector';inspector.style.cssText='display:none;position:fixed;inset:0;background:rgba(3,10,17,.95);z-index:100;align-items:center;justify-content:center;color:white';inspector.innerHTML='<div style="width:min(94vw,700px);background:#152d39;border:1px solid #476071;border-radius:16px;padding:15px"><div style="display:flex;justify-content:space-between"><b>Your warrior · Animation view</b><button id="closeWarriorView">Close</button></div><canvas id="warriorViewCanvas" width="512" height="512" style="width:100%;max-height:65vh;object-fit:contain"></canvas><div id="warriorViewButtons" style="display:flex;gap:8px"><button data-clip="Idle">Guard</button><button data-clip="Walk">Walk</button><button data-clip="Run">Run</button><button data-clip="Jump">Jump</button><button data-clip="Combo">Four-cut combo</button><label>Speed <input id="warriorViewSpeed" type="range" min=".25" max="1.5" step=".05" value="1"></label></div><div id="warriorViewLabel" style="margin-top:10px;color:#e1c98d"></div><p style="font-size:12px;color:#acbfca">Drag to rotate. This is the same model and motion used in gameplay.</p></div>';document.body.appendChild(inspector);let inspecting=false,inspectClip='Idle',inspectClock=0,inspectSpeed=1,inspectYaw=-.35,inspectLast=0,priorPaused=false;
+ const openButton=document.createElement('button');openButton.textContent='3D Warrior · Animation view';openButton.style.cssText='margin:8px;padding:8px 13px;border-radius:8px;background:#264958;color:#fff';document.getElementById('gameScreen').appendChild(openButton);openButton.onclick=()=>{if(!isWarrior()){flash('Select a warrior to inspect its 3D animations.');return}chooseRig();priorPaused=paused;paused=true;inspecting=true;inspectClock=0;inspectLast=performance.now();inspector.style.display='flex';inspectFrame()};document.getElementById('closeWarriorView').onclick=()=>{inspecting=false;inspector.style.display='none';paused=priorPaused;lastRigFrame=-1};document.getElementById('warriorViewSpeed').oninput=e=>inspectSpeed=+e.target.value;inspector.querySelectorAll('[data-clip]').forEach(b=>b.onclick=()=>{inspectClip=b.dataset.clip==='Run'&&!rig.channels.Run?'Walk':b.dataset.clip;inspectClock=0});const inspectionCanvas=document.getElementById('warriorViewCanvas');let drag=null;inspectionCanvas.onpointerdown=e=>{inspectionCanvas.setPointerCapture(e.pointerId);drag=e.clientX};inspectionCanvas.onpointerup=inspectionCanvas.onpointercancel=()=>drag=null;inspectionCanvas.onpointermove=e=>{if(drag!==null){inspectYaw+=(e.clientX-drag)*.008;drag=e.clientX}};
  function inspectFrame(){if(!inspecting)return;requestAnimationFrame(inspectFrame);const now=performance.now(),dt=Math.min(.05,(now-inspectLast)/1000);inspectLast=now;inspectClock=(inspectClock+dt*inspectSpeed)%rig.channels[inspectClip].duration;const v=createView();if(!v)return;rig.sample(inspectClip,inspectClock);rig.root.position.y=inspectClip==='Jump'?.16*Math.sin(Math.PI*Math.max(0,Math.min(1,(inspectClock-.12)/.76))):0;rig.root.rotation.y=inspectYaw;rig.root.updateMatrixWorld(true);rig.skeleton.update();updateTrail(v,inspectClip);v.renderer.render(v.scene,v.camera);inspectionCanvas.getContext('2d').clearRect(0,0,512,512);inspectionCanvas.getContext('2d').drawImage(v.renderer.domElement,0,0);document.getElementById('warriorViewLabel').textContent=inspectClip==='Combo'?(CUTS[Math.min(3,comboStep(inspectClock))].label+(rig.mana.visible?' · RED MANA':'')):inspectClip;lastRigFrame=-1}
  function comboStep(t){return Math.min(3,SEGMENTS.findIndex(s=>t<s.to)<0?3:SEGMENTS.findIndex(s=>t<s.to))}
  window.WarriorCombat={ready,get rig(){chooseRig();return rig},get cuts(){chooseRig();return CUTS},chooseRig,reset,snapshot:()=>({combo:combo?{time:combo.time,index:combo.index,hit:combo.hit,dir:{...combo.dir}}:null,nextCut,pendingCuts:[...pendingCuts],sincePress:combatClock-lastPress,jumpZ,airTime,walkClock,gender:rigGender,revision:rig?.revision,active:!!active()}),pose:animateAsset,inspect:openButton.onclick};
