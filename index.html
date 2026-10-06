@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <script>
-        tailwind.config = {
+        if (window.tailwind) tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
@@ -79,6 +79,30 @@
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #f43f5e; border-radius: 10px; }
     
+        .hidden{display:none!important}
+        #storeModal{position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(2,6,23,.94);padding:16px;box-sizing:border-box}
+        #storeModal:not(.hidden){display:flex}
+        #storeModal>div{max-height:90vh;overflow-y:auto;background:#0f172a;padding:20px;border-radius:20px;width:min(100%,900px);color:#f8fafc;box-sizing:border-box}
+        #storeModal h2{margin:0 0 6px;font-size:26px;color:#93c5fd}
+        #storeModal h3{margin:0 0 12px}
+        #storeModal button{border:0}
+        #storeModal [onclick="toggleStore()"]{background:#334155;color:white;padding:10px 16px;border-radius:10px;cursor:pointer}
+        .store-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+        .store-wallet{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;font-weight:bold}
+        .store-wallet span{background:#172554;border-radius:8px;padding:10px}
+        #storeModal [onclick^="purchaseGem"]{padding:12px;border-radius:10px;background:#1d4ed8;color:white;font-weight:bold;cursor:pointer}
+        #gameOverModal:not(.hidden){display:flex;position:fixed;inset:0;z-index:50;background:rgba(2,6,23,.94);align-items:center;justify-content:center;padding:16px}
+        #gameOverModal>div{background:#0f172a;padding:24px;border-radius:18px;width:min(100%,400px);text-align:center}
+        #gameOverModal button{width:100%;padding:12px;background:#b91c1c;color:white;border:0;border-radius:10px;font-weight:bold;cursor:pointer}
+        .store-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+        .store-sections>div{background:#1e293b;border-radius:14px;padding:16px}
+        #storeWeapons,#storeCharacters,#storeClothes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+        .store-card{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:12px}
+        .store-card p{font-size:12px;color:#94a3b8;margin:8px 0}
+        .store-action{display:block;width:100%;margin-top:8px;padding:10px;border-radius:8px;background:#1d4ed8;color:white;font-weight:700;cursor:pointer}
+        #storeModal button:disabled{opacity:.5;cursor:not-allowed}
+        #storeMessage{min-height:1.5em;color:#fcd34d}
+        @media(max-width:600px){.store-sections{grid-template-columns:1fr}#storeCharacters{grid-template-columns:1fr}}
         .menuBtn{width:100%;padding:16px;border-radius:14px;color:white;font-family:Fredoka,sans-serif;font-weight:800;font-size:18px;transition:.2s}.menuBtn:hover{transform:translateY(-2px);filter:brightness(1.12)}
 </style>
 </head>
@@ -195,15 +219,17 @@
          STAGE 4: VICTORY REUNION MODAL
          Anchor ID: #victoryModal
     ========================================================================== -->
-    <div id="storeModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-[60] overflow-y-auto">
+    <div id="storeModal" role="dialog" aria-modal="true" aria-label="Adventure Store" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-[60] overflow-y-auto">
         <div class="bg-slate-900 rounded-2xl max-w-3xl w-full p-5 border-2 border-blue-500/40 shadow-2xl my-6">
-            <div class="flex items-center justify-between mb-4"><div><h2 class="font-fredoka text-2xl font-bold text-blue-300">💎 Adventure Store</h2><p class="text-xs text-slate-400">Buy gems, weapons, characters and clothes.</p></div><button onclick="toggleStore()" class="px-3 py-2 bg-slate-800 rounded-lg">✕</button></div>
-            <div class="flex gap-2 flex-wrap mb-5 text-sm font-bold"><span class="bg-emerald-950 px-3 py-2 rounded-lg">💵 $<b id="storeMoney">0</b></span><span class="bg-cyan-950 px-3 py-2 rounded-lg">💎 <b id="storeDiamonds">0</b></span><span class="bg-blue-950 px-3 py-2 rounded-lg">🔷 <b id="storeGems">0</b></span><span class="bg-red-950 px-3 py-2 rounded-lg">🔴 <b id="storeRedGems">0</b></span></div>
-            <div class="grid md:grid-cols-2 gap-4">
+            <div class="store-header flex items-center justify-between mb-4"><div><h2 class="font-fredoka text-2xl font-bold text-blue-300">💎 Adventure Store</h2><p class="text-xs text-slate-400">Spend earned currency on gems, character unlocks, upgrades and outfits.</p></div><button onclick="toggleStore()" aria-label="Close store" class="px-3 py-2 bg-slate-800 rounded-lg">✕</button></div>
+            <div class="store-wallet flex gap-2 flex-wrap mb-5 text-sm font-bold"><span class="bg-emerald-950 px-3 py-2 rounded-lg">💵 $<b id="storeMoney">0</b></span><span class="bg-cyan-950 px-3 py-2 rounded-lg">💎 <b id="storeDiamonds">0</b></span><span class="bg-blue-950 px-3 py-2 rounded-lg">🔷 <b id="storeGems">0</b></span><span class="bg-red-950 px-3 py-2 rounded-lg">🔴 <b id="storeRedGems">0</b></span></div>
+            <p id="storeMessage" role="status" aria-live="polite" class="text-sm text-amber-300 mb-4">Earn money from enemies and diamonds by clearing stages.</p>
+            <div class="store-sections grid md:grid-cols-2 gap-4">
                 <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Gems</h3><div class="grid grid-cols-2 gap-2"><button onclick="purchaseGem('blue')" class="py-3 bg-blue-600 rounded-xl font-bold">🔷 BLUE GEM — 1 💎</button><button onclick="purchaseGem('red')" class="py-3 bg-red-600 rounded-xl font-bold">🔴 RED GEM — 1 💎</button></div><p class="text-xs text-slate-400 mt-2">Weapon upgrades cost 1→10 gems for levels 1→10.</p></div>
-                <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Weapons</h3><div id="storeWeapons" class="grid grid-cols-2 gap-2"></div></div>
+                <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Weapon upgrades</h3><div id="storeWeapons" class="grid grid-cols-2 gap-2"></div></div>
                 <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Characters</h3><p id="storeGenderNote" class="text-xs text-slate-400 mb-2"></p><div id="storeCharacters" class="grid grid-cols-2 gap-2"></div></div>
-                <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Clothes</h3><div id="storeClothes" class="grid grid-cols-2 gap-2"></div></div>
+                <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Character upgrade</h3><div id="storeUpgrades"></div></div>
+                <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Outfits</h3><div id="storeClothes" class="grid grid-cols-2 gap-2"></div></div>
             </div>
             <div class="mt-4 flex justify-end"><button onclick="toggleStore()" class="px-5 py-2.5 bg-slate-800 rounded-xl font-bold">CLOSE</button></div>
         </div>
@@ -248,6 +274,7 @@
             <button onclick="restartLevel()" class="w-full py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-fredoka font-bold rounded-xl shadow-lg transition">
                 <i class="fa-solid fa-rotate-right mr-1"></i> RESTART GAME
             </button>
+            <button onclick="returnToSetup()" class="menuBtn bg-slate-800 mt-3" style="margin-top:12px;background:#334155">MAIN MENU</button>
         </div>
     </div>
 
@@ -663,7 +690,7 @@
         let clashBursts = [], victoryCelebrating = false, victoryFrame = 0, victoryRaf = 0, lives = 5, gameOver = false;
 
         const ov = (ax, ay, aw, ah, bx, by, bw, bh) => Math.abs(ax - bx) < (aw + bw) / 2 && Math.abs(ay - by) < (ah + bh) / 2;
-        const flash = t => { msgText = t; msgT = 200; };
+        const flash = t => { msgText = t; msgT = 200; const status = $('storeMessage'); if (status && !$('storeModal').classList.contains('hidden')) status.textContent = t; };
         // Shared effect used by pickups, combat hits, defeats, and player damage.
         function createHeartParticles(x, y, count = 10) {
             if (!Array.isArray(particles)) particles = [];
@@ -1268,14 +1295,19 @@
         /* ---------------------------------------------------------------------
            STAGE 5.6: CONTROLS, WEAPON PICKER & SETTINGS (REMAPPABLE)
         --------------------------------------------------------------------- */
-        function syncEconomyUI(){ ['hudMoney','storeMoney'].forEach(id=>$(id)&&($(id).innerText=progression.money)); ['hudDiamonds','storeDiamonds'].forEach(id=>$(id)&&($(id).innerText=progression.diamonds)); ['hudGems','storeGems'].forEach(id=>$(id)&&($(id).innerText=progression.gems)); renderStore(); }
-        function toggleStore(){ const m=$('storeModal'); m.classList.toggle('hidden'); m.classList.toggle('flex'); if(!m.classList.contains('hidden')){paused=true;syncEconomyUI();} else paused=false; }
         function buyGem(){ if(progression.diamonds<ECON.gemDiamondCost){flash('Need 10 diamonds for 1 gem.');return;} progression.diamonds-=ECON.gemDiamondCost; progression.gems++; saveProgress(); syncEconomyUI(); }
-        function upgradeWeapon(w){ const lv=progression.weaponLevels[w]||0; if(lv>=10){flash('Weapon is already max level!');return;} const cost=lv+1; if(progression.gems<cost){flash(`Need ${cost} gems for level ${lv+1}.`);return;} progression.gems-=cost; progression.weaponLevels[w]=lv+1; saveProgress(); syncEconomyUI(); flash(`${w.toUpperCase()} upgraded to Lv.${lv+1}!`); }
         function buyStoreWeapon(w){ if(progression.unlockedWeapons.includes(w)){ weapon=w; renderWeapons(); return; } if(progression.money<ECON.weaponCost){flash(`Need $${ECON.weaponCost}.`);return;} progression.money-=ECON.weaponCost; progression.unlockedWeapons.push(w); weapon=w; weaponLocked=true; saveProgress(); syncEconomyUI(); flash(`${w.toUpperCase()} purchased and equipped!`); }
         function buyCharacter(id){ const list=playerGender==='male'?MALE_AVATARS:FEMALE_AVATARS; if(!list.some(a=>a.id===id)) return; const key=playerGender==='male'?'unlockedMale':'unlockedFemale'; if(progression[key].includes(id)){selectedHeroAvatar=list.find(a=>a.id===id);flash(`${selectedHeroAvatar.name} selected.`);renderStep2Grids();return;} if(progression.money<ECON.characterCost){flash(`Need $${ECON.characterCost}.`);return;} progression.money-=ECON.characterCost; progression[key].push(id); selectedHeroAvatar=list.find(a=>a.id===id); saveProgress(); renderStep2Grids(); syncEconomyUI(); }
-        function buyClothes(id){ const c=CLOTHES.find(x=>x.id===id); if(!c)return; if(progression.ownedClothes.includes(id)){progression.selectedClothes=id; if(heroPlayer){heroPlayer.data={...heroPlayer.data,...(c.outfit?{outfit:c.outfit,outfitDark:c.outfitDark}:{} )};} saveProgress();syncEconomyUI();flash(`${c.name} equipped!`);return;} if(progression.money<c.price){flash(`Need $${c.price}.`);return;} progression.money-=c.price;progression.ownedClothes.push(id);progression.selectedClothes=id;saveProgress();syncEconomyUI(); }
-        function renderStore(){ const sw=$('storeWeapons'),sc=$('storeCharacters'),cl=$('storeClothes'); if(!sw||!sc||!cl)return; sw.innerHTML=WEAPONS.filter(w=>w!==weapon).map(w=>`<button onclick="buyStoreWeapon('${w}')" class="p-2 bg-slate-900 rounded-lg text-xs font-bold">${WINFO[w].icon} ${w}<br><span class="text-amber-300">$${progression.unlockedWeapons.includes(w)?'OWNED':ECON.weaponCost}</span></button>`).join(''); const chars=playerGender==='male'?MALE_AVATARS:FEMALE_AVATARS; const key=playerGender==='male'?'unlockedMale':'unlockedFemale'; sc.innerHTML=chars.filter(a=>a.id!==selectedHeroAvatar.id).map(a=>`<button onclick="buyCharacter('${a.id}')" class="p-2 bg-slate-900 rounded-lg text-xs font-bold">${a.name}<br><span class="text-amber-300">${progression[key].includes(a.id)?'OWNED':'$'+ECON.characterCost}</span></button>`).join(''); $('storeGenderNote').innerText=`Male shop only: ${playerGender==='male'?'male':'female'} heroes.`; cl.innerHTML=CLOTHES.map(c=>`<button onclick="buyClothes('${c.id}')" class="p-2 bg-slate-900 rounded-lg text-xs font-bold ${progression.selectedClothes===c.id?'ring-2 ring-pink-400':''}">👕 ${c.name}<br><span class="text-amber-300">${progression.ownedClothes.includes(c.id)?'OWNED':'$'+c.price}</span></button>`).join(''); }
+        function buyClothes(id){
+            const c=CLOTHES.find(x=>x.id===id);if(!c)return;
+            if(!progression.ownedClothes.includes(id)){
+                if(progression.money<c.price){flash(`Need $${c.price}.`);return;}
+                progression.money-=c.price;progression.ownedClothes.push(id);
+            }
+            progression.selectedClothes=id;
+            if(gameRunning&&heroPlayer){heroPlayer.data={...selectedHeroAvatar,...(c.outfit?{outfit:c.outfit,outfitDark:c.outfitDark}:{})};}
+            saveProgress();syncEconomyUI();flash(`${c.name} equipped!`);
+        }
          function setWeapon(w, fromStart=false) {
              if(!WEAPONS.includes(w)) return;
              if(!fromStart && !progression.unlockedWeapons.includes(w)){ flash('Buy this weapon in the Store first!'); return; }
@@ -1548,11 +1580,11 @@
         function showOnly(id){['welcomeScreen','mainMenu','characterScreen','setupContainer','gameScreen'].forEach(x=>{const e=$(x);if(e)e.classList.add('hidden');}); const e=$(id);if(e)e.classList.remove('hidden'); if(id==='gameScreen')e.classList.add('flex');}
         function openMainMenu(){initAudio();showOnly('mainMenu');}
         function showMainMenu(){gameRunning=false;clearInterval(timerInterval);showOnly('mainMenu');}
-        function startNewGameFlow(){newGender='male';selectedRole='warrior';cheatUltimate=false;populateCharacterScreen();showOnly('characterScreen');}
-        function setNewGender(g){newGender=g;document.getElementById('genderMaleNew').className=`flex-1 p-2 rounded-lg font-bold ${g==='male'?'bg-blue-700':'bg-slate-700'}`;document.getElementById('genderFemaleNew').className=`flex-1 p-2 rounded-lg font-bold ${g==='female'?'bg-pink-700':'bg-slate-700'}`;renderRoleGrid();}
+        function startNewGameFlow(){newGender=playerGender;if(!storeOwnsRole(selectedRole,newGender))selectedRole='warrior';cheatUltimate=false;populateCharacterScreen();showOnly('characterScreen');}
+        function setNewGender(g){newGender=g;if(!storeOwnsRole(selectedRole,g))selectedRole='warrior';document.getElementById('genderMaleNew').className=`flex-1 p-2 rounded-lg font-bold ${g==='male'?'bg-blue-700':'bg-slate-700'}`;document.getElementById('genderFemaleNew').className=`flex-1 p-2 rounded-lg font-bold ${g==='female'?'bg-pink-700':'bg-slate-700'}`;renderRoleGrid();}
         function populateCharacterScreen(){const sel=$('countrySelect');sel.innerHTML=COUNTRIES.map(c=>`<option>${c}</option>`).join('');sel.value=localStorage.getItem('loveAdventureCountry')||'United States';$('heroNameNew').value='Hero';setNewGender(newGender);}
-        function renderRoleGrid(){const grid=$('roleGrid');if(!grid)return;grid.innerHTML=STARTER_ROLES.map(r=>{const d=ROLE_DATA[r],a=roleAvatar(r,newGender);return `<button onclick="selectNewRole('${r}')" class="p-4 rounded-2xl text-left border-2 ${selectedRole===r?'border-rose-400 bg-rose-950/40':'border-slate-700 bg-slate-800/70'}"><div class="flex items-center gap-3"><canvas id="roleCv_${r}" width="60" height="70"></canvas><div><div class="text-white font-bold">${d.name}</div><div class="text-xs text-slate-400">${d.normal}</div><div class="text-xs text-amber-300 mt-1">Weapon: ${d.weapon}</div><div class="text-xs text-purple-300 mt-1">Ultimate: ${d.ultimate} • Power ${d.power}</div></div></div></button>`}).join('');setTimeout(()=>STARTER_ROLES.forEach(r=>{const c=$(`roleCv_${r}`);if(c)drawChibi3D(c.getContext('2d'),30,55,roleAvatar(r,newGender),{facing:'right',isActive:true})}),20);const d=ROLE_DATA[selectedRole];$('cheatInfo').innerText=($('countrySelect')?.value==='Morocco'&&($('heroNameNew')?.value||'').trim()==='Kaouthaar')?'CHEAT ACTIVE: Ultimate stays full.':'';$('selectedRoleInfo').innerText=`${d.name} • ${d.weapon.toUpperCase()} • Ultimate: ${d.ultimate} (${d.power} power)`;}
-        function selectNewRole(r){selectedRole=r;renderRoleGrid();}
+        function renderRoleGrid(){const grid=$('roleGrid');if(!grid)return;const availableRoles=[...new Set([...STARTER_ROLES,...(progression[newGender==='male'?'ownedMaleRoles':'ownedFemaleRoles']||[])])];grid.innerHTML=availableRoles.filter(r=>ROLE_DATA[r]).map(r=>{const d=ROLE_DATA[r],a=roleAvatar(r,newGender);return `<button onclick="selectNewRole('${r}')" class="p-4 rounded-2xl text-left border-2 ${selectedRole===r?'border-rose-400 bg-rose-950/40':'border-slate-700 bg-slate-800/70'}"><div class="flex items-center gap-3"><canvas id="roleCv_${r}" width="60" height="70"></canvas><div><div class="text-white font-bold">${d.name}</div><div class="text-xs text-slate-400">${d.normal}</div><div class="text-xs text-amber-300 mt-1">Weapon: ${d.weapon}</div><div class="text-xs text-purple-300 mt-1">Ultimate: ${d.ultimate} • Power ${d.power}</div></div></div></button>`}).join('');setTimeout(()=>availableRoles.filter(r=>ROLE_DATA[r]).forEach(r=>{const c=$(`roleCv_${r}`);if(c)drawChibi3D(c.getContext('2d'),30,55,roleAvatar(r,newGender),{facing:'right',isActive:true})}),20);const d=ROLE_DATA[selectedRole];$('cheatInfo').innerText=($('countrySelect')?.value==='Morocco'&&($('heroNameNew')?.value||'').trim()==='Kaouthaar')?'CHEAT ACTIVE: Ultimate stays full.':'';$('selectedRoleInfo').innerText=`${d.name} • ${d.weapon.toUpperCase()} • Ultimate: ${d.ultimate} (${d.power} power)`;}
+        function selectNewRole(r){if(!ROLE_DATA[r]||!storeOwnsRole(r,newGender))return;selectedRole=r;renderRoleGrid();}
         function beginSelectedCharacter(){const name=($('heroNameNew').value||'Hero').trim();const country=$('countrySelect').value;localStorage.setItem('loveAdventureCountry',country);playerGender=newGender;selectedRole=selectedRole;selectedHeroAvatar=roleAvatar(selectedRole,newGender);selectedHeroAvatar.name=name;selectedHeroAvatar.country=country;selectedPartnerAvatar=roleAvatar(selectedRole,newGender==='male'?'female':'male');selectedPartnerAvatar.name=`${ROLE_DATA[selectedRole].name} Partner`;weapon=ROLE_DATA[selectedRole].weapon;characterLevel=progression.characterLevels?.[newGender+'_'+selectedRole]||1;ultimateCharge=0;soulCounters={bird:0,archer:0,gate:0,boss:0};cheatUltimate=country==='Morocco'&&name==='Kaouthaar';saveProgress();startGame();}
         function continueGameFlow(){const slots=loadSaveSlots();if(!slots.length){flash('No saved games yet.');return;}const wrap=$('saveSlots');wrap.innerHTML=slots.map((x,i)=>x?`<button onclick="loadSaveSlot(${i})" class="text-left p-4 bg-slate-800 hover:bg-slate-700 rounded-xl"><b class="text-white">SLOT ${i+1}</b><div class="text-sm text-slate-300">Stage ${x.stageNumber} • ${x.roleName||'Hero'} • ${x.gender}</div><div class="text-xs text-slate-500">${new Date(x.savedAt).toLocaleString()}</div></button>`:`<div class="p-4 bg-slate-950 rounded-xl text-slate-500">SLOT ${i+1} — Empty</div>`).join('');$('saveModal').classList.remove('hidden');$('saveModal').classList.add('flex');}
         function closeSaveModal(){$('saveModal').classList.add('hidden');$('saveModal').classList.remove('flex');}
@@ -1560,15 +1592,34 @@
         function loadSaveSlot(i){const x=loadSaveSlots()[i];if(!x)return;playerGender=x.gender||'male';selectedRole=x.role||'warrior';selectedHeroAvatar=x.selectedHeroAvatar||roleAvatar(selectedRole,playerGender);selectedPartnerAvatar=x.selectedPartnerAvatar||roleAvatar(selectedRole,playerGender==='male'?'female':'male');weapon=x.weapon||ROLE_DATA[selectedRole].weapon;characterLevel=x.characterLevel||1;ultimateCharge=x.ultimateCharge||0;progression={...progression,...(x.progression||{})};closeSaveModal();startGame();if(x.stageNumber===2){stageNumber=2;initStage2();if(x.stage2)stage2=x.stage2;} }
         function openSaveGame(){const wrap=$('saveSlots'),slots=loadSaveSlots();const arr=[...slots,null,null,null].slice(0,3);wrap.innerHTML=arr.map((x,i)=>x?`<button onclick="saveCurrentSlot(${i})" class="text-left p-4 bg-slate-800 rounded-xl"><b>SLOT ${i+1}</b><div class="text-xs text-slate-400">Overwrite ${x.roleName||'Hero'} • Stage ${x.stageNumber}</div></button>`:`<button onclick="saveCurrentSlot(${i})" class="text-left p-4 bg-emerald-950/40 border border-emerald-700 rounded-xl"><b>SLOT ${i+1}</b><div class="text-xs text-emerald-300">EMPTY — SAVE HERE</div></button>`).join('');$('saveModal').classList.remove('hidden');$('saveModal').classList.add('flex');}
         function openSettingsFromMenu(){paused=true;toggleSettings();}
-        function openMainStore(){paused=true;toggleStore();}
-        function purchaseGem(kind){if(progression.diamonds<1){flash('You need 1 💎 Diamond.');return;}progression.diamonds--;progression[kind==='blue'?'gems':'redGems']=(progression[kind==='blue'?'gems':'redGems']||0)+1;saveProgress();syncEconomyUI();}
-        function buyStoreCharacterRoleBase(r,g){const price=STORE_ROLE_PRICES[r];const key=g==='male'?'ownedMaleRoles':'ownedFemaleRoles';progression[key]??=[];if(progression[key].includes(r)){flash(`${ROLE_DATA[r].name} already owned.`);return;}if(progression.diamonds<price){flash(`Need ${price} 💎 Diamonds.`);return;}progression.diamonds-=price;progression[key].push(r);saveProgress();renderStore();syncEconomyUI();flash(`${ROLE_DATA[r].name} purchased.`);}
-        function upgradeWeapon(w){const lv=progression.weaponLevels[w]||0;if(lv>=10){flash('Weapon is already Level 10.');return;}if((progression.gems||0)<lv+1){flash(`Need ${lv+1} 🔷 Blue Gems.`);return;}progression.gems-=lv+1;progression.weaponLevels[w]=lv+1;saveProgress();renderStore();syncEconomyUI();}
-        function upgradeCharacter(){if(characterLevel>=10){flash('Character is already Level 10.');return;}if((progression.redGems||0)<characterLevel){flash(`Need ${characterLevel} 🔴 Red Gems.`);return;}progression.redGems-=characterLevel;characterLevel++;progression.characterLevels??={};progression.characterLevels[playerGender+'_'+selectedRole]=characterLevel;saveProgress();renderStore();syncEconomyUI();flash(`Character Level ${characterLevel}!`);}
-        function renderStore(){const sw=$('storeWeapons'),sc=$('storeCharacters'),cl=$('storeClothes');if(!sw||!sc)return;sw.innerHTML=Object.entries(ROLE_DATA).map(([r,d])=>`<button onclick="upgradeWeapon('${d.weapon}')" class="p-2 bg-slate-900 rounded-lg text-xs font-bold text-white">${d.weapon}<br>Lv.${progression.weaponLevels[d.weapon]||0}/10<br><span class="text-blue-300">Upgrade</span></button>`).join('');const roles=Object.entries(ROLE_DATA);sc.innerHTML=roles.map(([r,d])=>`<div class="p-2 bg-slate-900 rounded-lg"><b class="text-white text-xs">${d.name}</b><div class="text-[10px] text-slate-500">Male + Female</div><div class="flex gap-1 mt-1"><button onclick="buyStoreCharacterRole('${r}','male')" class="text-[10px] px-2 py-1 bg-blue-700 rounded">♂ ${STORE_ROLE_PRICES[r]}💎</button><button onclick="buyStoreCharacterRole('${r}','female')" class="text-[10px] px-2 py-1 bg-pink-700 rounded">♀ ${STORE_ROLE_PRICES[r]}💎</button></div></div>`).join('');if(cl)cl.innerHTML=`<div class="p-3 bg-slate-900 rounded-xl text-sm text-slate-300">Character Level <b class="text-white">${characterLevel}/10</b><button onclick="upgradeCharacter()" class="block mt-2 px-3 py-2 bg-red-700 rounded-lg font-bold">🔴 Upgrade (${characterLevel} Red Gems)</button></div>`;syncStoreCounters();}
+        function openMainStore(){toggleStore();}
+        function purchaseGem(kind){if(!['blue','red'].includes(kind))return;if(progression.diamonds<1){flash('You need 1 💎 Diamond.');return;}progression.diamonds--;progression[kind==='blue'?'gems':'redGems']=(progression[kind==='blue'?'gems':'redGems']||0)+1;saveProgress();syncEconomyUI();flash(`${kind==='blue'?'Blue':'Red'} gem purchased.`);}
+        function buyStoreCharacterRoleBase(r,g){const price=STORE_ROLE_PRICES[r];const key=g==='male'?'ownedMaleRoles':'ownedFemaleRoles';progression[key]??=[];if(progression[key].includes(r)){flash(`${ROLE_DATA[r].name} already owned.`);return;}if(progression.diamonds<price){flash(`Need ${price} 💎 Diamonds.`);return;}progression.diamonds-=price;progression[key].push(r);saveProgress();syncEconomyUI();flash(`${ROLE_DATA[r].name} purchased.`);}
+        function upgradeWeapon(w){if(!Object.values(ROLE_DATA).some(d=>d.weapon===w))return;const lv=progression.weaponLevels[w]||0;if(lv>=10){flash('Weapon is already Level 10.');return;}if((progression.gems||0)<lv+1){flash(`Need ${lv+1} 🔷 Blue Gems.`);return;}progression.gems-=lv+1;progression.weaponLevels[w]=lv+1;saveProgress();syncEconomyUI();flash(`${w.toUpperCase()} upgraded to level ${lv+1}.`);}
+        function upgradeCharacter(){characterLevel=progression.characterLevels?.[playerGender+'_'+selectedRole]||1;if(characterLevel>=10){flash('Character is already Level 10.');return;}if((progression.redGems||0)<characterLevel){flash(`Need ${characterLevel} 🔴 Red Gems.`);return;}progression.redGems-=characterLevel;characterLevel++;progression.characterLevels??={};progression.characterLevels[playerGender+'_'+selectedRole]=characterLevel;saveProgress();syncEconomyUI();flash(`Character Level ${characterLevel}!`);}
+        const storeOwnsRole = (r,g) => STARTER_ROLES.includes(r) || (progression[g==='male'?'ownedMaleRoles':'ownedFemaleRoles']||[]).includes(r);
+        function storeAction(action,label,disabled=false){return `<button onclick="${action}" ${disabled?'disabled':''} class="store-action">${label}</button>`;}
+        function renderStore(){
+            const sw=$('storeWeapons'),sc=$('storeCharacters');if(!sw||!sc)return;
+            sw.innerHTML=[...new Set(Object.values(ROLE_DATA).map(d=>d.weapon))].map(w=>{
+                const lv=progression.weaponLevels[w]||0,cost=lv+1;
+                return `<div class="store-card"><b>${w.toUpperCase()}</b><p>Upgrade level ${lv}/10</p>${storeAction(`upgradeWeapon('${w}')`,lv>=10?'MAX LEVEL':`Upgrade · ${cost} 🔷`,lv>=10||(progression.gems||0)<cost)}</div>`;
+            }).join('');
+            $('storeGenderNote').textContent=gameRunning?'Unlock characters here. Choose your hero from New Game after returning to the menu.':'Starter heroes are free. Purchased heroes are available in New Game.';
+            sc.innerHTML=Object.entries(ROLE_DATA).map(([r,d])=>`<div class="store-card"><b>${d.name}</b><p>${d.weapon.toUpperCase()} · ${d.ultimate}</p>${['male','female'].map(g=>{
+                const owned=storeOwnsRole(r,g),selected=playerGender===g&&selectedRole===r;
+                const label=`${g==='male'?'♂ Male':'♀ Female'} · ${owned?(selected?'Selected':gameRunning?'Owned':'Select'):`${STORE_ROLE_PRICES[r]} 💎`}`;
+                return storeAction(`buyStoreCharacterRole('${r}','${g}')`,label,owned?(selected||gameRunning):(progression.diamonds||0)<STORE_ROLE_PRICES[r]);
+            }).join('')}</div>`).join('');
+            const level=progression.characterLevels?.[playerGender+'_'+selectedRole]||1;
+            $('storeUpgrades').innerHTML=`<div class="store-card"><b>${playerGender==='male'?'♂':'♀'} ${ROLE_DATA[selectedRole].name}</b><p>Character level ${level}/10</p>${storeAction('upgradeCharacter()',level>=10?'MAX LEVEL':`Upgrade · ${level} 🔴`,level>=10||(progression.redGems||0)<level)}</div>`;
+            $('storeClothes').innerHTML=CLOTHES.map(c=>{const owned=progression.ownedClothes.includes(c.id),selected=progression.selectedClothes===c.id;return `<div class="store-card"><b>👕 ${c.name}</b>${storeAction(`buyClothes('${c.id}')`,selected?'Equipped':owned?'Equip':`Buy · $${c.price}`,selected||(!owned&&(progression.money||0)<c.price))}</div>`}).join('');
+            document.querySelectorAll('#storeModal [onclick^="purchaseGem"]').forEach(b=>b.disabled=(progression.diamonds||0)<1);
+            syncStoreCounters();
+        }
         function syncStoreCounters(){$('storeDiamonds')&&($('storeDiamonds').innerText=progression.diamonds||0);$('storeGems')&&($('storeGems').innerText=progression.gems||0);const rg=document.getElementById('storeRedGems');if(rg)rg.innerText=progression.redGems||0;}
-        function syncEconomyUI(){syncStoreCounters();if($('hudDiamonds'))$('hudDiamonds').innerText=progression.diamonds||0;if($('hudGems'))$('hudGems').innerText=progression.gems||0;}
-        function toggleStore(){const m=$('storeModal');m.classList.toggle('hidden');m.classList.toggle('flex');if(!m.classList.contains('hidden')){paused=true;renderStore();}else paused=false;}
+        let storeWasPaused=false;
+        function toggleStore(){const m=$('storeModal'),opening=m.classList.contains('hidden');if(opening){storeWasPaused=paused;paused=true;m.classList.remove('hidden');m.classList.add('flex');$('storeMessage').textContent='Earn money from enemies and diamonds by clearing stages.';syncEconomyUI();}else{m.classList.add('hidden');m.classList.remove('flex');paused=storeWasPaused;}}
         function toggleSettings(){const m=$('settingsModal');m.classList.toggle('hidden');m.classList.toggle('flex');paused=!m.classList.contains('hidden');refreshSettings();}
         function setSpecialKey(){keys.special=true;}
         function ultimateReady(){return cheatUltimate||ultimateCharge>=100;}
@@ -1613,10 +1664,18 @@
         function saveBossAndStageProgress(){saveProgress();}
         const baseRestartLevelV2=restartLevelBase;
         function restartLevel(){if(stageNumber===2&&stage2){stage2Health=100;stage2DamageCooldown=0;heroPlayer.x=180;heroPlayer.y=180;gameOver=false;gameRunning=true;paused=false;$('gameOverModal').classList.add('hidden');requestAnimationFrame(gameLoop);return;}baseRestartLevelV2();}
-        function returnToSetup(){stage2=null;rescueState=null;stageNumber=1;gameRunning=false;clearInterval(timerInterval);$('gameOverModal')?.classList.add('hidden');$('victoryModal')?.classList.add('hidden');showOnly('mainMenu');}
-        function equipStoreRole(r,g){const key=g==='male'?'ownedMaleRoles':'ownedFemaleRoles';if(!(progression[key]||[]).includes(r)){flash('Buy this character first.');return;}playerGender=g;selectedRole=r;selectedHeroAvatar=roleAvatar(r,g);selectedPartnerAvatar=roleAvatar(r,g==='male'?'female':'male');weapon=ROLE_DATA[r].weapon;flash(`${ROLE_DATA[r].name} equipped.`);renderStore();}
-        const oldBuyStoreCharacterRole=buyStoreCharacterRoleBase;
-        function buyStoreCharacterRole(r,g){const key=g==='male'?'ownedMaleRoles':'ownedFemaleRoles';progression[key]??=[];if(progression[key].includes(r)){equipStoreRole(r,g);return;}oldBuyStoreCharacterRole(r,g);}
+        function returnToSetup(){stage2=null;rescueState=null;stageNumber=1;gameRunning=false;gameOver=false;paused=false;clearInterval(timerInterval);victoryCelebrating=false;if(victoryRaf)cancelAnimationFrame(victoryRaf);Object.keys(keys).forEach(k=>keys[k]=false);['gameOverModal','victoryModal','storeModal','settingsModal','saveModal'].forEach(id=>{const modal=$(id);if(modal){modal.classList.add('hidden');if(id!=='gameOverModal'&&id!=='victoryModal')modal.classList.remove('flex');}});showOnly('mainMenu');}
+        function equipStoreRole(r,g){
+            if(!ROLE_DATA[r]||!['male','female'].includes(g)||!storeOwnsRole(r,g)){flash('Buy this character first.');return;}
+            if(gameRunning){flash('Return to the menu to select a different character.');return;}
+            playerGender=newGender=g;selectedRole=r;selectedHeroAvatar=roleAvatar(r,g);selectedPartnerAvatar=roleAvatar(r,g==='male'?'female':'male');weapon=ROLE_DATA[r].weapon;characterLevel=progression.characterLevels?.[g+'_'+r]||1;
+            flash(`${ROLE_DATA[r].name} selected. Choose New Game to play.`);renderStore();
+        }
+        function buyStoreCharacterRole(r,g){
+            if(!ROLE_DATA[r]||!['male','female'].includes(g))return;
+            if(storeOwnsRole(r,g)){equipStoreRole(r,g);return;}
+            buyStoreCharacterRoleBase(r,g);
+        }
         function rollEnemy(o,max=2){if(!o||o._rolled)return;o.level=enemyLevelRoll(max);o.weaponLevel=enemyWeaponRoll(max);o._rolled=true;o.baseHp=o.hp||1;if(o.level===2)o.hp*=2;o.max=o.hp;if(o.level===2&&o.weaponLevel===2)o.attackMultiplier=4;else if(o.weaponLevel===2)o.attackMultiplier=2;else o.attackMultiplier=1;}
         function updateEnemyLevelRules(){[...birds,...archers,...gates,boss].forEach(o=>rollEnemy(o,stageNumber===1?2:10));}
         const baseInitStageV2=initStageBase;
@@ -1636,7 +1695,7 @@
         function combatTargets(){return stage2 ? [...stage2.monsters.map(o=>({o,k:'monster',x:o.x,y:o.y})),...stage2.cats.map(o=>({o,k:'cat',x:o.x,y:o.y}))].filter(t=>!t.o.dead) : foeBoxes().filter(t=>!t.o.dead);}
         function awardDefeat(t){if(t.o._rewarded)return;t.o._rewarded=true;progression.money+=t.k==='bird'?1:t.k==='boss'?20:5;addSoul(t.k==='cat'?'bird':t.k==='monster'?'archer':t.k);syncEconomyUI();saveProgress();}
         function damage(t,power=1){const o=t.o;if(!o||o.dead||o.flash>0)return;if((t.k==='gate'||t.k==='boss')&&!o.firstAttackDone)return;const level=o.level||1;const hp=Number.isFinite(o.hp)?o.hp:Math.pow(2,level-1);o.hp=hp-power*Math.pow(2,characterLevel-level);o.flash=8;pop(o.x,o.y,8);playSound('heart');if(o.hp>0)return;o.dead=true;awardDefeat(t);if(t.k==='gate'&&arena===o){arena=null;checkpoint=heroPlayer.x;flash('Path clear!');}if(t.k==='boss'){bossDefeated=true;boss.dead=true;arena=null;boss.swords=[];birds=[];shots=[];if(!progression.clearedStages.includes(stageNumber)){progression.diamonds+=2;progression.clearedStages.push(stageNumber);saveProgress();syncEconomyUI();}flash('Go meet your partner!');}}
-        function syncEconomyUI(){syncStoreCounters();['hudMoney','storeMoney'].forEach(id=>{if($(id))$(id).innerText=progression.money||0;});if($('hudDiamonds'))$('hudDiamonds').innerText=progression.diamonds||0;if($('hudGems'))$('hudGems').innerText=progression.gems||0;}
+        function syncEconomyUI(){renderStore();syncStoreCounters();['hudMoney','storeMoney'].forEach(id=>{if($(id))$(id).innerText=progression.money||0;});if($('hudDiamonds'))$('hudDiamonds').innerText=progression.diamonds||0;if($('hudGems'))$('hudGems').innerText=progression.gems||0;}
         function useUltimate(){if(!ultimateReady()){flash('Defeat enemies to charge your ultimate.');return;}const d=ROLE_DATA[selectedRole];ultimateCharge=cheatUltimate?100:0;const line=['dash','sniper'].includes(d.ultType);const f=heroPlayer.facing==='left'?-1:1;const e={type:d.ultType,name:d.ultimate,x:heroPlayer.x,y:heroPlayer.y,f,t:0,duration:90,power:d.power,hit:new Set()};if(d.ultType==='taunt'){e.duration=300;heroGuard=300;}if(d.ultType==='stomp'){heroGuard=90;stage2Health=Math.min(100,stage2Health+25);updateHealthHUD();}if(d.ultType==='arc')heroGuard=60;if(d.ultType==='traps')e.duration=600;ultimateEffects.push(e);flash(d.ultimate+'!');}
         function buildUltimatePlan(targets,power,single){
             const rank={bird:0,cat:0,archer:1,monster:1,gate:2,boss:3};
