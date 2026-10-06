@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Love Adventure — Female Warrior V9</title>
+    <title>Aethelos</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -104,6 +104,28 @@
         #storeMessage{min-height:1.5em;color:#fcd34d}
         @media(max-width:600px){.store-sections{grid-template-columns:1fr}#storeCharacters{grid-template-columns:1fr}}
         .menuBtn{width:100%;padding:16px;border-radius:14px;color:white;font-family:Fredoka,sans-serif;font-weight:800;font-size:18px;transition:.2s}.menuBtn:hover{transform:translateY(-2px);filter:brightness(1.12)}
+        .aeth-screen{isolation:isolate;background:linear-gradient(180deg,#71b8e7 0%,#b9d9eb 38%,#f4e9d3 72%,#597b9d 100%);color:#f8fafc}
+        .aeth-cloudfield{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;background:linear-gradient(180deg,#7dbce7 0%,#c8dfed 48%,#526d8d 100%)}
+        .aeth-cloudfield::before,.aeth-cloudfield::after{content:"";position:absolute;inset:-18%;background:radial-gradient(ellipse at 12% 62%,rgba(255,255,255,.88) 0 9%,transparent 23%),radial-gradient(ellipse at 34% 69%,rgba(255,255,255,.76) 0 12%,transparent 27%),radial-gradient(ellipse at 68% 59%,rgba(255,255,255,.82) 0 11%,transparent 25%),radial-gradient(ellipse at 91% 74%,rgba(239,248,255,.72) 0 13%,transparent 28%);filter:blur(18px);animation:aeth-cloud-drift 58s linear infinite}
+        .aeth-cloudfield::after{opacity:.56;transform:scale(1.14);animation-duration:88s;animation-direction:reverse;filter:blur(28px)}
+        @keyframes aeth-cloud-drift{from{background-position:0 0,0 0,0 0,0 0}to{background-position:320px -35px,-240px 20px,280px -15px,-180px 30px}}
+        .aeth-sun{position:absolute;width:min(46vw,520px);height:min(46vw,520px);border-radius:50%;left:50%;top:4%;transform:translateX(-50%);background:radial-gradient(circle,rgba(255,250,214,.95) 0,rgba(255,225,164,.48) 35%,transparent 72%);filter:blur(4px);pointer-events:none}
+        .aeth-title-content{position:relative;z-index:1;text-align:center;width:min(100%,900px);padding:2rem}
+        .aeth-title-mark{font-size:clamp(3.7rem,11vw,8rem);line-height:.95;letter-spacing:.12em;font-weight:800;color:#fff6dc;text-shadow:0 5px 0 rgba(91,77,70,.3),0 12px 38px rgba(16,38,70,.7),0 0 42px rgba(255,235,182,.85)}
+        .aeth-title-sub{color:#fff4da;text-shadow:0 2px 12px rgba(11,28,52,.8);letter-spacing:.16em;text-transform:uppercase}
+        .aeth-panel{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(145deg,rgba(10,25,48,.9),rgba(26,38,61,.88));backdrop-filter:blur(16px);box-shadow:0 26px 80px rgba(4,17,38,.48);border:1px solid rgba(242,221,176,.35)}
+        .aeth-panel::before,.aeth-screen::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 2%,rgba(255,245,205,.55),transparent 35%),linear-gradient(180deg,rgba(10,30,62,.12),rgba(11,25,49,.68));z-index:-1}
+        .aeth-menu-button{border:1px solid rgba(226,208,164,.32);background:linear-gradient(115deg,rgba(41,61,88,.95),rgba(18,35,61,.95));color:#f7edcf;box-shadow:0 8px 18px rgba(0,0,0,.2);text-align:left}
+        .aeth-menu-button:hover{border-color:rgba(255,232,174,.8);background:linear-gradient(115deg,#526d8c,#263c60)}
+        .aeth-card{--tilt-x:0deg;--tilt-y:0deg;transform:perspective(1100px) rotateX(var(--tilt-y)) rotateY(var(--tilt-x));transform-style:preserve-3d;transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease;background:linear-gradient(160deg,rgba(26,43,66,.97),rgba(10,24,45,.98));border:1px solid rgba(242,221,176,.34);box-shadow:0 18px 34px rgba(3,13,27,.38);cursor:pointer}
+        .aeth-card:hover{box-shadow:0 26px 48px rgba(5,17,35,.55),0 0 25px rgba(196,219,244,.16)}
+        .aeth-card.selected{border-color:#f4d28c;box-shadow:0 24px 50px rgba(2,12,28,.6),0 0 0 2px rgba(244,210,140,.42),0 0 34px rgba(244,210,140,.28)}
+        .aeth-card-art{transform:translateZ(24px);background:linear-gradient(180deg,rgba(171,211,238,.2),rgba(15,31,52,.1))}
+        .aeth-card-art img{filter:drop-shadow(0 14px 18px rgba(0,0,0,.35));transition:transform .3s ease}
+        .aeth-card:hover .aeth-card-art img{transform:translateY(-5px) scale(1.025)}
+        .aeth-gold{color:#f5d99b}.aeth-glass{background:rgba(5,18,36,.68);backdrop-filter:blur(12px)}
+        @media(max-width:640px){.aeth-card-art{height:280px!important}.aeth-title-content{padding:1.25rem}.aeth-title-sub{letter-spacing:.08em}}
+        @media(prefers-reduced-motion:reduce){.aeth-cloudfield::before,.aeth-cloudfield::after{animation:none}.aeth-card,.aeth-card-art img{transition:none}}
 </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-6 overflow-x-hidden">
@@ -112,40 +134,53 @@
          STAGE 1: WELCOME SCREEN (SPLASH PAGE)
          Anchor ID: #welcomeScreen
     ========================================================================== -->
-    <div id="welcomeScreen" onclick="openMainMenu()" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-950/95 backdrop-blur-md cursor-pointer">
-        <canvas id="bgHeartsCanvas" class="absolute inset-0 pointer-events-none"></canvas>
-        <div class="relative z-10 text-center space-y-7">
-            <div class="w-32 h-32 mx-auto bg-gradient-to-tr from-rose-500 to-pink-500 rounded-full flex items-center justify-center shadow-2xl pulse-glow border-4 border-white/20"><i class="fa-solid fa-heart text-6xl text-white"></i></div>
-            <h1 class="font-fredoka text-5xl md:text-7xl font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-300 to-amber-200">Welcome to Love Adventure</h1>
-            <p class="text-rose-200 font-semibold text-lg">A single-player journey of love, combat and adventure</p>
-            <div class="inline-flex px-9 py-4 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-full font-fredoka font-bold text-xl shadow-lg"><i class="fa-solid fa-play mr-3"></i> CLICK THE SCREEN</div>
+    <div id="welcomeScreen" role="button" tabindex="0" aria-label="Enter Aethelos" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMainMenu();}" onclick="openMainMenu()" class="aeth-screen fixed inset-0 z-50 flex items-center justify-center p-6 cursor-pointer">
+        <div class="aeth-cloudfield" aria-hidden="true"></div><div class="aeth-sun" aria-hidden="true"></div>
+        <div class="aeth-title-content">
+            <div class="mb-6 text-amber-100/90 text-4xl drop-shadow-xl" aria-hidden="true"><i class="fa-solid fa-crown"></i></div>
+            <h1 class="aeth-title-mark font-fredoka">AETHELOS</h1>
+            <p class="aeth-title-sub mt-6 text-sm md:text-base font-bold">A noble realm above the clouds</p>
+            <p class="max-w-xl mx-auto mt-3 text-white/90 text-lg drop-shadow">Where ancient skies guard a new legend.</p>
+            <div class="inline-flex mt-10 px-8 py-4 rounded-full border border-amber-100/60 bg-slate-950/45 text-amber-50 font-fredoka font-bold text-lg shadow-2xl backdrop-blur-md"><i class="fa-solid fa-play mr-3 self-center"></i> ENTER AETHELOS</div>
+            <p class="mt-4 text-sm text-slate-100/80">Click or press Enter</p>
         </div>
     </div>
 
-    <main id="mainMenu" class="hidden w-full max-w-3xl bg-slate-900/95 rounded-3xl shadow-2xl p-6 md:p-10 border border-slate-700 my-auto">
-        <div class="text-center mb-7"><h2 class="font-fredoka text-4xl font-extrabold text-white">Love Adventure</h2><p class="text-slate-400 mt-2">Main Menu</p></div>
-        <div class="grid gap-3 max-w-md mx-auto">
-            <button onclick="startNewGameFlow()" class="menuBtn bg-gradient-to-r from-rose-500 to-pink-600">❤️ NEW GAME</button>
-            <button onclick="continueGameFlow()" class="menuBtn bg-slate-800">▶ CONTINUE</button>
-            <button onclick="openSettingsFromMenu()" class="menuBtn bg-slate-800">⚙ SETTINGS</button>
-            <button onclick="openCharacters()" class="menuBtn bg-slate-800">👤 CHARACTERS</button>
-            <button onclick="openMainStore()" class="menuBtn bg-slate-800">🛒 STORE</button>
+        <main id="mainMenu" class="hidden aeth-panel w-full max-w-3xl rounded-3xl p-6 md:p-10 my-auto">
+        <div class="absolute inset-0 aeth-cloudfield opacity-30" aria-hidden="true"></div>
+        <div class="relative z-10 text-center mb-8"><p class="aeth-gold text-xs tracking-[.4em] font-bold">THE SKYBOUND ADVENTURE</p><h2 class="font-fredoka text-5xl font-extrabold text-white mt-2">AETHELOS</h2><p class="text-slate-200/75 mt-2">Main Menu</p></div>
+        <div class="relative z-10 grid gap-3 max-w-md mx-auto">
+            <button onclick="startNewGameFlow()" class="menuBtn aeth-menu-button"><i class="fa-solid fa-compass mr-3 aeth-gold"></i>New Game</button>
+            <button onclick="continueGameFlow()" class="menuBtn aeth-menu-button"><i class="fa-solid fa-book-open mr-3 aeth-gold"></i>Continue</button>
+            <button onclick="openSettingsFromMenu()" class="menuBtn aeth-menu-button"><i class="fa-solid fa-sliders mr-3 aeth-gold"></i>Settings</button>
+            <button onclick="quitGame()" class="menuBtn aeth-menu-button"><i class="fa-solid fa-right-from-bracket mr-3 aeth-gold"></i>Quit game</button>
         </div>
-        <p class="text-center text-xs text-slate-500 mt-7">Choose New Game to create a new adventure. Continue loads one of your saved slots.</p>
+        <p class="relative z-10 text-center text-xs text-slate-300/70 mt-7">Choose New Game or continue your saved adventure.</p>
     </main>
 
-    <main id="characterScreen" class="hidden w-full max-w-5xl bg-slate-900/95 rounded-3xl shadow-2xl p-5 md:p-8 border border-slate-700 my-auto">
-        <div class="flex items-center justify-between mb-5 border-b border-slate-800 pb-4"><div><h2 class="font-fredoka text-3xl font-bold text-rose-400">Choose Your Character</h2><p class="text-sm text-slate-400">Your weapon is assigned automatically by your role.</p></div><button onclick="showMainMenu()" class="px-4 py-2 bg-slate-800 rounded-xl">MENU</button></div>
-        <div class="grid md:grid-cols-3 gap-4 mb-5">
-            <label class="bg-slate-800/70 p-3 rounded-xl"><span class="text-xs text-slate-400">Country</span><select id="countrySelect" onchange="renderRoleGrid()" class="w-full mt-1 bg-slate-950 text-white rounded-lg p-2"></select></label>
-            <label class="bg-slate-800/70 p-3 rounded-xl"><span class="text-xs text-slate-400">Character Name</span><input id="heroNameNew" maxlength="24" class="w-full mt-1 bg-slate-950 text-white rounded-lg p-2" value="Hero"></label>
-            <div class="bg-slate-800/70 p-3 rounded-xl"><span class="text-xs text-slate-400">Hero</span><div class="flex gap-2 mt-1"><button id="genderMaleNew" onclick="setNewGender('male')" class="flex-1 p-2 rounded-lg bg-blue-700 font-bold">♂ Male</button><button id="genderFemaleNew" onclick="setNewGender('female')" class="flex-1 p-2 rounded-lg bg-slate-700 font-bold">♀ Female</button></div></div>
+        <main id="characterScreen" class="hidden aeth-screen relative w-full max-w-6xl rounded-3xl p-5 md:p-8 mx-auto my-auto overflow-hidden">
+        <div class="aeth-cloudfield" aria-hidden="true"></div><div class="aeth-sun" aria-hidden="true"></div>
+        <div class="relative z-10 flex items-center justify-between mb-6">
+            <div><p class="aeth-gold text-xs tracking-[.35em] font-bold">AETHELOS</p><h2 class="font-fredoka text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg">Select Your Hero</h2><p class="text-white/80 mt-1">Choose the warrior who will begin your adventure.</p></div>
+            <button onclick="showMainMenu()" class="px-4 py-2 aeth-glass rounded-xl border border-white/20 text-white">MENU</button>
         </div>
-        <div id="roleGrid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
-        <div class="mt-5 p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-wrap items-center justify-between gap-3"><div><div class="text-xs text-slate-400">Selected</div><div id="selectedRoleInfo" class="text-white font-bold"></div><div id="cheatInfo" class="text-xs text-emerald-400 mt-1"></div></div><button onclick="beginSelectedCharacter()" class="px-7 py-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white font-fredoka font-bold">START ADVENTURE</button></div>
+        <div class="relative z-10 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <button id="heroCardMale" type="button" aria-pressed="true" onclick="selectAethelosHero('male')" onpointermove="tiltAethelosCard(event,this)" onpointerleave="resetAethelosCard(this)" class="aeth-card selected rounded-3xl p-4 text-left focus:outline-none focus:ring-2 focus:ring-amber-200">
+                <div class="aeth-card-art h-[340px] rounded-2xl flex items-end justify-center overflow-hidden"><img src="assets/images/art-01.webp" alt="Male warrior" class="h-full w-full object-contain object-bottom"></div>
+                <div class="relative z-10 flex items-center justify-between px-2 pt-4"><div><span class="aeth-gold text-xs uppercase tracking-[.28em]">The swordsman</span><h3 class="font-fredoka text-2xl font-bold text-white">Male Warrior</h3></div><span class="hero-check text-amber-200 text-2xl"><i class="fa-solid fa-circle-check"></i></span></div>
+            </button>
+            <button id="heroCardFemale" type="button" aria-pressed="false" onclick="selectAethelosHero('female')" onpointermove="tiltAethelosCard(event,this)" onpointerleave="resetAethelosCard(this)" class="aeth-card rounded-3xl p-4 text-left focus:outline-none focus:ring-2 focus:ring-amber-200">
+                <div class="aeth-card-art h-[340px] rounded-2xl flex items-end justify-center overflow-hidden"><img src="assets/images/art-02.webp" alt="Female warrior" class="h-full w-full object-contain object-bottom"></div>
+                <div class="relative z-10 flex items-center justify-between px-2 pt-4"><div><span class="aeth-gold text-xs uppercase tracking-[.28em]">The blade dancer</span><h3 class="font-fredoka text-2xl font-bold text-white">Female Warrior</h3></div><span class="hero-check text-slate-500 text-2xl"><i class="fa-regular fa-circle"></i></span></div>
+            </button>
+        </div>
+        <div class="relative z-10 flex flex-col sm:flex-row justify-center gap-3 mt-7">
+            <button onclick="beginSelectedCharacter()" class="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-300 to-yellow-600 text-slate-950 font-fredoka font-bold shadow-xl hover:brightness-110 transition"><i class="fa-solid fa-swords mr-2"></i>BEGIN ADVENTURE</button>
+            <button onclick="showMainMenu()" class="px-8 py-3 rounded-xl aeth-glass border border-white/20 text-white font-bold">BACK TO MENU</button>
+        </div>
     </main>
 
-    <main id="gameScreen" class="hidden w-full max-w-5xl flex-col items-center">
+        <main id="gameScreen" class="hidden w-full max-w-5xl flex-col items-center">
         <!-- STAGE 3.1: Top HUD Status Bar -->
         <div class="w-full bg-slate-900/90 backdrop-blur-md p-3 md:p-4 rounded-xl border border-slate-800 mb-3 flex flex-wrap items-center justify-between gap-2 text-xs md:text-sm">
             <div class="flex items-center gap-2 flex-wrap">
@@ -153,17 +188,13 @@
                 <div class="flex items-center gap-1.5 font-bold text-cyan-300 bg-cyan-950/50 px-3 py-1 rounded-lg border border-cyan-800/50"><span>💎</span><span id="hudDiamonds">0</span></div>
                 <div class="flex items-center gap-1.5 font-bold text-blue-300 bg-blue-950/50 px-3 py-1 rounded-lg border border-blue-800/50"><span>🔷</span><span id="hudGems">0</span></div>
                 <div class="flex items-center gap-4 flex-wrap">
-                <div class="flex items-center gap-1.5 font-bold text-rose-400 bg-rose-950/50 px-3 py-1 rounded-lg border border-rose-800/50">
-                    <i class="fa-solid fa-heart text-rose-500"></i>
-                    <span id="hudHearts">0</span> / 6
-                </div>
                 <div class="flex items-center gap-2 font-bold text-green-300 bg-green-950/50 px-3 py-1 rounded-lg border border-green-800/50 min-w-[150px]">
-                    <span>❤️ HP</span>
+                    <span>HP</span>
                     <div class="w-20 h-2.5 bg-slate-700 rounded-full overflow-hidden"><div id="hudHealthBar" class="h-full bg-green-500 rounded-full" style="width:100%"></div></div>
                     <span id="hudHealth">100</span><span class="ml-2 text-purple-300">ULT <b id="hudUltimate">0</b>%</span>
                 </div>
                 <div class="flex items-center gap-1.5 font-bold text-red-300 bg-red-950/50 px-3 py-1 rounded-lg border border-red-800/50">
-                    <i class="fa-solid fa-shield-heart text-red-400"></i>
+                    <i class="fa-solid fa-shield text-red-400"></i>
                     <span id="hudLives">4</span> / 4 LIVES
                 </div>
                 <div class="flex items-center gap-1.5 font-bold text-slate-300 bg-slate-800/60 px-3 py-1 rounded-lg">
@@ -179,13 +210,13 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <button onclick="openSaveGame()" class="px-3 py-1 bg-emerald-900/70 rounded-lg text-emerald-200 font-semibold">💾 SAVE</button><button onclick="toggleStore()" class="px-3 py-1 bg-blue-900/70 hover:bg-blue-800 rounded-lg text-blue-200 font-semibold transition"><i class="fa-solid fa-store"></i> STORE</button>
+                <button onclick="openSaveGame()" class="px-3 py-1 bg-emerald-900/70 rounded-lg text-emerald-200 font-semibold">💾 SAVE</button>
                     <button onclick="toggleSettings()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 font-semibold transition"><i class="fa-solid fa-gear"></i></button>
                 <button onclick="toggleAudio()" id="audioBtn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 font-semibold transition">
                     <i class="fa-solid fa-volume-high"></i>
                 </button>
                 <button onclick="returnToSetup()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition flex items-center gap-1">
-                    <i class="fa-solid fa-rotate-left"></i> RESTART
+                    <i class="fa-solid fa-users"></i> SELECT HERO
                 </button>
             </div>
         </div>
@@ -661,8 +692,8 @@
            STAGE 5.5: SCROLLING STAGE ENGINE (CAMERA, ARENAS, WEAPONS, ENEMIES, BOSS)
         --------------------------------------------------------------------- */
         const $ = id => document.getElementById(id);
-        let canvas, ctx, gameRunning = false, paused = false, levelTimeSeconds = 0, timerInterval = null, collectedHearts = 0;
-        const TOTAL_HEARTS = 6, VW = 900, GROUND = 430, WORLD_W = 5400;
+        let canvas, ctx, gameRunning = false, paused = false, levelTimeSeconds = 0, timerInterval = null;
+        const VW = 900, GROUND = 430, WORLD_W = 5400;
         const keys = { left: false, right: false, up: false, down:false, jump: false, run: false, sprint: false, action: false, attack: false, special:false };
         const DEFAULT_BINDS = { left: 'ArrowLeft', right: 'ArrowRight', up:'ArrowUp', down:'ArrowDown', jump: 'ShiftLeft', run: 'KeyR', sprint: 'ControlLeft', attack: 'Space', action: 'KeyE', special:'KeyQ' };
         let binds = { ...DEFAULT_BINDS };
@@ -735,10 +766,7 @@
             switches = []; // Removed red switch squares.
             // Keep the paths usable without the removed switches.
             bridges = [{ x: 280, y: 430, w: 70, h: 14, active: true }, { x: 560, y: 310, w: 40, h: 14, active: true }];
-            hearts = [
-                { x: 180, y: 280, collected: false }, { x: 340, y: 210, collected: false }, { x: 310, y: 390, collected: false },
-                { x: 500, y: 270, collected: false }, { x: 660, y: 190, collected: false }, { x: 810, y: 280, collected: false }
-            ];
+            hearts = [];
             particles = []; birds = []; archers = []; shots = []; projs = []; clashBursts = [];
             // Rooftop archer stages: stationary enemies on elevated platforms.
             archers = [
@@ -761,8 +789,8 @@
             bossDefeated = false; arena = null; stage2 = null; rescueState = null; stage2Health = 100; stage2DamageCooldown = 0; camX = 0; checkpoint = 60; atkCd = 0; swing = null; birdTimer = 150; invuln = 0; frame = 0; victoryCelebrating = false; victoryFrame = 0; clashBursts = []; lives = 5; gameOver = false;
             last = 0; acc = 0; paused = false; msgT = 0;
             if (victoryRaf) cancelAnimationFrame(victoryRaf);
-            collectedHearts = 0; levelTimeSeconds = 0;
-            $('hudHearts').innerText = 0; $('hudLives').innerText = lives; $('hudHeroName').innerText = heroPlayer.name; $('hudPartnerName').innerText = partnerGoal.name; updateHealthHUD();
+            levelTimeSeconds = 0;
+            $('hudLives').innerText = lives; $('hudHeroName').innerText = heroPlayer.name; $('hudPartnerName').innerText = partnerGoal.name; updateHealthHUD();
             $('gameOverModal').classList.add('hidden'); syncEconomyUI(); renderWeapons();
 
             if (timerInterval) clearInterval(timerInterval);
@@ -994,12 +1022,6 @@
                 });
                 keys.action = false;
             }
-            hearts.forEach(h => {
-                if (!h.collected && Math.hypot(heroPlayer.x - h.x, heroPlayer.y - h.y) < 25) {
-                    h.collected = true; collectedHearts++; $('hudHearts').innerText = collectedHearts; playSound('heart'); pop(h.x, h.y, 10);
-                }
-            });
-
             // Direct contact with an enemy also costs one life.
             if (invuln <= 0) {
                 for (const t of foeBoxes()) {
@@ -1199,8 +1221,6 @@
             bridges.forEach(br => { ctx.fillStyle = br.active ? '#f59e0b' : 'rgba(245,158,11,0.2)'; ctx.beginPath(); ctx.roundRect(br.x, br.y, br.w, br.h, 4); ctx.fill(); });
             hazards.forEach(hz => { ctx.save(); ctx.translate(hz.x, hz.y); ctx.rotate(hz.angle); ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(0, 0, hz.r, 0, 7); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore(); });
             switches.forEach(sw => { ctx.fillStyle = sw.activated ? '#10b981' : '#f43f5e'; ctx.fillRect(sw.x, sw.y, sw.w, sw.h); });
-            hearts.forEach(h => { if (!h.collected) { ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(h.x, h.y, 8, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '10px FontAwesome'; ctx.fillText('♥', h.x - 3.5, h.y + 3.5); } });
-
             gates.forEach(drawGate);
             drawBoss();
             birds.forEach(drawBird);
@@ -1471,7 +1491,6 @@
 
         function startGame() {
             stageNumber = 1; weaponLocked=false;
-            document.getElementById('setupContainer').classList.add('hidden');
             document.getElementById('gameScreen').classList.remove('hidden');
             document.getElementById('gameScreen').classList.add('flex');
 
@@ -1526,47 +1545,14 @@
         function returnToSetup() {
             stage2=null; rescueState=null; stageNumber=1; stage2Health=100; stage2DamageCooldown=0; victoryCelebrating = false;
             if (victoryRaf) cancelAnimationFrame(victoryRaf);
-            gameRunning = false;
-            clearInterval(timerInterval);
+            gameRunning = false; paused=false; clearInterval(timerInterval);
             document.getElementById('victoryModal').classList.add('hidden');
             document.getElementById('gameOverModal').classList.add('hidden');
-            document.getElementById('gameScreen').classList.add('hidden');
-            document.getElementById('gameScreen').classList.remove('flex');
-            document.getElementById('setupContainer').classList.remove('hidden');
+            newGender=playerGender==='female'?'female':'male';populateCharacterScreen();showOnly('characterScreen');
         }
-
-        // Splash Screen Background Hearts Animation
-        function initSplashBgCanvas() {
-            const bgCv = document.getElementById('bgHeartsCanvas');
-            if (!bgCv) return;
-            const bgCtx = bgCv.getContext('2d');
-            bgCv.width = window.innerWidth;
-            bgCv.height = window.innerHeight;
-
-            const floatingHearts = Array.from({ length: 25 }, () => ({
-                x: Math.random() * bgCv.width,
-                y: Math.random() * bgCv.height,
-                size: Math.random() * 12 + 8,
-                speed: Math.random() * 1 + 0.5,
-                opacity: Math.random() * 0.5 + 0.2
-            }));
-
-            function drawBg() {
-                bgCtx.clearRect(0,0,bgCv.width,bgCv.height);
-                floatingHearts.forEach(h => {
-                    h.y -= h.speed;
-                    if (h.y < -20) h.y = bgCv.height + 20;
-                    bgCtx.fillStyle = `rgba(244, 63, 94, ${h.opacity})`;
-                    bgCtx.font = `${h.size}px FontAwesome`;
-                    bgCtx.fillText('♥', h.x, h.y);
-                });
-                requestAnimationFrame(drawBg);
-            }
-            drawBg();
-        }
-
 
         /* =====================================================================
+           LOVE ADVENTURE 2.0 MENU        /* =====================================================================
            LOVE ADVENTURE 2.0 MENU / CHARACTER / SAVE / RPG SYSTEM
         ====================================================================== */
         const ROLE_DATA = {
@@ -1593,17 +1579,18 @@
         function writeSaveSlots(x){try{localStorage.setItem(SAVE_KEY,JSON.stringify(x));}catch(_){} }
         function showOnly(id){['welcomeScreen','mainMenu','characterScreen','setupContainer','gameScreen'].forEach(x=>{const e=$(x);if(e)e.classList.add('hidden');}); const e=$(id);if(e)e.classList.remove('hidden'); if(id==='gameScreen')e.classList.add('flex');}
         function openMainMenu(){initAudio();showOnly('mainMenu');}
-        function showMainMenu(){gameRunning=false;clearInterval(timerInterval);showOnly('mainMenu');}
-        function startNewGameFlow(){newGender=playerGender;if(!storeOwnsRole(selectedRole,newGender))selectedRole='warrior';cheatUltimate=false;populateCharacterScreen();showOnly('characterScreen');}
-        function setNewGender(g){newGender=g;if(!storeOwnsRole(selectedRole,g))selectedRole='warrior';document.getElementById('genderMaleNew').className=`flex-1 p-2 rounded-lg font-bold ${g==='male'?'bg-blue-700':'bg-slate-700'}`;document.getElementById('genderFemaleNew').className=`flex-1 p-2 rounded-lg font-bold ${g==='female'?'bg-pink-700':'bg-slate-700'}`;renderRoleGrid();}
-        function populateCharacterScreen(){const sel=$('countrySelect');sel.innerHTML=COUNTRIES.map(c=>`<option>${c}</option>`).join('');sel.value=localStorage.getItem('loveAdventureCountry')||'United States';$('heroNameNew').value='Hero';setNewGender(newGender);}
-        function renderRoleGrid(){const grid=$('roleGrid');if(!grid)return;const availableRoles=[...new Set([...STARTER_ROLES,...(progression[newGender==='male'?'ownedMaleRoles':'ownedFemaleRoles']||[])])];grid.innerHTML=availableRoles.filter(r=>ROLE_DATA[r]).map(r=>{const d=ROLE_DATA[r],a=roleAvatar(r,newGender);return `<button onclick="selectNewRole('${r}')" class="p-4 rounded-2xl text-left border-2 ${selectedRole===r?'border-rose-400 bg-rose-950/40':'border-slate-700 bg-slate-800/70'}"><div class="flex items-center gap-3"><canvas id="roleCv_${r}" width="60" height="70"></canvas><div><div class="text-white font-bold">${d.name}</div><div class="text-xs text-slate-400">${d.normal}</div><div class="text-xs text-amber-300 mt-1">Weapon: ${d.weapon}</div><div class="text-xs text-purple-300 mt-1">Ultimate: ${d.ultimate} • Power ${d.power}</div></div></div></button>`}).join('');setTimeout(()=>availableRoles.filter(r=>ROLE_DATA[r]).forEach(r=>{const c=$(`roleCv_${r}`);if(c)drawChibi3D(c.getContext('2d'),30,55,roleAvatar(r,newGender),{facing:'right',isActive:true})}),20);const d=ROLE_DATA[selectedRole];$('cheatInfo').innerText=($('countrySelect')?.value==='Morocco'&&($('heroNameNew')?.value||'').trim()==='Kaouthaar')?'CHEAT ACTIVE: Ultimate stays full.':'';$('selectedRoleInfo').innerText=`${d.name} • ${d.weapon.toUpperCase()} • Ultimate: ${d.ultimate} (${d.power} power)`;}
-        function selectNewRole(r){if(!ROLE_DATA[r]||!storeOwnsRole(r,newGender))return;selectedRole=r;renderRoleGrid();}
-        function beginSelectedCharacter(){const name=($('heroNameNew').value||'Hero').trim();const country=$('countrySelect').value;localStorage.setItem('loveAdventureCountry',country);playerGender=newGender;selectedRole=selectedRole;selectedHeroAvatar=roleAvatar(selectedRole,newGender);selectedHeroAvatar.name=name;selectedHeroAvatar.country=country;selectedPartnerAvatar=roleAvatar(selectedRole,newGender==='male'?'female':'male');selectedPartnerAvatar.name=`${ROLE_DATA[selectedRole].name} Partner`;weapon=ROLE_DATA[selectedRole].weapon;characterLevel=progression.characterLevels?.[newGender+'_'+selectedRole]||1;ultimateCharge=0;soulCounters={bird:0,archer:0,gate:0,boss:0};cheatUltimate=country==='Morocco'&&name==='Kaouthaar';saveProgress();startGame();}
-        function continueGameFlow(){const slots=loadSaveSlots();if(!slots.length){flash('No saved games yet.');return;}const wrap=$('saveSlots');wrap.innerHTML=slots.map((x,i)=>x?`<button onclick="loadSaveSlot(${i})" class="text-left p-4 bg-slate-800 hover:bg-slate-700 rounded-xl"><b class="text-white">SLOT ${i+1}</b><div class="text-sm text-slate-300">Stage ${x.stageNumber} • ${x.roleName||'Hero'} • ${x.gender}</div><div class="text-xs text-slate-500">${new Date(x.savedAt).toLocaleString()}</div></button>`:`<div class="p-4 bg-slate-950 rounded-xl text-slate-500">SLOT ${i+1} — Empty</div>`).join('');$('saveModal').classList.remove('hidden');$('saveModal').classList.add('flex');}
+        function showMainMenu(){gameRunning=false;paused=false;clearInterval(timerInterval);showOnly('mainMenu');}
+        function quitGame(){gameRunning=false;paused=true;if(timerInterval){clearInterval(timerInterval);timerInterval=null;}window.close();if(!window.closed)setTimeout(()=>alert('Your browser did not allow Aethelos to close this tab. Close the tab or window to exit.'),50);}
+        function startNewGameFlow(){newGender=playerGender==='female'?'female':'male';cheatUltimate=false;populateCharacterScreen();showOnly('characterScreen');}
+        function selectAethelosHero(gender){newGender=gender==='female'?'female':'male';const male=$('heroCardMale'),female=$('heroCardFemale');[[male,'male'],[female,'female']].forEach(([card,g])=>{const active=g===newGender;if(!card)return;card.classList.toggle('selected',active);card.setAttribute('aria-pressed',String(active));const check=card.querySelector('.hero-check');if(check){check.innerHTML=active?'<i class="fa-solid fa-circle-check"></i>':'<i class="fa-regular fa-circle"></i>';check.className='hero-check '+(active?'text-amber-200':'text-slate-500')+' text-2xl';}});}
+        function tiltAethelosCard(event,card){const r=card.getBoundingClientRect(),x=(event.clientX-r.left)/r.width-.5,y=(event.clientY-r.top)/r.height-.5;card.style.setProperty('--tilt-x',(x*9)+'deg');card.style.setProperty('--tilt-y',(-y*8)+'deg');}
+        function resetAethelosCard(card){card.style.setProperty('--tilt-x','0deg');card.style.setProperty('--tilt-y','0deg');}
+        function populateCharacterScreen(){selectAethelosHero(newGender);}
+        function beginSelectedCharacter(){playerGender=newGender==='female'?'female':'male';selectedRole='warrior';const heroName=playerGender==='female'?'Female Warrior':'Male Warrior';selectedHeroAvatar=roleAvatar('warrior',playerGender);selectedHeroAvatar.name=heroName;selectedHeroAvatar.country='Aethelos';selectedPartnerAvatar=roleAvatar('warrior',playerGender==='male'?'female':'male');selectedPartnerAvatar.name=playerGender==='male'?'Female Warrior':'Male Warrior';weapon=ROLE_DATA.warrior.weapon;characterLevel=progression.characterLevels?.[playerGender+'_warrior']||1;ultimateCharge=0;soulCounters={bird:0,archer:0,gate:0,boss:0};cheatUltimate=false;localStorage.setItem('loveAdventureHeroGender',playerGender);saveProgress();startGame();}
+        function continueGameFlow(){const slots=loadSaveSlots();if(!slots.length){alert('No saved adventure found. Start a New Game first.');return;}const wrap=$('saveSlots');wrap.innerHTML=slots.map((x,i)=>x?`<button onclick="loadSaveSlot(${i})" class="text-left p-4 bg-slate-800 hover:bg-slate-700 rounded-xl"><b class="text-white">SLOT ${i+1}</b><div class="text-sm text-slate-300">Stage ${x.stageNumber} • ${x.roleName||'Hero'} • ${x.gender}</div><div class="text-xs text-slate-500">${new Date(x.savedAt).toLocaleString()}</div></button>`:`<div class="p-4 bg-slate-950 rounded-xl text-slate-500">SLOT ${i+1} — Empty</div>`).join('');$('saveModal').classList.remove('hidden');$('saveModal').classList.add('flex');}
         function closeSaveModal(){$('saveModal').classList.add('hidden');$('saveModal').classList.remove('flex');}
         function saveCurrentSlot(i){const slots=loadSaveSlots();slots[i]={stageNumber,stage2:stageNumber===2?stage2:null,role:selectedRole,roleName:ROLE_DATA[selectedRole]?.name||selectedHeroAvatar.name,gender:playerGender,heroName:heroPlayer?.name||selectedHeroAvatar.name,country:selectedHeroAvatar.country,weapon,characterLevel,ultimateCharge,progression,selectedHeroAvatar,selectedPartnerAvatar,savedAt:Date.now()};while(slots.length<3)slots.push(null);writeSaveSlots(slots);flash(`Game saved to Slot ${i+1}`);closeSaveModal();}
-        function loadSaveSlot(i){const x=loadSaveSlots()[i];if(!x)return;playerGender=x.gender||'male';selectedRole=x.role||'warrior';selectedHeroAvatar=x.selectedHeroAvatar||roleAvatar(selectedRole,playerGender);selectedPartnerAvatar=x.selectedPartnerAvatar||roleAvatar(selectedRole,playerGender==='male'?'female':'male');weapon=x.weapon||ROLE_DATA[selectedRole].weapon;characterLevel=x.characterLevel||1;ultimateCharge=x.ultimateCharge||0;progression={...progression,...(x.progression||{})};closeSaveModal();startGame();if(x.stageNumber===2){stageNumber=2;initStage2();if(x.stage2)stage2=x.stage2;} }
+        function loadSaveSlot(i){const x=loadSaveSlots()[i];if(!x)return;playerGender=x.gender==='female'?'female':'male';selectedRole='warrior';selectedHeroAvatar=roleAvatar('warrior',playerGender);selectedHeroAvatar.name=x.heroName||(playerGender==='female'?'Female Warrior':'Male Warrior');selectedHeroAvatar.country='Aethelos';selectedPartnerAvatar=roleAvatar('warrior',playerGender==='male'?'female':'male');selectedPartnerAvatar.name=playerGender==='male'?'Female Warrior':'Male Warrior';weapon='sword';characterLevel=x.characterLevel||1;ultimateCharge=x.ultimateCharge||0;progression={...progression,...(x.progression||{})};localStorage.setItem('loveAdventureHeroGender',playerGender);closeSaveModal();startGame();if(x.stageNumber===2){stageNumber=2;initStage2();if(x.stage2)stage2=x.stage2;} }
         function openSaveGame(){const wrap=$('saveSlots'),slots=loadSaveSlots();const arr=[...slots,null,null,null].slice(0,3);wrap.innerHTML=arr.map((x,i)=>x?`<button onclick="saveCurrentSlot(${i})" class="text-left p-4 bg-slate-800 rounded-xl"><b>SLOT ${i+1}</b><div class="text-xs text-slate-400">Overwrite ${x.roleName||'Hero'} • Stage ${x.stageNumber}</div></button>`:`<button onclick="saveCurrentSlot(${i})" class="text-left p-4 bg-emerald-950/40 border border-emerald-700 rounded-xl"><b>SLOT ${i+1}</b><div class="text-xs text-emerald-300">EMPTY — SAVE HERE</div></button>`).join('');$('saveModal').classList.remove('hidden');$('saveModal').classList.add('flex');}
         function openSettingsFromMenu(){paused=true;toggleSettings();}
         function openMainStore(){toggleStore();}
@@ -1678,7 +1665,7 @@
         function saveBossAndStageProgress(){saveProgress();}
         const baseRestartLevelV2=restartLevelBase;
         function restartLevel(){if(stageNumber===2&&stage2){stage2Health=100;stage2DamageCooldown=0;heroPlayer.x=180;heroPlayer.y=180;gameOver=false;gameRunning=true;paused=false;$('gameOverModal').classList.add('hidden');requestAnimationFrame(gameLoop);return;}baseRestartLevelV2();}
-        function returnToSetup(){stage2=null;rescueState=null;stageNumber=1;gameRunning=false;gameOver=false;paused=false;clearInterval(timerInterval);victoryCelebrating=false;if(victoryRaf)cancelAnimationFrame(victoryRaf);Object.keys(keys).forEach(k=>keys[k]=false);['gameOverModal','victoryModal','storeModal','settingsModal','saveModal'].forEach(id=>{const modal=$(id);if(modal){modal.classList.add('hidden');if(id!=='gameOverModal'&&id!=='victoryModal')modal.classList.remove('flex');}});showOnly('mainMenu');}
+        function returnToSetup(){stage2=null;rescueState=null;stageNumber=1;gameRunning=false;gameOver=false;paused=false;clearInterval(timerInterval);victoryCelebrating=false;if(victoryRaf)cancelAnimationFrame(victoryRaf);Object.keys(keys).forEach(k=>keys[k]=false);['gameOverModal','victoryModal','storeModal','settingsModal','saveModal'].forEach(id=>{const modal=$(id);if(modal){modal.classList.add('hidden');if(id!=='gameOverModal'&&id!=='victoryModal')modal.classList.remove('flex');}});newGender=playerGender==='female'?'female':'male';populateCharacterScreen();showOnly('characterScreen');}
         function equipStoreRole(r,g){
             if(!ROLE_DATA[r]||!['male','female'].includes(g)||!storeOwnsRole(r,g)){flash('Buy this character first.');return;}
             if(gameRunning){flash('Return to the menu to select a different character.');return;}
@@ -1699,7 +1686,7 @@
         const baseEnterStage2V2=enterStage2TopViewBase;
         function enterStage2TopView(){baseEnterStage2V2();setTimeout(()=>openSaveGame(),300);}
         window.onload = function() {
-            bindControls(); refreshSettings(); renderWeapons(); initSplashBgCanvas();
+            bindControls(); refreshSettings(); renderWeapons();
             const rg=document.getElementById('storeRedGems'); if(!rg){const e=document.createElement('span');e.id='storeRedGems';e.className='bg-red-950 px-3 py-2 rounded-lg';e.innerHTML='🔴 <b>0</b>';document.querySelector('#storeModal .flex.gap-2.flex-wrap.mb-5')?.appendChild(e);}
             renderStore(); syncEconomyUI();
         };
