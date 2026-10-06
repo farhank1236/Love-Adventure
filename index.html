@@ -268,7 +268,7 @@
                 <i class="fa-solid fa-skull-crossbones"></i>
             </div>
             <h2 class="font-fredoka text-3xl font-extrabold text-white mb-2">Game Over</h2>
-            <p id="gameOverText" class="text-red-300 font-bold text-sm mb-6">You lost all 5 lives. Restart and try again!</p>
+            <p id="gameOverText" class="text-red-300 font-bold text-sm mb-6">You ran out of health. Restart the stage or try again!</p>
             <button onclick="restartLevel()" class="w-full py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-fredoka font-bold rounded-xl shadow-lg transition">
                 <i class="fa-solid fa-rotate-right mr-1"></i> RESTART GAME
             </button>
@@ -758,7 +758,7 @@
             last = 0; acc = 0; paused = false; msgT = 0;
             if (victoryRaf) cancelAnimationFrame(victoryRaf);
             collectedHearts = 0; levelTimeSeconds = 0;
-            $('hudHearts').innerText = 0; $('hudLives').innerText = lives; $('hudHeroName').innerText = heroPlayer.name; $('hudPartnerName').innerText = partnerGoal.name; updateHealthHUD();
+            $('hudHearts').innerText = 0; updateHealthHUD(); $('hudHeroName').innerText = heroPlayer.name; $('hudPartnerName').innerText = partnerGoal.name; updateHealthHUD();
             $('gameOverModal').classList.add('hidden'); syncEconomyUI(); renderWeapons();
 
             if (timerInterval) clearInterval(timerInterval);
@@ -79663,7 +79663,7 @@ function createWarriorEffects(THREE,scene,rig){
 
 </script>
 <script src="assets/viewer/enemy-rig.js?v=14"></script>
-<script src="assets/viewer/enemy-game.js?v=14">
+<script src="assets/viewer/enemy-game.js?v=14"></script>
 <script>
 (() => {
  const maxHP=100;
@@ -79696,7 +79696,6 @@ function createWarriorEffects(THREE,scene,rig){
  window.LoveAdventureHealth={maxPlayerHP:maxHP,enemyHP:{ranged:40,standard:60,heavy:200,boss:500},damagePlayer:applyPlayerDamage};
  updateHealthHUD();
 })();
-</script>
 </script>
 </body>
 </html>
