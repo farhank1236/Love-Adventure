@@ -35,16 +35,16 @@ const { chromium } = require('playwright');
                     check(male.bones.every((b, i) => b.quaternion.angleTo(first[i].q) < 1e-5 && b.position.distanceTo(first[i].p) < 1e-6), 'Male locomotion has a continuous loop: ' + clip);
                 }
             }
-            for (let i = 1; i < 5; i++) {
+            for (let i = 1; i < 4; i++) {
                 male.sample('Attack' + i, male.channels['Attack' + i].duration);
                 const end = male.bones.map(b => ({ q: b.quaternion.clone(), p: b.position.clone() }));
                 male.sample('Attack' + (i + 1), 0);
                 check(male.bones.every((b, j) => b.quaternion.angleTo(end[j].q) < 1e-5 && b.position.distanceTo(end[j].p) < 1e-5), 'Male cuts flow through a shared boundary');
             }
-            male.sample('Combo', .06); const planted = male.byName.LFoot.getWorldPosition(new THREE.Vector3());
+            male.sample('Combo', .06); const planted = male.byName.RFoot.getWorldPosition(new THREE.Vector3());
             male.sample('Combo', .60);
-            check(planted.distanceTo(male.byName.LFoot.getWorldPosition(new THREE.Vector3())) < .002, 'Male supporting foot stays planted');
-            male.sample('Combo', 3.55); check(male.mana.visible && male.aura.visible, 'Male finisher has blade and body energy');
+            check(planted.distanceTo(male.byName.RFoot.getWorldPosition(new THREE.Vector3())) < .002, 'Male supporting foot stays planted');
+            male.sample('Combo', 2.70); check(male.mana.visible && male.aura.visible, 'Male finisher has blade and body energy');
             male.sample('Idle', 0); check(!male.mana.visible && !male.aura.visible, 'Male attack energy clears on idle');
             startNewGameFlow(); setNewGender('male'); await beginSelectedCharacter(); paused = true;
             function setup() {
@@ -53,14 +53,14 @@ const { chromium } = require('playwright');
                 boss.active = false; bossDefeated = true; boss.swords = []; birdTimer = 9999;
                 heroPlayer.x = 100; heroPlayer.y = 412; heroPlayer.vy = 0; heroPlayer.isGrounded = true; heroPlayer.facing = 'right'; invuln = 0;
             }
-            setup(); check(WarriorCombat.cuts.length === 5, 'Male gameplay uses five cuts');
+            setup(); check(WarriorCombat.cuts.length === 4, 'Male gameplay uses four cuts');
             const originalTargets = combatTargets;
             const target = { x: heroPlayer.x + 60, y: heroPlayer.y, hp: 10, flash: 0, dead: false };
             combatTargets = () => [{ o: target, k: 'monster' }];
             const originX = heroPlayer.x;
-            for (let i = 0; i < 5; i++) { keys.attack = true; updatePhysics(); keys.attack = false; updatePhysics(); }
+            for (let i = 0; i < 4; i++) { keys.attack = true; updatePhysics(); keys.attack = false; updatePhysics(); }
             for (let i = 0; i < 130; i++) { target.flash = 0; target.x = heroPlayer.x + 60; updatePhysics(); }
-            check(target.hp === 4, 'Five male presses deliver five hits and a stronger finisher');
+            check(target.hp === 5, 'Four male presses deliver four hits and a stronger finisher');
             check(Math.abs(heroPlayer.x - originX - 47.3) < .1, 'Male advancing combo travels the same gameplay distance');
             combatTargets = originalTargets;
             setup(); const low = { k: 'wave', x: heroPlayer.x + 4, y: heroPlayer.y + 16, vx: 0, vy: 0, r: 12, age: 0 };

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Retarget the approved female movement set to the original male warrior.
+"""Retarget the shared female movement set to the original male warrior.
 
-Preserves geometry, textures, bind transforms and skin weights. Uses the shared
+Preserves body geometry and textures; repairs joint placement and skin transitions. Uses the shared
 animation recipe, adapting arm axes and solving foot plants for male proportions.
 """
 import argparse
@@ -36,6 +36,8 @@ def main():
     args = parser.parse_args()
     files, g, binary = read_model('male')
     _, female, _ = read_model('female')
+    import warrior_repairs
+    warrior_repairs.apply(g,binary,'male')
     nodes = {n['name']: n for n in g['nodes']}
     source_nodes = {n['name']: n for n in female['nodes']}
     count_bones = len(g['skins'][0]['joints'])
@@ -66,14 +68,15 @@ def main():
         a.pop('min', None)
         a.pop('max', None)
 
-    durations = {'Idle': 3., 'Walk': .9, 'Run': .72, 'Sprint': .62, 'Jump': 1.12, 'Fall': .6, 'Land': .25, 'Stop': .25, 'Turn': .3, 'Combo': 4.05}
-    durations.update({f'Attack{i+1}': motion.ENDS[i]-motion.STARTS[i] for i in range(5)})
-    old = {a['name']: a for a in g['animations']} if g.get('extras', {}).get('revision') in ['MALE_BODY_AND_SWORD_V11','MALE_BODY_AND_SWORD_V12'] else {}
+    durations = {'Idle': 3., 'Walk': .9, 'Run': .72, 'Sprint': .62, 'Jump': 1.12, 'Fall': .6, 'Land': .25, 'Stop': .25, 'Turn': .3, 'Combo': 3.25}
+    durations.update({f'Attack{i+1}': motion.ENDS[i]-motion.STARTS[i] for i in range(4)})
+    old = {a['name']: a for a in g['animations']} if g.get('extras', {}).get('revision') in ['MALE_BODY_AND_SWORD_V11','MALE_BODY_AND_SWORD_V12','MALE_BODY_AND_SWORD_V13'] else {}
     animations = []
     for name, duration in durations.items():
         count = math.ceil(duration*60)+1
         times = [i*duration/(count-1) for i in range(count)]
         previous = old.get(name)
+        if previous and g['accessors'][previous['samplers'][0]['input']]['count'] != count: previous=None
         reuse = {(c['target']['node'], c['target']['path']): previous['samplers'][c['sampler']] for c in previous['channels']} if previous else {}
         ti = next(iter(reuse.values()))['input'] if reuse else accessor(times, 'SCALAR')
         write(ti, times)
@@ -83,9 +86,7 @@ def main():
         attack = name == 'Combo' or name.startswith('Attack')
         for t in times:
             full_t = t if name == 'Combo' or not attack else motion.STARTS[int(name[-1])-1]+t
-            pose = motion.authored(name, t)
-            if attack:
-                pose = motion.grounded_attack_pose(g, pose, full_t, scale)
+            pose,legs = motion.resolved_pose(g,name,t,scale)
             source_world, target_world, local = {}, {}, {}
             authored_qs = motion.attack_rotations(full_t) if attack else {}
             for i, node in enumerate(g['nodes'][:count_bones]):
@@ -97,8 +98,8 @@ def main():
                 # Retarget limb bind axes in world space, then recover local joint rotations.
                 target_world[i] = motion.qmul(source_world[i], basis.get(bone_name, (0, 0, 0, 1)))
                 local[bone_name] = motion.qmul(motion.inverse(target_world[parent]), target_world[i]) if parent is not None else target_world[i]
-            if attack:
-                local.update(motion.attack_legs(g, pose, full_t, scale))
+            local.update(legs)
+            local['Sword']=(0,0,0,1)
             positions = {}
             for node in g['nodes'][:count_bones]:
                 pos = list(node['translation'])
@@ -120,8 +121,10 @@ def main():
                 animation['samplers'].append({'input': ti, 'output': oi, 'interpolation': 'LINEAR'})
         animations.append(animation)
     g['animations'] = animations
-    g.setdefault('extras', {}).update(revision='MALE_BODY_AND_SWORD_V12', gender='male', swordTip=male_tip, motionScale=scale,
-                                     combatNote='Grounded body rhythm and pivots retargeted to male proportions; approved blade orientation preserved')
+    import warrior_repairs
+    warrior_repairs.apply(g,binary,'male')
+    g.setdefault('extras', {}).update(revision='MALE_BODY_AND_SWORD_V13', gender='male', motionScale=scale, gaitStride=motion.GAIT_STRIDE,
+                                     combatNote='Four directional cuts, repaired knee weights, trajectory-based locomotion and rigid grip')
     g['buffers'][0]['byteLength'] = len(binary)
     header = json.dumps(g, separators=(',', ':')).encode()
     header += b' '*((-len(header)) % 4)

@@ -1,0 +1,57 @@
+{
+  "female": {
+    "tip": [
+      -0.253,
+      -0.366,
+      0.176
+    ],
+    "grip": [
+      -0.191,
+      0.511,
+      0.008
+    ],
+    "bladeMax": 0.4830200143316451,
+    "texture": "069ccce63a64a6db9d1f382f4d0a80ffaea0f7732036e37719a88fd01998b92c",
+    "meshes": [
+      {
+        "NORMAL": "7db1d82983d48227555cb8cf3838527c010b80c2b7944f626b1d52cd6b5844ef",
+        "TEXCOORD_0": "063577f1fceba8d7e205cf47d054674436113d57f9f8b30a99a229568e354a45",
+        "immutablePosition": "3dd9383e271d590c96343d013922a7dc626f2f50fb86fe4fa41e522c37513564",
+        "indices": "d87027fa773ad420c5e2e03a313bc83c1572440437e705bc304ea852413f01f2"
+      },
+      {
+        "NORMAL": "a6d41fa3c9d26525c4b7f8b2f19430ed50d92b61f39e90c3211b7f00b95648dd",
+        "immutablePosition": "797ea46cce5642f6e56ca18eacec47669e1198343b50338149089453b22afe81",
+        "indices": "28e93ecc027f58f14853896a70abaea2d00f8c1a69a3ea52bef89ae89604e3ab"
+      },
+      {
+        "NORMAL": "9219fc5a7352fc888ed4bba03f79c9054f0873b7221dc5ddb0b427029d3b3f21",
+        "TEXCOORD_0": "4b07d9f866d5bdae19ccde5fe17946e9ab2fcbb276a0dcb538fc9a2ae8c1e335",
+        "immutablePosition": "e37fe8356defa25f8e34f2a8ce61417f6274f91c00e1811a23a32be75557fcf4",
+        "indices": "4b179ae8d804ebfa770b459aebd70ad86f0fb6224de9670689a5dcbaebdfb1c0"
+      }
+    ]
+  },
+  "male": {
+    "tip": [
+      0.079,
+      -0.445,
+      0.474
+    ],
+    "grip": [
+      -0.197,
+      0.562,
+      0.247
+    ],
+    "bladeMax": 0.668630383639966,
+    "texture": "a1a59a56abe6f175f42298b776e5e65a179c60e6a3aebffc17a3ba4ba49d3794",
+    "meshes": [
+      {
+        "NORMAL": "68dc83c7d98789184c990ef61cdfca6fee924252b706254ab3e68f7be5d012ba",
+        "TEXCOORD_0": "8c6ff14e4c3e8f0fc3bfa57e19a3f3994c2decb9f4d0612d7d89ee1f3ca31868",
+        "immutablePosition": "b6d5339cbb7dcd2ed2d57a4ce9053ae52b4bcfa92ff8ef027f74bf240eed9db7",
+        "indices": "1754b652060c116c8d45a1c0d2d7d63dfb3b3250debceb0cb0e71b154be79338"
+      }
+    ]
+  }
+}

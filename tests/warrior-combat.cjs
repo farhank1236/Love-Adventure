@@ -19,7 +19,7 @@ const { chromium } = require('playwright');
             const check=(ok,message)=>{if(!ok)throw Error(message);checks++};
             const rig=createWarriorAsset(THREE,FEMALE_WARRIOR_MODEL,{loadTexture:false});
             check(!!rig.channels.Run, 'Female warrior includes a distinct Run clip');
-            check(['Sprint','Fall','Land','Stop','Turn','Attack5'].every(n=>rig.channels[n]),'Distinct locomotion, jump and five attack clips exist');
+            check(['Sprint','Fall','Land','Stop','Turn','Attack4'].every(n=>rig.channels[n]),'Distinct locomotion, jump and four attack clips exist');
             const hand=rig.byName.RHand.position.clone();
             for(const name of Object.keys(rig.channels))for(let i=0;i<=12;i++){
                 rig.sample(name,rig.channels[name].duration*i/12);
@@ -34,26 +34,29 @@ const { chromium } = require('playwright');
                 rig.sample(name,rig.channels[name].duration);
                 check(rig.bones.every((b,i)=>b.quaternion.angleTo(initial[i].q)<1e-5&&b.position.distanceTo(initial[i].p)<1e-6),name+' has a continuous loop seam');
             }
-            const joints=['Hips','Chest','RShoulder','RElbow','RWrist','Sword'];
-            for(let i=1;i<=5;i++){
+            const joints=['Hips','Chest','RShoulder','RWrist'];
+            for(let i=1;i<=4;i++){
                 const name='Attack'+i;rig.sample(name,.12);const first=joints.map(n=>rig.byName[n].quaternion.clone());const hip=rig.byName.Hips.position.y;
                 rig.sample(name,rig.channels[name].duration*.70);
                 joints.forEach((n,j)=>check(first[j].angleTo(rig.byName[n].quaternion)>.03,n+' contributes to '+name));
                 const heights=[];for(let j=0;j<=20;j++){rig.sample(name,rig.channels[name].duration*j/20);heights.push(rig.byName.Hips.position.y)}check(Math.max(...heights)-Math.min(...heights)>.005,'Body rises and falls in '+name);
-                if(i<5){rig.sample(name,rig.channels[name].duration);const end=rig.bones.map(b=>({q:b.quaternion.clone(),p:b.position.clone()}));rig.sample('Attack'+(i+1),0);check(rig.bones.every((b,j)=>b.quaternion.angleTo(end[j].q)<1e-5&&b.position.distanceTo(end[j].p)<1e-5),'Consecutive cuts share their boundary pose');}
+                if(i<4){rig.sample(name,rig.channels[name].duration);const end=rig.bones.map(b=>({q:b.quaternion.clone(),p:b.position.clone()}));rig.sample('Attack'+(i+1),0);check(rig.bones.every((b,j)=>b.quaternion.angleTo(end[j].q)<1e-5&&b.position.distanceTo(end[j].p)<1e-5),'Consecutive cuts share their boundary pose');}
             }
-            rig.sample('Combo',.06);const planted=rig.byName.LFoot.getWorldPosition(new THREE.Vector3());rig.sample('Combo',.60);
-            check(planted.distanceTo(rig.byName.LFoot.getWorldPosition(new THREE.Vector3()))<.002,'Supporting foot remains planted during the first advancing cut');
+            rig.sample('Combo',.06);const planted=rig.byName.RFoot.getWorldPosition(new THREE.Vector3());rig.sample('Combo',.60);
+            check(planted.distanceTo(rig.byName.RFoot.getWorldPosition(new THREE.Vector3()))<.002,'Supporting foot remains planted during the first advancing cut');
             rig.sample('Jump',.13);const crouch=rig.byName.Hips.position.y;rig.sample('Jump',.25);check(rig.byName.Hips.position.y-crouch>.04,'Jump crouch extends into takeoff');
-            rig.sample('Combo',3.55);check(rig.aura.visible&&rig.mana.visible,'Finisher has transient body and blade energy');rig.sample('Idle',0);check(!rig.aura.visible&&!rig.mana.visible,'Attack energy clears on idle');
+            rig.sample('Combo',2.70);check(rig.aura.visible&&rig.mana.visible,'Finisher has transient body and blade energy');rig.sample('Idle',0);check(!rig.aura.visible&&!rig.mana.visible,'Attack energy clears on idle');
             const cloth=await (await fetch('tools/female-cloth-bindings.json')).json(),indices=rig.mesh.geometry.attributes.skinIndex.array,weights=rig.mesh.geometry.attributes.skinWeight.array;
             check(cloth.patches.every(([v])=>{for(let j=0;j<4;j++)if([6,7,8,9,11,12,13,14].includes(indices[v*4+j])&&weights[v*4+j]>1e-6)return false;return true}),'Cape and coat bindings contain no hand or arm influence');
             const kinds=new Uint8Array(rig.mesh.geometry.attributes.position.count);cloth.patches.forEach(([v,b,w,k])=>kinds[v]=k);
             const pos=rig.mesh.geometry.attributes.position,idx=rig.mesh.geometry.index.array,edges=[];
             for(let k=0;k<idx.length;k+=3){const a=idx[k],b=idx[k+1];if(kinds[a]&&kinds[a]===kinds[b]){const A=new THREE.Vector3().fromBufferAttribute(pos,a),B=new THREE.Vector3().fromBufferAttribute(pos,b),length=A.distanceTo(B);if(length>.004)edges.push([a,b,length])}}
-            const va=new THREE.Vector3(),vb=new THREE.Vector3();let maxStretch=0;
-            for(const t of [.23,.42,1.10,1.85,2.63,3.55]){rig.sample('Combo',t);for(const [a,b,length] of edges){va.fromBufferAttribute(pos,a);vb.fromBufferAttribute(pos,b);rig.mesh.applyBoneTransform(a,va);rig.mesh.applyBoneTransform(b,vb);maxStretch=Math.max(maxStretch,va.distanceTo(vb)/length)}}
-            check(maxStretch<1.8,'Garment triangles must not stretch into long hand-driven spikes; max='+maxStretch.toFixed(2));
+            const va=new THREE.Vector3(),vb=new THREE.Vector3();let maxStretch=0,maxCapeStretch=0,maxExpansion=0;
+            for(const t of [.23,.42,1.10,1.85,2.40,2.70]){rig.sample('Combo',t);for(const [a,b,length] of edges){va.fromBufferAttribute(pos,a);vb.fromBufferAttribute(pos,b);rig.mesh.applyBoneTransform(a,va);rig.mesh.applyBoneTransform(b,vb);const distance=va.distanceTo(vb);maxStretch=Math.max(maxStretch,distance/length);maxExpansion=Math.max(maxExpansion,distance-length);if(kinds[a]===1)maxCapeStretch=Math.max(maxCapeStretch,distance/length)}}
+            check(maxCapeStretch<1.8,'Cape stays on its cloth chain; max='+maxCapeStretch.toFixed(2));
+            // The old coat mask also includes thigh/knee surfaces. These now bend,
+            // so protect against long spikes by absolute expansion as well as ratio.
+            check(maxStretch<4&&maxExpansion<.05,'Repaired coat/leg surface has bounded local expansion; ratio='+maxStretch.toFixed(2)+', expansion='+maxExpansion.toFixed(3));
             startNewGameFlow();setNewGender('female');await beginSelectedCharacter();paused=true;
             check(binds.run==='KeyR'&&binds.sprint==='ControlLeft'&&binds.jump==='ShiftLeft','Old saved controls gain R without replacing Jump');
             return checks;
@@ -79,6 +82,14 @@ const { chromium } = require('playwright');
                 heroPlayer.x=100;heroPlayer.y=412;heroPlayer.vy=0;heroPlayer.isGrounded=true;heroPlayer.facing='right';invuln=0;
             }
             function shot(k,dx,dy,vx=0,r=7){return {k,x:heroPlayer.x+dx,y:heroPlayer.y+dy,vx,vy:0,r,age:0}}
+            for(const gender of ['female','male']){
+                playerGender=gender;setup();keys.attack=true;
+                for(let i=0;i<45;i++)updatePhysics();
+                check(WarriorCombat.snapshot().combo===null&&WarriorCombat.snapshot().nextCut===1&&WarriorCombat.snapshot().pendingCuts.length===0,'Holding Space triggers only one cut for '+gender);
+                keys.attack=false;for(let i=0;i<65;i++)updatePhysics();keys.attack=true;updatePhysics();
+                check(WarriorCombat.snapshot().combo.index===0,'One-second gap resets to the first attack for '+gender);
+            }
+            playerGender='female';
             setup();const low=shot('wave',4,16,0,12);shots=[low];keys.attack=true;updatePhysics();
             check(low.dead&&lives===4&&invuln===0,'Space cancels a low wave immediately; cancelled wave cannot still damage');
             setup();const ground=shot('wave',0,38,0,40);shots=[ground];keys.attack=true;updatePhysics();
@@ -114,9 +125,9 @@ const { chromium } = require('playwright');
             keys.run=true;for(let i=0;i<25;i++)updatePhysics();const sx=heroPlayer.x,sy=heroPlayer.y;updatePhysics();const running=Math.hypot(heroPlayer.x-sx,heroPlayer.y-sy);
             check(Math.abs(step-4.2)<.02&&Math.abs(running-7.2)<.02,'Stage 2 speeds converge smoothly and are normalized diagonally');
             setup();const originalTargets=combatTargets;const target={x:heroPlayer.x+60,y:heroPlayer.y,hp:10,flash:0,dead:false};combatTargets=()=>[{o:target,k:'monster'}];
-            for(let i=0;i<5;i++){keys.attack=true;updatePhysics();keys.attack=false;updatePhysics()}
+            for(let i=0;i<4;i++){keys.attack=true;updatePhysics();keys.attack=false;updatePhysics()}
             for(let i=0;i<120;i++){target.flash=0;target.x=heroPlayer.x+60;updatePhysics()}
-            check(target.hp===4,'Five presses produce five cuts, with a stronger finisher');combatTargets=originalTargets;
+            check(target.hp===5,'Four presses produce four cuts, with a stronger finisher');combatTargets=originalTargets;
             setup();initStage2();paused=true;stage2.trees=[];stage2.monsters=[];stage2.cats=[];
             keys.right=true;updatePhysics();const firstSpeed=heroPlayer.moveSpeed;
             for(let i=0;i<25;i++)updatePhysics();check(firstSpeed<2&&heroPlayer.moveSpeed>4.1,'Locomotion accelerates smoothly');

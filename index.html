@@ -2089,23 +2089,23 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 })();
 
 </script>
-<div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">R run · Ctrl sprint · Space attack · Five-hit combo</div>
+<div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">R run · Ctrl sprint · Space attack · Four-hit combo</div>
 <script>window.LoveAdventureModelParts={male:[],female:[]};</script>
-<script src="assets/models/male-01.js?v=12"></script>
-<script src="assets/models/male-02.js?v=12"></script>
-<script src="assets/models/male-03.js?v=12"></script>
-<script src="assets/models/male-04.js?v=12"></script>
-<script src="assets/models/male-05.js?v=12"></script>
-<script src="assets/models/male-06.js?v=12"></script>
-<script src="assets/models/male-07.js?v=12"></script>
-<script src="assets/models/female-01.js?v=12"></script>
-<script src="assets/models/female-02.js?v=12"></script>
-<script src="assets/models/female-03.js?v=12"></script>
-<script src="assets/models/female-04.js?v=12"></script>
-<script src="assets/models/female-05.js?v=12"></script>
-<script src="assets/models/female-06.js?v=12"></script>
-<script src="assets/models/female-07.js?v=12"></script>
-<script src="assets/models/female-08.js?v=12"></script>
+<script src="assets/models/male-01.js?v=13"></script>
+<script src="assets/models/male-02.js?v=13"></script>
+<script src="assets/models/male-03.js?v=13"></script>
+<script src="assets/models/male-04.js?v=13"></script>
+<script src="assets/models/male-05.js?v=13"></script>
+<script src="assets/models/male-06.js?v=13"></script>
+<script src="assets/models/male-07.js?v=13"></script>
+<script src="assets/models/female-01.js?v=13"></script>
+<script src="assets/models/female-02.js?v=13"></script>
+<script src="assets/models/female-03.js?v=13"></script>
+<script src="assets/models/female-04.js?v=13"></script>
+<script src="assets/models/female-05.js?v=13"></script>
+<script src="assets/models/female-06.js?v=13"></script>
+<script src="assets/models/female-07.js?v=13"></script>
+<script src="assets/models/female-08.js?v=13"></script>
 <script>
 
 const THREE=(()=>{const exports={};const module={exports};
@@ -79574,10 +79574,10 @@ function createWarriorAsset(THREE,encoded,{loadTexture=true}={}){
  const restPose=bones.map(b=>({p:b.position.clone(),q:b.quaternion.clone()}));
  const qa=new THREE.Quaternion(),qb=new THREE.Quaternion(),v3=new THREE.Vector3();let textureReady=Promise.resolve();
  if(loadTexture){const image=g.images[0],view=g.bufferViews[image.bufferView],url=URL.createObjectURL(new Blob([new Uint8Array(bytes.buffer,start+view.byteOffset,view.byteLength)],{type:image.mimeType}));textureReady=new Promise((resolve,reject)=>new THREE.TextureLoader().load(url,texture=>{texture.flipY=false;texture.colorSpace=THREE.SRGBColorSpace;material.map=texture;material.needsUpdate=true;URL.revokeObjectURL(url);resolve()},undefined,e=>{URL.revokeObjectURL(url);reject(e)}))}
- function sample(name,time){bones.forEach((b,i)=>{b.position.copy(restPose[i].p);b.quaternion.copy(restPose[i].q)});const clip=channels[name]||channels.Idle,t=Math.max(0,Math.min(time,clip.duration));for(const ch of clip.channels){const a=Math.min(ch.t.length-2,Math.floor(t/clip.duration*(ch.t.length-1))),b=a+1,u=(t-ch.t[a])/(ch.t[b]-ch.t[a]),bone=bones[ch.node];if(ch.path==='rotation'){qa.fromArray(ch.v,a*4).normalize();qb.fromArray(ch.v,b*4).normalize();bone.quaternion.copy(qa).slerp(qb,u)}else bone.position.fromArray(ch.v,a*3).lerp(v3.fromArray(ch.v,b*3),u)}const attack=name==='Combo'||name.startsWith('Attack'),ends=[.72,1.38,2.15,2.93,4.05],starts=[0,.72,1.38,2.15,2.93],i=name==='Combo'?Math.max(0,ends.findIndex(e=>t<e)):name.startsWith('Attack')?Number(name.slice(6))-1:0,local=name==='Combo'?t-starts[i]:t,duration=name==='Combo'?ends[i]-starts[i]:clip.duration;
- const glow=attack?Math.max(0,Math.min(1,local/.08,(duration-local)/.16))*(i===4?1:i===2?.8:.55):0;mana.visible=glow>0;manaMaterial.opacity=.65*glow;aura.visible=glow>0;auraMaterial.opacity=.13*glow;
+ function sample(name,time){bones.forEach((b,i)=>{b.position.copy(restPose[i].p);b.quaternion.copy(restPose[i].q)});const clip=channels[name]||channels.Idle,t=Math.max(0,Math.min(time,clip.duration));for(const ch of clip.channels){const a=Math.min(ch.t.length-2,Math.floor(t/clip.duration*(ch.t.length-1))),b=a+1,u=(t-ch.t[a])/(ch.t[b]-ch.t[a]),bone=bones[ch.node];if(ch.path==='rotation'){qa.fromArray(ch.v,a*4).normalize();qb.fromArray(ch.v,b*4).normalize();bone.quaternion.copy(qa).slerp(qb,u)}else bone.position.fromArray(ch.v,a*3).lerp(v3.fromArray(ch.v,b*3),u)}const attack=name==='Combo'||name.startsWith('Attack'),ends=[.72,1.38,2.15,3.25],starts=[0,.72,1.38,2.15],i=name==='Combo'?Math.max(0,ends.findIndex(e=>t<e)):name.startsWith('Attack')?Number(name.slice(6))-1:0,local=name==='Combo'?t-starts[i]:t,duration=name==='Combo'?ends[i]-starts[i]:clip.duration;
+ const glow=attack?Math.max(0,Math.min(1,local/.08,(duration-local)/.16))*(i===3?1:i===2?.8:.55):0;mana.visible=glow>0;manaMaterial.opacity=.65*glow;aura.visible=glow>0;auraMaterial.opacity=.13*glow;
  root.updateMatrixWorld(true);skeleton.update();return glow}
- sample('Idle',0);return {root,bones,byName,mesh,skeleton,material,mana,tip,hilt,channels,sample,textureReady,bytes,weaponMesh,aura,motionScale:g.extras?.motionScale||1,rootMotionScale:110/(g.extras?.motionScale||1),revision:g.extras?.revision||'OLDER_MODEL'};
+ sample('Idle',0);return {root,bones,byName,mesh,skeleton,material,mana,tip,hilt,channels,sample,textureReady,bytes,weaponMesh,aura,motionScale:g.extras?.motionScale||1,rootMotionScale:110/(g.extras?.motionScale||1),gaitStride:g.extras?.gaitStride||{Walk:.516129,Run:.863636,Sprint:1.1},revision:g.extras?.revision||'OLDER_MODEL'};
 }
 
 function createWarriorEffects(THREE,scene,rig){
@@ -79593,8 +79593,8 @@ function createWarriorEffects(THREE,scene,rig){
 (() => {
  const isWarrior=()=>selectedRole==='warrior'&&!!heroPlayer;
  const ATTACK_SPEED=2;
- const WARRIOR_CUTS=[{at:.42,start:.33,end:.60,label:'Diagonal slash'},{at:1.10,start:.99,end:1.26,label:'Reverse slash'},{at:1.85,start:1.73,end:2.02,label:'Advancing slash'},{at:2.63,start:2.51,end:2.84,label:'Pivot sweep'},{at:3.55,start:3.40,end:3.80,label:'Red energy · finishing slash'}];
- const WARRIOR_SEGMENTS=[{from:0,to:.72},{from:.72,to:1.38},{from:1.38,to:2.15},{from:2.15,to:2.93},{from:2.93,to:4.05}];
+ const WARRIOR_CUTS=[{at:.42,start:.33,end:.60,label:'Downward slash'},{at:1.10,start:.99,end:1.26,label:'Cut to the right'},{at:1.85,start:1.73,end:2.02,label:'Right-to-left slash'},{at:2.70,start:2.55,end:2.94,label:'Red mana · rising finisher'}];
+ const WARRIOR_SEGMENTS=[{from:0,to:.72},{from:.72,to:1.38},{from:1.38,to:2.15},{from:2.15,to:3.25}];
  let CUTS=WARRIOR_CUTS,SEGMENTS=WARRIOR_SEGMENTS,rigGender='male';const rigs={},views={};
  let combatClock=0,lastPress=-Infinity,nextCut=0,pendingCuts=[];
  let movementSpeed=0,movementVelocity=0,jumpPrep=0,stopClock=1,turnClock=1,visualYaw=1.05,previousMoving=false,previousFacing=null;
@@ -79651,7 +79651,7 @@ function createWarriorEffects(THREE,scene,rig){
   if(heroPlayer.isMoving&&!previousMoving)stopClock=1;if(!heroPlayer.isMoving&&previousMoving)stopClock=0;stopClock+=1/60;previousMoving=heroPlayer.isMoving;
   if(previousFacing!==null&&heroPlayer.facing!==previousFacing)turnClock=0;previousFacing=heroPlayer.facing;turnClock+=1/60;
   heroPlayer.isSprinting=!!requested.sprint&&heroPlayer.isMoving&&!combo;
-  if(heroPlayer.isMoving&&!combo)walkClock+=1/60*Math.max(.2,movementSpeed/(heroPlayer.isSprinting?9:heroPlayer.isRunning?7:4));
+  if(heroPlayer.isMoving&&!combo){const gait=heroPlayer.isSprinting?'Sprint':heroPlayer.isRunning?'Run':'Walk',distance=stage2?heroPlayer.moveSpeed:Math.abs(heroPlayer.vx);walkClock+=distance/rig.rootMotionScale*rig.channels[gait].duration/rig.gaitStride[gait]};
   if(combo){const oldTime=combo.time;combo.time+=ATTACK_SPEED/60;if(rig.channels.Combo){const nextTime=Math.min(combo.time,SEGMENTS[combo.index].to),attackAge=(oldTime-SEGMENTS[combo.index].from)/ATTACK_SPEED,carry=combo.entryVelocity*Math.exp(-attackAge/.065),advance=(rootAt(nextTime)-rootAt(oldTime))*rig.rootMotionScale+carry;heroPlayer.x+=advance*combo.dir.x;if(stage2)heroPlayer.y+=advance*combo.dir.y;heroPlayer.x=Math.max(stage2?35:arena?camX+16:20,Math.min(stage2?stage2.worldW-35:arena?(arena.type==='boss'?camX+VW-20:Math.min(camX+VW-20,arena.x-45)):WORLD_W-20,heroPlayer.x));if(stage2)heroPlayer.y=Math.max(20,Math.min(stage2.worldH-20,heroPlayer.y))}if(!combo.hit&&combo.time+1e-8>=CUTS[combo.index].at){hit(combo.index);combo.hit=true}if(combo.time>=SEGMENTS[combo.index].to){combo=null;atkCd=0;if(pendingCuts.length)startCut(pendingCuts.shift(),true)}}
   heroPlayer.attackMotion=0;heroPlayer.comboPose=-1;
  };
@@ -79662,7 +79662,7 @@ function createWarriorEffects(THREE,scene,rig){
  const mode=combo?'Combo':jumpPrep>0?'Jump':wasAir?(phased&&falling?'Fall':'Jump'):landTime>0?(phased?'Land':'Jump'):phased&&turnClock<.18?'Turn':heroPlayer.isMoving?(heroPlayer.isSprinting&&phased?'Sprint':heroPlayer.isRunning&&rig.channels.Run?'Run':'Walk'):phased&&stopClock<.25?'Stop':phased&&turnClock<.3?'Turn':'Idle';
  let time=combo?combo.time:jumpPrep>0?(.10-jumpPrep)*1.3:mode==='Land'?.25-landTime:mode==='Fall'?Math.min(.6,airTime):mode==='Jump'?landTime>0?.86+(.25-landTime):Math.min(.78,.25+airTime):mode==='Stop'?stopClock:mode==='Turn'?turnClock:['Walk','Run','Sprint'].includes(mode)?walkClock%rig.channels[mode].duration:(frame/60)%3;
  if(mode!==rigMode){blendFrom=rig.bones.map(b=>({q:b.quaternion.clone(),p:b.position.clone()}));blendClock=0;rigMode=mode}if(combo&&(wasAir||landTime>0)){
- const jt=landTime>0?.84+(.16-landTime):Math.min(.72,.16+airTime);rig.sample('Jump',jt);
+ const jt=Math.min(.72,.25+airTime);rig.sample(landTime>0?'Land':falling?'Fall':'Jump',landTime>0?.25-landTime:jt);
  const names=['RHip','RKnee','RAnkle','RFoot','LHip','LKnee','LAnkle','LFoot','LShoulder','LElbow','LWrist','LHand'];
  const jumpPose=names.map(name=>({bone:rig.byName[name],q:rig.byName[name].quaternion.clone(),p:rig.byName[name].position.clone()}));const hipY=rig.byName.Hips.position.y;
  rig.sample(mode,time);for(const j of jumpPose){j.bone.quaternion.copy(j.q);j.bone.position.copy(j.p)}rig.byName.Hips.position.y=hipY;
