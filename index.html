@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aethelos</title>
+    <title>Æthelos — A Noble End</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -80,30 +80,6 @@
         ::-webkit-scrollbar-thumb { background: #f43f5e; border-radius: 10px; }
     
         .hidden{display:none!important}
-        #storeModal{position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(2,6,23,.94);padding:16px;box-sizing:border-box}
-        #storeModal:not(.hidden){display:flex}
-        #storeModal>div{max-height:90vh;overflow-y:auto;background:#0f172a;padding:20px;border-radius:20px;width:min(100%,900px);color:#f8fafc;box-sizing:border-box}
-        #storeModal h2{margin:0 0 6px;font-size:26px;color:#93c5fd}
-        #storeModal h3{margin:0 0 12px}
-        #storeModal button{border:0}
-        #storeModal [onclick="toggleStore()"]{background:#334155;color:white;padding:10px 16px;border-radius:10px;cursor:pointer}
-        .store-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
-        .store-wallet{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;font-weight:bold}
-        .store-wallet span{background:#172554;border-radius:8px;padding:10px}
-        #storeModal [onclick^="purchaseGem"]{padding:12px;border-radius:10px;background:#1d4ed8;color:white;font-weight:bold;cursor:pointer}
-        #gameOverModal:not(.hidden){display:flex;position:fixed;inset:0;z-index:50;background:rgba(2,6,23,.94);align-items:center;justify-content:center;padding:16px}
-        #gameOverModal>div{background:#0f172a;padding:24px;border-radius:18px;width:min(100%,400px);text-align:center}
-        #gameOverModal button{width:100%;padding:12px;background:#b91c1c;color:white;border:0;border-radius:10px;font-weight:bold;cursor:pointer}
-        .store-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-        .store-sections>div{background:#1e293b;border-radius:14px;padding:16px}
-        #storeWeapons,#storeCharacters,#storeClothes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-        .store-card{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:12px}
-        .store-card p{font-size:12px;color:#94a3b8;margin:8px 0}
-        .store-action{display:block;width:100%;margin-top:8px;padding:10px;border-radius:8px;background:#1d4ed8;color:white;font-weight:700;cursor:pointer}
-        #storeModal button:disabled{opacity:.5;cursor:not-allowed}
-        #storeMessage{min-height:1.5em;color:#fcd34d}
-        @media(max-width:600px){.store-sections{grid-template-columns:1fr}#storeCharacters{grid-template-columns:1fr}}
-        .menuBtn{width:100%;padding:16px;border-radius:14px;color:white;font-family:Fredoka,sans-serif;font-weight:800;font-size:18px;transition:.2s}.menuBtn:hover{transform:translateY(-2px);filter:brightness(1.12)}
         .aeth-screen{isolation:isolate;background:linear-gradient(180deg,#71b8e7 0%,#b9d9eb 38%,#f4e9d3 72%,#597b9d 100%);color:#f8fafc}
         .aeth-cloudfield{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;background:linear-gradient(180deg,#7dbce7 0%,#c8dfed 48%,#526d8d 100%)}
         .aeth-cloudfield::before,.aeth-cloudfield::after{content:"";position:absolute;inset:-18%;background:radial-gradient(ellipse at 12% 62%,rgba(255,255,255,.88) 0 9%,transparent 23%),radial-gradient(ellipse at 34% 69%,rgba(255,255,255,.76) 0 12%,transparent 27%),radial-gradient(ellipse at 68% 59%,rgba(255,255,255,.82) 0 11%,transparent 25%),radial-gradient(ellipse at 91% 74%,rgba(239,248,255,.72) 0 13%,transparent 28%);filter:blur(18px);animation:aeth-cloud-drift 58s linear infinite}
@@ -134,21 +110,21 @@
          STAGE 1: WELCOME SCREEN (SPLASH PAGE)
          Anchor ID: #welcomeScreen
     ========================================================================== -->
-    <div id="welcomeScreen" role="button" tabindex="0" aria-label="Enter Aethelos" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMainMenu();}" onclick="openMainMenu()" class="aeth-screen fixed inset-0 z-50 flex items-center justify-center p-6 cursor-pointer">
+    <div id="welcomeScreen" role="button" tabindex="0" aria-label="Enter Æthelos" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMainMenu();}" onclick="openMainMenu()" class="aeth-screen fixed inset-0 z-50 flex items-center justify-center p-6 cursor-pointer">
         <div class="aeth-cloudfield" aria-hidden="true"></div><div class="aeth-sun" aria-hidden="true"></div>
         <div class="aeth-title-content">
             <div class="mb-6 text-amber-100/90 text-4xl drop-shadow-xl" aria-hidden="true"><i class="fa-solid fa-crown"></i></div>
-            <h1 class="aeth-title-mark font-fredoka">AETHELOS</h1>
-            <p class="aeth-title-sub mt-6 text-sm md:text-base font-bold">A noble realm above the clouds</p>
+            <h1 class="aeth-title-mark font-fredoka">ÆTHELOS</h1>
+            <p class="aeth-title-sub mt-6 text-sm md:text-base font-bold">A Noble End</p>
             <p class="max-w-xl mx-auto mt-3 text-white/90 text-lg drop-shadow">Where ancient skies guard a new legend.</p>
-            <div class="inline-flex mt-10 px-8 py-4 rounded-full border border-amber-100/60 bg-slate-950/45 text-amber-50 font-fredoka font-bold text-lg shadow-2xl backdrop-blur-md"><i class="fa-solid fa-play mr-3 self-center"></i> ENTER AETHELOS</div>
+            <div class="inline-flex mt-10 px-8 py-4 rounded-full border border-amber-100/60 bg-slate-950/45 text-amber-50 font-fredoka font-bold text-lg shadow-2xl backdrop-blur-md"><i class="fa-solid fa-play mr-3 self-center"></i> ENTER ÆTHELOS</div>
             <p class="mt-4 text-sm text-slate-100/80">Click or press Enter</p>
         </div>
     </div>
 
         <main id="mainMenu" class="hidden aeth-panel w-full max-w-3xl rounded-3xl p-6 md:p-10 my-auto">
         <div class="absolute inset-0 aeth-cloudfield opacity-30" aria-hidden="true"></div>
-        <div class="relative z-10 text-center mb-8"><p class="aeth-gold text-xs tracking-[.4em] font-bold">THE SKYBOUND ADVENTURE</p><h2 class="font-fredoka text-5xl font-extrabold text-white mt-2">AETHELOS</h2><p class="text-slate-200/75 mt-2">Main Menu</p></div>
+        <div class="relative z-10 text-center mb-8"><p class="aeth-gold text-xs tracking-[.4em] font-bold">THE SKYBOUND ADVENTURE</p><h2 class="font-fredoka text-5xl font-extrabold text-white mt-2">ÆTHELOS</h2><p class="text-slate-200/75 mt-2">Main Menu</p></div>
         <div class="relative z-10 grid gap-3 max-w-md mx-auto">
             <button onclick="startNewGameFlow()" class="menuBtn aeth-menu-button"><i class="fa-solid fa-compass mr-3 aeth-gold"></i>New Game</button>
             <button onclick="continueGameFlow()" class="menuBtn aeth-menu-button"><i class="fa-solid fa-book-open mr-3 aeth-gold"></i>Continue</button>
@@ -161,15 +137,15 @@
         <main id="characterScreen" class="hidden aeth-screen relative w-full max-w-6xl rounded-3xl p-5 md:p-8 mx-auto my-auto overflow-hidden">
         <div class="aeth-cloudfield" aria-hidden="true"></div><div class="aeth-sun" aria-hidden="true"></div>
         <div class="relative z-10 flex items-center justify-between mb-6">
-            <div><p class="aeth-gold text-xs tracking-[.35em] font-bold">AETHELOS</p><h2 class="font-fredoka text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg">Select Your Hero</h2><p class="text-white/80 mt-1">Choose the warrior who will begin your adventure.</p></div>
+            <div><p class="aeth-gold text-xs tracking-[.35em] font-bold">ÆTHELOS</p><h2 class="font-fredoka text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg">Select Your Hero</h2><p class="text-white/80 mt-1">Choose the warrior who will begin your adventure.</p></div>
             <button onclick="showMainMenu()" class="px-4 py-2 aeth-glass rounded-xl border border-white/20 text-white">MENU</button>
         </div>
         <div class="relative z-10 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <button id="heroCardMale" type="button" aria-pressed="true" onclick="selectAethelosHero('male')" onpointermove="tiltAethelosCard(event,this)" onpointerleave="resetAethelosCard(this)" class="aeth-card selected rounded-3xl p-4 text-left focus:outline-none focus:ring-2 focus:ring-amber-200">
+            <button id="heroCardMale" type="button" aria-pressed="true" onclick="selectÆthelosHero('male')" onpointermove="tiltÆthelosCard(event,this)" onpointerleave="resetÆthelosCard(this)" class="aeth-card selected rounded-3xl p-4 text-left focus:outline-none focus:ring-2 focus:ring-amber-200">
                 <div class="aeth-card-art h-[340px] rounded-2xl flex items-end justify-center overflow-hidden"><img src="assets/images/art-01.webp" alt="Male warrior" class="h-full w-full object-contain object-bottom"></div>
                 <div class="relative z-10 flex items-center justify-between px-2 pt-4"><div><span class="aeth-gold text-xs uppercase tracking-[.28em]">The swordsman</span><h3 class="font-fredoka text-2xl font-bold text-white">Male Warrior</h3></div><span class="hero-check text-amber-200 text-2xl"><i class="fa-solid fa-circle-check"></i></span></div>
             </button>
-            <button id="heroCardFemale" type="button" aria-pressed="false" onclick="selectAethelosHero('female')" onpointermove="tiltAethelosCard(event,this)" onpointerleave="resetAethelosCard(this)" class="aeth-card rounded-3xl p-4 text-left focus:outline-none focus:ring-2 focus:ring-amber-200">
+            <button id="heroCardFemale" type="button" aria-pressed="false" onclick="selectÆthelosHero('female')" onpointermove="tiltÆthelosCard(event,this)" onpointerleave="resetÆthelosCard(this)" class="aeth-card rounded-3xl p-4 text-left focus:outline-none focus:ring-2 focus:ring-amber-200">
                 <div class="aeth-card-art h-[340px] rounded-2xl flex items-end justify-center overflow-hidden"><img src="assets/images/art-02.webp" alt="Female warrior" class="h-full w-full object-contain object-bottom"></div>
                 <div class="relative z-10 flex items-center justify-between px-2 pt-4"><div><span class="aeth-gold text-xs uppercase tracking-[.28em]">The blade dancer</span><h3 class="font-fredoka text-2xl font-bold text-white">Female Warrior</h3></div><span class="hero-check text-slate-500 text-2xl"><i class="fa-regular fa-circle"></i></span></div>
             </button>
@@ -184,18 +160,11 @@
         <!-- STAGE 3.1: Top HUD Status Bar -->
         <div class="w-full bg-slate-900/90 backdrop-blur-md p-3 md:p-4 rounded-xl border border-slate-800 mb-3 flex flex-wrap items-center justify-between gap-2 text-xs md:text-sm">
             <div class="flex items-center gap-2 flex-wrap">
-                <div class="flex items-center gap-1.5 font-bold text-emerald-300 bg-emerald-950/50 px-3 py-1 rounded-lg border border-emerald-800/50"><span>💵</span><span id="hudMoney">0</span></div>
-                <div class="flex items-center gap-1.5 font-bold text-cyan-300 bg-cyan-950/50 px-3 py-1 rounded-lg border border-cyan-800/50"><span>💎</span><span id="hudDiamonds">0</span></div>
-                <div class="flex items-center gap-1.5 font-bold text-blue-300 bg-blue-950/50 px-3 py-1 rounded-lg border border-blue-800/50"><span>🔷</span><span id="hudGems">0</span></div>
                 <div class="flex items-center gap-4 flex-wrap">
                 <div class="flex items-center gap-2 font-bold text-green-300 bg-green-950/50 px-3 py-1 rounded-lg border border-green-800/50 min-w-[150px]">
                     <span>HP</span>
                     <div class="w-20 h-2.5 bg-slate-700 rounded-full overflow-hidden"><div id="hudHealthBar" class="h-full bg-green-500 rounded-full" style="width:100%"></div></div>
                     <span id="hudHealth">100</span><span class="ml-2 text-purple-300">ULT <b id="hudUltimate">0</b>%</span>
-                </div>
-                <div class="flex items-center gap-1.5 font-bold text-red-300 bg-red-950/50 px-3 py-1 rounded-lg border border-red-800/50">
-                    <i class="fa-solid fa-shield text-red-400"></i>
-                    <span id="hudLives">4</span> / 4 LIVES
                 </div>
                 <div class="flex items-center gap-1.5 font-bold text-slate-300 bg-slate-800/60 px-3 py-1 rounded-lg">
                     <i class="fa-regular fa-clock text-amber-400"></i>
@@ -250,22 +219,6 @@
          STAGE 4: VICTORY REUNION MODAL
          Anchor ID: #victoryModal
     ========================================================================== -->
-    <div id="storeModal" role="dialog" aria-modal="true" aria-label="Adventure Store" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-[60] overflow-y-auto">
-        <div class="bg-slate-900 rounded-2xl max-w-3xl w-full p-5 border-2 border-blue-500/40 shadow-2xl my-6">
-            <div class="store-header flex items-center justify-between mb-4"><div><h2 class="font-fredoka text-2xl font-bold text-blue-300">💎 Adventure Store</h2><p class="text-xs text-slate-400">Spend earned currency on gems, character unlocks, upgrades and outfits.</p></div><button onclick="toggleStore()" aria-label="Close store" class="px-3 py-2 bg-slate-800 rounded-lg">✕</button></div>
-            <div class="store-wallet flex gap-2 flex-wrap mb-5 text-sm font-bold"><span class="bg-emerald-950 px-3 py-2 rounded-lg">💵 $<b id="storeMoney">0</b></span><span class="bg-cyan-950 px-3 py-2 rounded-lg">💎 <b id="storeDiamonds">0</b></span><span class="bg-blue-950 px-3 py-2 rounded-lg">🔷 <b id="storeGems">0</b></span><span class="bg-red-950 px-3 py-2 rounded-lg">🔴 <b id="storeRedGems">0</b></span></div>
-            <p id="storeMessage" role="status" aria-live="polite" class="text-sm text-amber-300 mb-4">Earn money from enemies and diamonds by clearing stages.</p>
-            <div class="store-sections grid md:grid-cols-2 gap-4">
-                <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Gems</h3><div class="grid grid-cols-2 gap-2"><button onclick="purchaseGem('blue')" class="py-3 bg-blue-600 rounded-xl font-bold">🔷 BLUE GEM — 1 💎</button><button onclick="purchaseGem('red')" class="py-3 bg-red-600 rounded-xl font-bold">🔴 RED GEM — 1 💎</button></div><p class="text-xs text-slate-400 mt-2">Weapon upgrades cost 1→10 gems for levels 1→10.</p></div>
-                <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Weapon upgrades</h3><div id="storeWeapons" class="grid grid-cols-2 gap-2"></div></div>
-                <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Characters</h3><p id="storeGenderNote" class="text-xs text-slate-400 mb-2"></p><div id="storeCharacters" class="grid grid-cols-2 gap-2"></div></div>
-                <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Character upgrade</h3><div id="storeUpgrades"></div></div>
-                <div class="bg-slate-800/70 rounded-xl p-4"><h3 class="font-fredoka font-bold text-white mb-3">Outfits</h3><div id="storeClothes" class="grid grid-cols-2 gap-2"></div></div>
-            </div>
-            <div class="mt-4 flex justify-end"><button onclick="toggleStore()" class="px-5 py-2.5 bg-slate-800 rounded-xl font-bold">CLOSE</button></div>
-        </div>
-    </div>
-
     <div id="saveModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-[80]">
       <div class="bg-slate-900 rounded-2xl max-w-lg w-full p-6 border-2 border-emerald-500/40 shadow-2xl">
         <h2 class="font-fredoka text-2xl font-bold text-white">💾 Save Game</h2><p class="text-sm text-slate-400 mt-1 mb-4">Choose a save slot. Your current stage and character will be stored in this browser.</p>
@@ -303,7 +256,7 @@
                 <i class="fa-solid fa-skull-crossbones"></i>
             </div>
             <h2 class="font-fredoka text-3xl font-extrabold text-white mb-2">Game Over</h2>
-            <p id="gameOverText" class="text-red-300 font-bold text-sm mb-6">You lost all 5 lives. Restart and try again!</p>
+            <p id="gameOverText" class="text-red-300 font-bold text-sm mb-6">Your health reached zero. Restart and try again!</p>
             <button onclick="restartLevel()" class="w-full py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-fredoka font-bold rounded-xl shadow-lg transition">
                 <i class="fa-solid fa-rotate-right mr-1"></i> RESTART GAME
             </button>
@@ -314,28 +267,20 @@
     <div id="victoryModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
         <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 text-center border-2 border-rose-500/40 shadow-2xl transform transition-all scale-95 opacity-0" id="victoryModalCard">
             <div class="w-20 h-20 bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-full flex items-center justify-center text-4xl mx-auto mb-4 pulse-glow">
-                <i class="fa-solid fa-heart"></i>
+                <i class="fa-solid fa-trophy"></i>
             </div>
             <h2 class="font-fredoka text-3xl font-extrabold text-white mb-1">Reunited at Last!</h2>
             <p id="victorySubtitle" class="text-rose-400 font-bold text-sm mb-3">You reached your partner!</p>
             <div class="relative rounded-2xl overflow-hidden border border-pink-400/30 bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 mb-4">
                 <canvas id="victoryCelebrationCanvas" width="760" height="260" class="w-full h-auto"></canvas>
-                <div class="absolute inset-x-0 bottom-2 text-center text-white/90 font-fredoka font-bold text-sm">Together at last ❤️</div>
+                <div class="absolute inset-x-0 bottom-2 text-center text-white/90 font-fredoka font-bold text-sm">A Noble End</div>
             </div>
             
             <!-- STAGE 4.1: Game End Performance Stats -->
             <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 mb-6 text-left space-y-2 text-sm text-slate-300">
                 <div class="flex justify-between">
-                    <span>Hearts Collected:</span>
-                    <span id="vicHearts" class="font-bold text-rose-400">6 / 6</span>
-                </div>
-                <div class="flex justify-between">
                     <span>Time Taken:</span>
                     <span id="vicTime" class="font-bold text-amber-400">01:15</span>
-                </div>
-                <div class="flex justify-between">
-                    <span>Love Status:</span>
-                    <span class="font-bold text-pink-400">Eternal Harmony ❤️</span>
                 </div>
             </div>
 
@@ -345,7 +290,7 @@
                     <i class="fa-solid fa-rotate-right mr-1"></i> PLAY AGAIN
                 </button>
                 <button onclick="returnToSetup()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition">
-                    <i class="fa-solid fa-sliders text-slate-400 mr-1"></i> CHANGE CHARACTERS
+                    <i class="fa-solid fa-sliders text-slate-400 mr-1"></i> SELECT HERO
                 </button>
             </div>
         </div>
@@ -359,17 +304,11 @@
            STAGE 5.1: AVATAR CONFIGURATIONS (CHIBI CHARACTER PRESETS)
         --------------------------------------------------------------------- */
         const MALE_AVATARS = [
-            { id: 'm_jp', name: 'Kenji', country: 'Japan 🇯🇵', skin: '#ffe0bd', hair: '#1a1a1a', hairStyle: 'ninja_topknot', outfit: '#3b82f6', outfitDark: '#1d4ed8' },
-            { id: 'm_es', name: 'Mateo', country: 'Spain 🇪🇸', skin: '#f3c193', hair: '#3b2314', hairStyle: 'wavy_short', outfit: '#ef4444', outfitDark: '#b91c1c' },
-            { id: 'm_eg', name: 'Tariq', country: 'Egypt 🇪🇬', skin: '#c68642', hair: '#0f0f0f', hairStyle: 'curly_crop', outfit: '#10b981', outfitDark: '#047857' },
-            { id: 'm_uk', name: 'Liam', country: 'UK 🇬🇧', skin: '#ffd8b5', hair: '#d97706', hairStyle: 'side_part', outfit: '#8b5cf6', outfitDark: '#6d28d9' }
+            { id: 'm_jp', name: 'Kenji', country: 'Japan 🇯🇵', skin: '#ffe0bd', hair: '#1a1a1a', hairStyle: 'ninja_topknot', outfit: '#3b82f6', outfitDark: '#1d4ed8' }
         ];
 
         const FEMALE_AVATARS = [
-            { id: 'f_eg', name: 'Fatima', country: 'Egypt 🇪🇬 (Hijab)', skin: '#d69d65', hair: null, hijab: '#ec4899', hijabDark: '#be185d', outfit: '#f43f5e', outfitDark: '#be123c' },
-            { id: 'f_cn', name: 'Mei', country: 'China 🇨🇳', skin: '#ffe5c4', hair: '#1e1e1e', hairStyle: 'twin_buns', outfit: '#ef4444', outfitDark: '#b91c1c' },
-            { id: 'f_it', name: 'Sofia', country: 'Italy 🇮🇹', skin: '#f8d5b1', hair: '#7c2d12', hairStyle: 'long_wavy', outfit: '#06b6d4', outfitDark: '#0e7490' },
-            { id: 'f_in', name: 'Priya', country: 'India 🇮🇳', skin: '#b27a4b', hair: '#0f0f0f', hairStyle: 'braid', outfit: '#a855f7', outfitDark: '#7e22ce' }
+            { id: 'f_eg', name: 'Fatima', country: 'Egypt 🇪🇬 (Hijab)', skin: '#d69d65', hair: null, hijab: '#ec4899', hijabDark: '#be185d', outfit: '#f43f5e', outfitDark: '#be123c' }
         ];
 
         // Active Player Selections
@@ -405,7 +344,7 @@
                 gain.gain.setValueAtTime(0.2, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
                 osc.start(now); osc.stop(now + 0.15);
-            } else if (type === 'heart') {
+            } else if (type === 'hit') {
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(523, now);
                 osc.frequency.setValueAtTime(659, now + 0.08);
@@ -551,144 +490,6 @@
         }
 
         /* ---------------------------------------------------------------------
-           STAGE 5.4: SETUP & STATE FLOW (STEP TRANSITION LOGIC)
-        --------------------------------------------------------------------- */
-        function selectHeroGender(gender) {
-            playerGender = gender; localStorage.setItem('loveAdventureHeroGender',gender);
-            const borderM = document.getElementById('genderOptMale');
-            const borderF = document.getElementById('genderOptFemale');
-            const bM = document.getElementById('badgeMale');
-            const bF = document.getElementById('badgeFemale');
-
-            if (gender === 'male') {
-                borderM.classList.add('border-blue-500', 'bg-slate-800');
-                borderF.classList.remove('border-pink-500');
-                bM.classList.remove('opacity-0');
-                bF.classList.add('opacity-0');
-                selectedHeroAvatar = MALE_AVATARS[0];
-                selectedPartnerAvatar = FEMALE_AVATARS[0];
-            } else {
-                borderF.classList.add('border-pink-500', 'bg-slate-800');
-                borderM.classList.remove('border-blue-500');
-                bF.classList.remove('opacity-0');
-                bM.classList.add('opacity-0');
-                selectedHeroAvatar = FEMALE_AVATARS[0];
-                selectedPartnerAvatar = MALE_AVATARS[0];
-            }
-        }
-
-        function transitionToStep(stepNum) {
-            initAudio();
-            playSound('switch');
-
-            document.getElementById('welcomeScreen').classList.add('opacity-0', 'pointer-events-none');
-            setTimeout(() => { document.getElementById('welcomeScreen').classList.add('hidden'); }, 700);
-
-            document.getElementById('setupContainer').classList.remove('hidden');
-
-            // Update Header Title
-            document.getElementById('setupStepTitle').innerText = stepNum === 1 ? 'Step 1: Choose Roles' : stepNum === 2 ? 'Step 2: Choose 3D Characters' : 'Step 3: Ready to Adventure!';
-            
-            // Update Badges
-            [1, 2, 3].forEach(n => {
-                const b = document.getElementById(`stepBadge${n}`);
-                if (n <= stepNum) {
-                    b.classList.add('bg-rose-500', 'text-white');
-                    b.classList.remove('bg-slate-800', 'text-slate-400');
-                } else {
-                    b.classList.remove('bg-rose-500', 'text-white');
-                    b.classList.add('bg-slate-800', 'text-slate-400');
-                }
-            });
-
-            // Toggle Step View
-            document.getElementById('setupStep1').classList.toggle('hidden', stepNum !== 1);
-            document.getElementById('setupStep2').classList.toggle('hidden', stepNum !== 2);
-            document.getElementById('setupStep3').classList.toggle('hidden', stepNum !== 3);
-
-            if (stepNum === 2) renderStep2Grids();
-            if (stepNum === 3) { renderStep3Briefing(); renderWeapons(); syncEconomyUI(); }
-        }
-
-        function renderStep2Grids() {
-            const isMaleHero = playerGender === 'male';
-            const heroAvatars = isMaleHero ? MALE_AVATARS : FEMALE_AVATARS;
-            const partnerAvatars = isMaleHero ? FEMALE_AVATARS : MALE_AVATARS;
-
-            document.getElementById('heroCustomLabel').innerText = isMaleHero ? 'Hero (Male)' : 'Hero (Female)';
-            document.getElementById('partnerCustomLabel').innerText = isMaleHero ? 'Partner (Female)' : 'Partner (Male)';
-
-            document.getElementById('heroNameInput').value = selectedHeroAvatar.name;
-            document.getElementById('partnerNameInput').value = selectedPartnerAvatar.name;
-
-            const renderGrid = (containerId, avatars, isHero) => {
-                const container = document.getElementById(containerId);
-                container.innerHTML = avatars.map(a => `
-                    <div onclick="${isHero && ((playerGender==='male'?progression.unlockedMale:progression.unlockedFemale).includes(a.id)) ? `selectChibiAvatar('${a.id}', true)` : isHero ? `toggleStore()` : `selectChibiAvatar('${a.id}', false)`}" id="card_${a.id}" class="chibi-card cursor-pointer border-2 border-slate-700 bg-slate-900 rounded-xl p-2 flex flex-col items-center text-center">
-                        <canvas id="cv_${a.id}" width="50" height="50"></canvas>
-                        <span class="font-fredoka font-bold text-xs text-white mt-1">${a.name}</span>
-                        <span class="text-[10px] text-slate-400">${a.country}</span>
-                    </div>
-                `).join('');
-
-                setTimeout(() => {
-                    avatars.forEach(a => {
-                        const cv = document.getElementById(`cv_${a.id}`);
-                        if (cv) drawChibi3D(cv.getContext('2d'), 25, 30, a, { facing: 'right' });
-                    });
-                    updateCardSelectionStyles();
-                }, 40);
-            };
-
-            renderGrid('heroAvatarGrid', heroAvatars, true);
-            renderGrid('partnerAvatarGrid', partnerAvatars, false);
-        }
-
-        function selectChibiAvatar(id, isHero) {
-            playSound('switch');
-            const isMaleHero = playerGender === 'male';
-            const heroList = isMaleHero ? MALE_AVATARS : FEMALE_AVATARS;
-            const partnerList = isMaleHero ? FEMALE_AVATARS : MALE_AVATARS;
-
-            if (isHero) {
-                selectedHeroAvatar = heroList.find(a => a.id === id);
-                document.getElementById('heroNameInput').value = selectedHeroAvatar.name;
-            } else {
-                return; // The rescue partner is locked after the initial selection.
-                document.getElementById('partnerNameInput').value = selectedPartnerAvatar.name;
-            }
-            updateCardSelectionStyles();
-        }
-
-        function updateCardSelectionStyles() {
-            [...MALE_AVATARS, ...FEMALE_AVATARS].forEach(a => {
-                const el = document.getElementById(`card_${a.id}`);
-                if (el) {
-                    const isSel = a.id === selectedHeroAvatar.id || a.id === selectedPartnerAvatar.id;
-                    el.classList.toggle('selected', isSel);
-                }
-            });
-        }
-
-        function renderStep3Briefing() {
-            const heroName = document.getElementById('heroNameInput').value || selectedHeroAvatar.name;
-            const partnerName = document.getElementById('partnerNameInput').value || selectedPartnerAvatar.name;
-
-            document.getElementById('confirmHeroText').innerText = heroName;
-            document.getElementById('confirmPartnerText').innerText = partnerName;
-
-            const hCv = document.getElementById('confirmHeroCv').getContext('2d');
-            const pCv = document.getElementById('confirmPartnerCv').getContext('2d');
-            hCv.clearRect(0,0,70,70); pCv.clearRect(0,0,70,70);
-
-            drawChibi3D(hCv, 35, 45, selectedHeroAvatar, { facing: 'right' });
-            drawChibi3D(pCv, 35, 45, selectedPartnerAvatar, { facing: 'left' });
-
-            document.getElementById('briefingTitle').innerText = `Mission: Reach ${partnerName}!`;
-            document.getElementById('briefingDesc').innerText = `Guide ${heroName} safely through platform hazards, avoid traps, and pull switches to reunite with ${partnerName}!`;
-        }
-
-        /* ---------------------------------------------------------------------
            STAGE 5.5: SCROLLING STAGE ENGINE (CAMERA, ARENAS, WEAPONS, ENEMIES, BOSS)
         --------------------------------------------------------------------- */
         const $ = id => document.getElementById(id);
@@ -701,31 +502,20 @@
             const savedBinds = JSON.parse(localStorage.getItem('loveAdventureKeyBinds') || 'null');
             if (savedBinds && typeof savedBinds === 'object') binds = { ...DEFAULT_BINDS, ...savedBinds };
         } catch (_) {}
-        const WEAPONS = ['sword', 'wand', 'gun', 'bow'];
-        const WINFO = { sword: { icon: '🗡️', cd: 24 }, wand: { icon: '🪄', cd: 30, sp: 5.5 }, gun: { icon: '🔫', cd: 14, sp: 11 }, bow: { icon: '🏹', cd: 36, sp: 8 } };
+        const WEAPONS = ['sword'];
+        const WINFO = { sword: { icon: '🗡️', cd: 24 } };
         let weapon = 'sword', remapping = null, last = 0, acc = 0, frame = 0;
-        const ECON = { gemDiamondCost: 10, characterCost: 250, weaponCost: 150, clothesCost: 100, birdMaxMoney: 15 };
-        const CLOTHES = [
-            {id:'classic',name:'Classic',price:0,outfit:null,outfitDark:null},
-            {id:'royal',name:'Royal Suit',price:100,outfit:'#f59e0b',outfitDark:'#b45309'},
-            {id:'shadow',name:'Shadow Gear',price:100,outfit:'#475569',outfitDark:'#111827'},
-            {id:'love',name:'Love Outfit',price:100,outfit:'#ec4899',outfitDark:'#9d174d'}
-        ];
-        let progression = { money:0, diamonds:0, gems:0, birdMoney:0, weaponLevels:{sword:0,wand:0,gun:0,bow:0}, unlockedWeapons:['sword'], unlockedMale:['m_jp'], unlockedFemale:['f_eg'], ownedClothes:['classic'], selectedClothes:'classic', clearedStages:[], bossRewarded:false };
-        let stageNumber = 1, stage2 = null, weaponLocked = false, rescueState = null, stage2Health = 100, stage2DamageCooldown = 0;
-        function loadProgress(){ try { const x=JSON.parse(localStorage.getItem('loveAdventureProgress')||'null'); if(x) progression={...progression,...x,weaponLevels:{...progression.weaponLevels,...(x.weaponLevels||{})}}; } catch(_){} }
-        function saveProgress(){ try{localStorage.setItem('loveAdventureProgress',JSON.stringify(progression));}catch(_){} }
-        loadProgress();
+        let stageNumber = 1, stage2 = null, weaponLocked = false, rescueState = null, heroHealth = 100, stage2DamageCooldown = 0;
         if(localStorage.getItem('loveAdventureHeroGender')) playerGender=localStorage.getItem('loveAdventureHeroGender');
-        selectedHeroAvatar=(playerGender==='male'?MALE_AVATARS:FEMALE_AVATARS).find(a=>(playerGender==='male'?progression.unlockedMale:progression.unlockedFemale).includes(a.id)) || (playerGender==='male'?MALE_AVATARS[0]:FEMALE_AVATARS[0]);
-        let heroPlayer, partnerGoal, platforms, bridges, switches, hazards, hearts, particles;
+        selectedHeroAvatar=playerGender==='male'?MALE_AVATARS[0]:FEMALE_AVATARS[0];
+        let heroPlayer, partnerGoal, platforms, bridges, switches, hazards, particles;
         let camX, checkpoint, arena, gates, boss, bossDefeated, birds, archers, shots, projs, atkCd, swing, birdTimer, invuln, msgText = '', msgT = 0;
-        let clashBursts = [], victoryCelebrating = false, victoryFrame = 0, victoryRaf = 0, lives = 5, gameOver = false;
+        let clashBursts = [], victoryCelebrating = false, victoryFrame = 0, victoryRaf = 0, gameOver = false;
 
         const ov = (ax, ay, aw, ah, bx, by, bw, bh) => Math.abs(ax - bx) < (aw + bw) / 2 && Math.abs(ay - by) < (ah + bh) / 2;
-        const flash = t => { msgText = t; msgT = 200; const status = $('storeMessage'); if (status && !$('storeModal').classList.contains('hidden')) status.textContent = t; };
+        const flash = t => { msgText = t; msgT = 200; };
         // Shared effect used by pickups, combat hits, defeats, and player damage.
-        function createHeartParticles(x, y, count = 10) {
+        function createHitParticles(x, y, count = 10) {
             if (!Array.isArray(particles)) particles = [];
             for (let i = 0; i < count; i++) {
                 particles.push({
@@ -737,7 +527,7 @@
                 });
             }
         }
-        const pop = (x, y, n) => createHeartParticles(x, y, n);
+        const pop = (x, y, n) => createHitParticles(x, y, n);
 
         function initStageBase() {
             canvas = $('gameCanvas'); ctx = canvas.getContext('2d');
@@ -747,8 +537,7 @@
             const heroName = ($('heroNameNew')?.value || selectedHeroAvatar?.name || 'Hero').trim();
             const partnerName = selectedPartnerAvatar?.name || `${ROLE_DATA?.[selectedRole]?.name || 'Hero'} Partner`;
 
-            const outfit = CLOTHES.find(c=>c.id===progression.selectedClothes) || CLOTHES[0];
-            const heroData = {...selectedHeroAvatar}; if(outfit.outfit){heroData.outfit=outfit.outfit; heroData.outfitDark=outfit.outfitDark;}
+            const heroData = {...selectedHeroAvatar};
             heroPlayer = { x: 60, y: 380, vx: 0, vy: 0, w: 28, h: 36, isGrounded: false, facing: 'right', isMoving: false, animFrame: 0, data: heroData, name: heroName };
             // Partner now waits at the far end of the scrolling world (behind the boss)
             partnerGoal = { x: WORLD_W - 70, y: 412, w: 28, h: 36, data: selectedPartnerAvatar, name: partnerName };
@@ -766,7 +555,6 @@
             switches = []; // Removed red switch squares.
             // Keep the paths usable without the removed switches.
             bridges = [{ x: 280, y: 430, w: 70, h: 14, active: true }, { x: 560, y: 310, w: 40, h: 14, active: true }];
-            hearts = [];
             particles = []; birds = []; archers = []; shots = []; projs = []; clashBursts = [];
             // Rooftop archer stages: stationary enemies on elevated platforms.
             archers = [
@@ -786,12 +574,12 @@
             const mk = (type, x) => ({ type, x, y: GROUND - 29, hp: 3, max: 3, dead: false, active: false, timer: 180, aimY: 400, laserActive: false, laserFrames: 0, flash: 0, m: 70, col: pal[Math.random() * pal.length | 0] });
             gates = [mk('aunty', 1700), mk('uncle', 2800), mk('aunty', 3800)];
             boss = { type: 'boss', x: 5000, bx: 5000, y: 330, hp: 6, max: 6, dead: false, active: false, st: 'summon', n: 0, t: 90, swords: [], flash: 0, m: 170, proximityTimer: 0 };
-            bossDefeated = false; arena = null; stage2 = null; rescueState = null; stage2Health = 100; stage2DamageCooldown = 0; camX = 0; checkpoint = 60; atkCd = 0; swing = null; birdTimer = 150; invuln = 0; frame = 0; victoryCelebrating = false; victoryFrame = 0; clashBursts = []; lives = 5; gameOver = false;
+            bossDefeated = false; arena = null; stage2 = null; rescueState = null; heroHealth = 100; stage2DamageCooldown = 0; camX = 0; checkpoint = 60; atkCd = 0; swing = null; birdTimer = 150; invuln = 0; frame = 0; victoryCelebrating = false; victoryFrame = 0; clashBursts = []; gameOver = false;
             last = 0; acc = 0; paused = false; msgT = 0;
             if (victoryRaf) cancelAnimationFrame(victoryRaf);
             levelTimeSeconds = 0;
-            $('hudLives').innerText = lives; $('hudHeroName').innerText = heroPlayer.name; $('hudPartnerName').innerText = partnerGoal.name; updateHealthHUD();
-            $('gameOverModal').classList.add('hidden'); syncEconomyUI(); renderWeapons();
+            $('hudHeroName').innerText = heroPlayer.name; $('hudPartnerName').innerText = partnerGoal.name; heroHealth=100; updateHealthHUD();
+            $('gameOverModal').classList.add('hidden'); updateHealthHUD();
 
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
@@ -842,48 +630,47 @@
 
         function damageBase(t) {
             const o = t.o;
-            if (t.k === 'bird') { o.dead = true; if(progression.birdMoney < ECON.birdMaxMoney){ progression.money += 1; progression.birdMoney += 1; } pop(o.x, o.y, 8); playSound('heart'); syncEconomyUI(); saveProgress(); return; }
+            if (t.k === 'bird') { o.dead = true; pop(o.x, o.y, 8); playSound('hit'); return; }
             if (t.k === 'archer') {
                 if (o.flash > 0) return;
-                o.hp--; o.flash = 12; pop(o.x, o.y, 6); playSound('heart');
-                if (o.hp <= 0) { o.dead = true; progression.money += 5; pop(o.x, o.y, 24); flash('Archer defeated! +$5'); syncEconomyUI(); saveProgress(); }
+                o.hp--; o.flash = 12; pop(o.x, o.y, 6); playSound('hit');
+                if (o.hp <= 0) { o.dead = true; pop(o.x, o.y, 24); flash('Archer defeated!'); }
                 return;
             }
             if (o.flash > 0 && t.k === 'boss') return;
-            o.hp--; o.flash = t.k === 'boss' ? 40 : 10; pop(o.x, o.y, 8); playSound('heart');
+            o.hp--; o.flash = t.k === 'boss' ? 40 : 10; pop(o.x, o.y, 8); playSound('hit');
             if (o.hp > 0) return;
             if (t.k === 'gate') {
-                o.dead = true; progression.money += 5; syncEconomyUI(); saveProgress(); pop(o.x, o.y, 30);
+                o.dead = true; pop(o.x, o.y, 30);
                 if (arena === o) { arena = null; checkpoint = heroPlayer.x; flash('Path clear! Go right →'); }
             } else {
-                if(!progression.clearedStages.includes(stageNumber)){ progression.diamonds += 2; progression.clearedStages.push(stageNumber); saveProgress(); }
+                
                 bossDefeated = true; boss.dead = true; arena = null; boss.swords = []; birds = []; shots = []; pop(o.x, o.y, 60);
                 flash(`Devil defeated! Reach ${partnerGoal.name}!`);
             }
         }
 
+        function endGameFromHealth() {
+            gameOver = true;
+            gameRunning = false;
+            clearInterval(timerInterval);
+            $('gameOverText').innerText = `${heroPlayer.name}'s health reached zero. Restart and try again!`;
+            $('gameOverModal').classList.remove('hidden');
+        }
+
         function killBase() {
             if (invuln > 0 || gameOver || !gameRunning) return;
-            lives--;
-            $('hudLives').innerText = lives;
+            heroHealth = Math.max(0, heroHealth - 25);
+            updateHealthHUD();
             pop(heroPlayer.x, heroPlayer.y, 20);
             playSound('switch');
-
-            if (lives <= 0) {
-                gameOver = true;
-                gameRunning = false;
-                clearInterval(timerInterval);
-                $('gameOverText').innerText = `${heroPlayer.name} lost all 4 lives. Restart the game to try again!`;
-                $('gameOverModal').classList.remove('hidden');
-                return;
-            }
-
+            if (heroHealth <= 0) { endGameFromHealth(); return; }
             birds = []; shots = []; projs = []; boss.swords = [];
             if (boss.active && !bossDefeated) { boss.st = 'summon'; boss.n = 0; boss.t = 90; boss.proximityTimer = 60; }
             gates.forEach(g => { if (g.active) g.timer = 90; g.laserActive = false; g.laserFrames = 0; });
             heroPlayer.x = arena ? camX + 70 : Math.max(60, checkpoint);
             heroPlayer.y = 350; heroPlayer.vx = 0; heroPlayer.vy = 0; invuln = 100; birdTimer = 150;
-            flash(`${lives} ${lives === 1 ? 'life' : 'lives'} remaining!`);
+            flash(`${heroHealth} HP remaining`);
         }
 
         function updateBoss() {
@@ -925,25 +712,6 @@
             b.swords = b.swords.filter(s => !s.dead);
         }
 
-        function updateGate(g) {
-            if (!g.active || g.dead || g.stunned>0 || g.silenced>0) return;
-            if (g.flash > 0) g.flash--;
-            g.timer--;
-            if (g.type === 'aunty') {
-                // Aunty fires a small eye laser every 3 seconds.
-                if (g.timer <= 0) {
-                    const eyeY = g.y - 42;
-                    const dir = heroPlayer.x < g.x ? -1 : 1;
-                    shots.push({ k: 'laser', x: g.x + dir * 18, y: eyeY, vx: dir * 7.2, vy: 0, r: 5, age: 0, life: 110 });
-                    g.timer = 180; // 3 seconds at 60 FPS
-                    g.aimY = eyeY;
-                }
-            } else if (g.timer <= 0) {
-                const dx = heroPlayer.x - g.x, dy = heroPlayer.y - (g.y - 20), d = Math.hypot(dx, dy) || 1;
-                shots.push({ k: 'wave', x: g.x - 24, y: g.y - 20, vx: dx / d * 2.3, vy: dy / d * 2.3, r: 12, age: 0 });
-                g.timer = 180;
-            }
-        }
 
         function updateArchers() {
             archers.forEach(a => {
@@ -1117,12 +885,9 @@
             particles = particles.filter(p => p.alpha > 0);
         }
 
-        function startRescueSequence(){if(rescueState||!bossDefeated)return;const portalX=Math.min(WORLD_W-180,Math.max(heroPlayer.x+120,partnerGoal.x+100));rescueState={phase:'eagle',t:0,eagleX:partnerGoal.x-260,eagleY:180,portalX,portalY:380,portalReady:false};flash(`${partnerGoal.name} has been rescued! The eagle is coming!`);}
-        function updateRescue(){if(!rescueState)return;rescueState.t++;if(rescueState.phase==='eagle'){const tx=partnerGoal.x,ty=partnerGoal.y-90;rescueState.eagleX+=(tx-rescueState.eagleX)*.025;rescueState.eagleY+=(ty-rescueState.eagleY)*.025;if(Math.hypot(rescueState.eagleX-tx,rescueState.eagleY-ty)<18){rescueState.phase='carry';rescueState.t=0;flash('The eagle picked up '+partnerGoal.name+'!');}}else if(rescueState.phase==='carry'){rescueState.eagleX+=(rescueState.portalX-rescueState.eagleX)*.018;rescueState.eagleY+=((rescueState.portalY-80)-rescueState.eagleY)*.018;if(Math.hypot(rescueState.eagleX-rescueState.portalX,rescueState.eagleY-(rescueState.portalY-80))<18){rescueState.phase='portal';rescueState.portalReady=true;flash('The portal is open! Walk into it to enter Stage 2.');}}else if(rescueState.phase==='portal'&&Math.hypot(heroPlayer.x-rescueState.portalX,heroPlayer.y-rescueState.portalY)<65)enterStage2TopView();}
         function updateStage2(){frame++;if(stage2DamageCooldown>0)stage2DamageCooldown--;if(atkCd>0)atkCd--;const speed=heroPlayer.motionSpeed3D ?? (keys.sprint?9.2:keys.run?7.2:4.2);heroPlayer.moveSpeed=speed;heroPlayer.isRunning=!!(keys.run||keys.sprint)&&!!(keys.left||keys.right||keys.up||keys.down);let dx=0,dy=0;if(keys.left)dx--;if(keys.right)dx++;if(keys.up)dy--;if(keys.down)dy++;if(!dx&&!dy&&heroPlayer.motionSpeed3D>0&&heroPlayer.moveAim3D){dx=heroPlayer.moveAim3D.x;dy=heroPlayer.moveAim3D.y}if(dx||dy){const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;heroPlayer.x+=dx*speed;heroPlayer.y+=dy*speed;heroPlayer.facing=dx<0?'left':dx>0?'right':heroPlayer.facing;heroPlayer.isMoving=true;}else heroPlayer.isMoving=false;heroPlayer.x=Math.max(35,Math.min(stage2.worldW-35,heroPlayer.x));heroPlayer.y=Math.max(35,Math.min(stage2.worldH-35,heroPlayer.y));for(const t of stage2.trees){const dx=heroPlayer.x-t.x,dy=heroPlayer.y-t.y,d=Math.hypot(dx,dy);if(d<34){const nx=dx/(d||1),ny=dy/(d||1);heroPlayer.x=t.x+nx*34;heroPlayer.y=t.y+ny*34;}}stage2.monsters.forEach(m=>{if(m.dead||m.stunned>0)return;const dx=heroPlayer.x-m.x,dy=heroPlayer.y-m.y,d=Math.hypot(dx,dy)||1;if(d<420){m.x+=dx/d*1.05;m.y+=dy/d*1.05;}if(d<38)damageStage2Player(8,m);});stage2.cats.forEach(c=>{if(c.dead||c.stunned>0)return;c.t++;if(!c.targetX||c.t%180===0){c.targetX=c.baseX+(Math.random()-.5)*180;c.targetY=c.baseY+(Math.random()-.5)*180;}let dx=heroPlayer.x-c.x,dy=heroPlayer.y-c.y,d=Math.hypot(dx,dy)||1;if(d<260){c.x+=dx/d*1.7;c.y+=dy/d*1.7;}else{dx=c.targetX-c.x;dy=c.targetY-c.y;d=Math.hypot(dx,dy)||1;c.x+=dx/d*.7;c.y+=dy/d*.7;}if(d<34)damageStage2Player(10,c);});if(keys.attack&&atkCd<=0)doStage2Attack();stage2.projectiles.forEach(p=>{if(p.dead)return;steerNearbyProjectile(p);recordProjectileTrail(p);const steps=Math.max(1,Math.ceil(Math.hypot(p.vx,p.vy)/5));for(let i=0;i<steps&&!p.dead;i++){p.x+=p.vx/steps;p.y+=p.vy/steps;const t=combatTargets().filter(t=>Math.hypot(p.x-t.o.x,p.y-t.o.y)<(t.k==='cat'?24:28)).sort((a,b)=>Math.hypot(p.x-a.o.x,p.y-a.o.y)-Math.hypot(p.x-b.o.x,p.y-b.o.y))[0];if(t){damage(t,p.power||1);p.dead=true;}}p.age++;if(p.age>100||p.x<0||p.y<0||p.x>stage2.worldW||p.y>stage2.worldH)p.dead=true;});stage2.projectiles=stage2.projectiles.filter(p=>!p.dead);stage2.camX=Math.max(0,Math.min(stage2.worldW-VW,heroPlayer.x-VW/2));stage2.camY=Math.max(0,Math.min(stage2.worldH-500,heroPlayer.y-250));}
-        function doStage2Attack(){const w=WINFO[weapon];atkCd=w.cd;playSound('switch');const dir=heroPlayer.facing==='left'?-1:1;if(weapon==='sword'){stage2.monsters.forEach(m=>{if(!m.dead&&Math.abs(m.x-heroPlayer.x)<70&&Math.abs(m.y-heroPlayer.y)<55){m.hp--;if(m.hp<=0)m.dead=true;}});stage2.cats.forEach(c=>{if(!c.dead&&Math.abs(c.x-heroPlayer.x)<60&&Math.abs(c.y-heroPlayer.y)<50){c.hp--;if(c.hp<=0)c.dead=true;}});}else stage2.projectiles.push({x:heroPlayer.x+dir*25,y:heroPlayer.y,vx:dir*(w.sp||8),vy:0,age:0});}
         function enterStage2TopViewBase(){stageNumber=2;initStage2();flash('Stage 2 — Explore the open world!');}
-        function initStage2(){const worldW=3200,worldH=2200,trees=[],safe=[{x:180,y:180},{x:900,y:500},{x:1500,y:1000},{x:2500,y:1700}];for(let i=0;i<85;i++){let x,y,ok=false;while(!ok){x=60+Math.random()*(worldW-120);y=60+Math.random()*(worldH-120);ok=safe.every(q=>Math.hypot(x-q.x,y-q.y)>150);}trees.push({x,y});}const roads=[{x1:0,y1:420,x2:3200,y2:420},{x1:800,y1:0,x2:800,y2:2200},{x1:800,y1:1450,x2:3200,y2:1450},{x1:2100,y1:420,x2:2100,y2:2200}];const monsters=[{x:550,y:700,hp:3,dead:false},{x:1250,y:300,hp:3,dead:false},{x:1750,y:750,hp:3,dead:false},{x:2700,y:650,hp:3,dead:false},{x:2850,y:1800,hp:3,dead:false},{x:1250,y:1750,hp:3,dead:false},{x:2250,y:1100,hp:3,dead:false}];const cats=[{x:500,y:300,baseX:500,baseY:300,hp:2,t:0},{x:1150,y:900,baseX:1150,baseY:900,hp:2,t:0},{x:1900,y:350,baseX:1900,baseY:350,hp:2,t:0},{x:2550,y:1300,baseX:2550,baseY:1300,hp:2,t:0},{x:2850,y:1950,baseX:2850,baseY:1950,hp:2,t:0}];stage2={phase:'top',worldW,worldH,camX:0,camY:0,trees,roads,monsters,cats,projectiles:[]};heroPlayer.x=180;heroPlayer.y=180;heroPlayer.vx=0;heroPlayer.vy=0;heroPlayer.isGrounded=true;heroPlayer.isMoving=false;stage2Health=100;stage2DamageCooldown=0;updateHealthHUD();rescueState=null;paused=false;gameRunning=true;last=0;acc=0;}
+        function initStage2(){const worldW=3200,worldH=2200,trees=[],safe=[{x:180,y:180},{x:900,y:500},{x:1500,y:1000},{x:2500,y:1700}];for(let i=0;i<85;i++){let x,y,ok=false;while(!ok){x=60+Math.random()*(worldW-120);y=60+Math.random()*(worldH-120);ok=safe.every(q=>Math.hypot(x-q.x,y-q.y)>150);}trees.push({x,y});}const roads=[{x1:0,y1:420,x2:3200,y2:420},{x1:800,y1:0,x2:800,y2:2200},{x1:800,y1:1450,x2:3200,y2:1450},{x1:2100,y1:420,x2:2100,y2:2200}];const monsters=[{x:550,y:700,hp:3,dead:false},{x:1250,y:300,hp:3,dead:false},{x:1750,y:750,hp:3,dead:false},{x:2700,y:650,hp:3,dead:false},{x:2850,y:1800,hp:3,dead:false},{x:1250,y:1750,hp:3,dead:false},{x:2250,y:1100,hp:3,dead:false}];const cats=[{x:500,y:300,baseX:500,baseY:300,hp:2,t:0},{x:1150,y:900,baseX:1150,baseY:900,hp:2,t:0},{x:1900,y:350,baseX:1900,baseY:350,hp:2,t:0},{x:2550,y:1300,baseX:2550,baseY:1300,hp:2,t:0},{x:2850,y:1950,baseX:2850,baseY:1950,hp:2,t:0}];stage2={phase:'top',worldW,worldH,camX:0,camY:0,trees,roads,monsters,cats,projectiles:[]};heroPlayer.x=180;heroPlayer.y=180;heroPlayer.vx=0;heroPlayer.vy=0;heroPlayer.isGrounded=true;heroPlayer.isMoving=false;heroHealth=100;stage2DamageCooldown=0;updateHealthHUD();rescueState=null;paused=false;gameRunning=true;last=0;acc=0;}
 
         /* ---- 3D-shaded rendering helpers ---- */
         function sph(c, x, y, r, col) {
@@ -1313,8 +1078,8 @@
             else {ctx.strokeStyle='#92400e';ctx.lineWidth=4;ctx.beginPath();ctx.arc(heroPlayer.facing==='left'?-8:8,0,15,0,Math.PI);ctx.stroke();}
             ctx.restore();
         }
-        function updateHealthHUD(){const hp=Math.max(0,Math.min(100,stage2Health));const bar=$('hudHealthBar'),txt=$('hudHealth');if(bar)bar.style.width=hp+'%';if(txt)txt.innerText=Math.round(hp);if(bar)bar.style.backgroundColor=hp<=25?'#ef4444':hp<=50?'#f59e0b':'#22c55e';}
-        function damageStage2Player(amount=10,attacker=null){if(stage2DamageCooldown>0||gameOver)return;stage2Health=Math.max(0,stage2Health-amount);stage2DamageCooldown=45;updateHealthHUD();pop(heroPlayer.x,heroPlayer.y,8);if(stage2Health<=0){stage2Health=100;updateHealthHUD();kill();}}
+        function updateHealthHUD(){const hp=Math.max(0,Math.min(100,heroHealth));const bar=$('hudHealthBar'),txt=$('hudHealth');if(bar)bar.style.width=hp+'%';if(txt)txt.innerText=Math.round(hp);if(bar)bar.style.backgroundColor=hp<=25?'#ef4444':hp<=50?'#f59e0b':'#22c55e';}
+        function damageStage2Player(amount=10,attacker=null){if(stage2DamageCooldown>0||gameOver)return;heroHealth=Math.max(0,heroHealth-amount);stage2DamageCooldown=45;updateHealthHUD();pop(heroPlayer.x,heroPlayer.y,8);if(heroHealth<=0)endGameFromHealth();}
         function drawRescueObjects(){
             if(rescueState&&rescueState.portalReady){const px=rescueState.portalX,py=rescueState.portalY;ctx.save();ctx.translate(px,py);ctx.fillStyle='rgba(59,130,246,.22)';ctx.beginPath();ctx.arc(0,0,48+Math.sin(frame*.08)*5,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#38bdf8';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,34+Math.sin(frame*.08)*4,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#e0f2fe';ctx.font='bold 15px Fredoka';ctx.textAlign='center';ctx.fillText('PORTAL → STAGE 2',0,65);ctx.restore();}
             if(rescueState&&(rescueState.phase==='eagle'||rescueState.phase==='carry')){const ex=rescueState.eagleX,ey=rescueState.eagleY;if(rescueState.phase==='carry')drawChibi3D(ctx,ex,ey+28,partnerGoal.data,{facing:'left'});ctx.save();ctx.translate(ex,ey-42);ctx.fillStyle='#e5e7eb';ctx.beginPath();ctx.ellipse(0,0,22,12,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#64748b';ctx.beginPath();ctx.arc(20,-5,8,0,Math.PI*2);ctx.fill();ctx.fillStyle='#60a5fa';ctx.beginPath();ctx.moveTo(-15,0);ctx.lineTo(-58,-20);ctx.lineTo(-25,12);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(15,0);ctx.lineTo(58,-20);ctx.lineTo(25,12);ctx.closePath();ctx.fill();ctx.restore();}
@@ -1322,30 +1087,8 @@
         /* ---------------------------------------------------------------------
            STAGE 5.6: CONTROLS, WEAPON PICKER & SETTINGS (REMAPPABLE)
         --------------------------------------------------------------------- */
-        function buyGem(){ if(progression.diamonds<ECON.gemDiamondCost){flash('Need 10 diamonds for 1 gem.');return;} progression.diamonds-=ECON.gemDiamondCost; progression.gems++; saveProgress(); syncEconomyUI(); }
-        function buyStoreWeapon(w){ if(progression.unlockedWeapons.includes(w)){ weapon=w; renderWeapons(); return; } if(progression.money<ECON.weaponCost){flash(`Need $${ECON.weaponCost}.`);return;} progression.money-=ECON.weaponCost; progression.unlockedWeapons.push(w); weapon=w; weaponLocked=true; saveProgress(); syncEconomyUI(); flash(`${w.toUpperCase()} purchased and equipped!`); }
-        function buyCharacter(id){ const list=playerGender==='male'?MALE_AVATARS:FEMALE_AVATARS; if(!list.some(a=>a.id===id)) return; const key=playerGender==='male'?'unlockedMale':'unlockedFemale'; if(progression[key].includes(id)){selectedHeroAvatar=list.find(a=>a.id===id);flash(`${selectedHeroAvatar.name} selected.`);renderStep2Grids();return;} if(progression.money<ECON.characterCost){flash(`Need $${ECON.characterCost}.`);return;} progression.money-=ECON.characterCost; progression[key].push(id); selectedHeroAvatar=list.find(a=>a.id===id); saveProgress(); renderStep2Grids(); syncEconomyUI(); }
-        function buyClothes(id){
-            const c=CLOTHES.find(x=>x.id===id);if(!c)return;
-            if(!progression.ownedClothes.includes(id)){
-                if(progression.money<c.price){flash(`Need $${c.price}.`);return;}
-                progression.money-=c.price;progression.ownedClothes.push(id);
-            }
-            progression.selectedClothes=id;
-            if(gameRunning&&heroPlayer){heroPlayer.data={...selectedHeroAvatar,...(c.outfit?{outfit:c.outfit,outfitDark:c.outfitDark}:{})};}
-            saveProgress();syncEconomyUI();flash(`${c.name} equipped!`);
-        }
-         function setWeapon(w, fromStart=false) {
-             if(!WEAPONS.includes(w)) return;
-             if(!fromStart && !progression.unlockedWeapons.includes(w)){ flash('Buy this weapon in the Store first!'); return; }
-             if(weaponLocked && w!==weapon){ flash('Weapon is locked. Buy another weapon in the Store to switch.'); return; }
-             weapon=w; renderWeapons(); syncEconomyUI(); saveProgress();
-         }
-         function renderWeapons() {
-             const start=$('weaponPickA'), settings=$('weaponPickB');
-             if(start) start.innerHTML=WEAPONS.map(w=>`<button type="button" class="px-4 py-3 rounded-xl text-sm font-bold text-white bg-slate-800 border-2 ${w===weapon?'border-rose-400 ring-2 ring-rose-400 bg-rose-950/50':'border-slate-700 hover:border-rose-300'}" onclick="setWeapon('${w}',true)">${WINFO[w].icon} ${w[0].toUpperCase()+w.slice(1)} Lv.${progression.weaponLevels[w]||0}<br><span class="text-xs text-slate-400">${w===weapon?'SELECTED':'CLICK TO SELECT'}</span></button>`).join('');
-             if(settings) settings.innerHTML=WEAPONS.map(w=>`<button type="button" class="px-3 py-2 bg-slate-800 rounded-lg text-sm font-bold text-white ${w===weapon?'ring-2 ring-rose-400':''}" onclick="setWeapon('${w}')">${WINFO[w].icon} ${w[0].toUpperCase()+w.slice(1)} Lv.${progression.weaponLevels[w]||0}</button>`).join('');
-         }
+        function setWeapon(w){if(w==='sword')weapon='sword';}
+
         const KEY_LABELS = {
             ArrowLeft: '← Left', ArrowRight: '→ Right', ArrowUp: '↑ Up', ArrowDown: '↓ Down',
             Space: 'Space', ShiftLeft: 'Left Shift', ShiftRight: 'Right Shift',
@@ -1394,14 +1137,6 @@
             p.style.display = getComputedStyle(p).display === 'none' ? 'grid' : 'none';
         }
 
-        function toggleSettings() {
-            const m = $('settingsModal');
-            m.classList.toggle('hidden');
-            m.classList.toggle('flex');
-            paused = !m.classList.contains('hidden');
-            remapping = null;
-            refreshSettings();
-        }
 
         function resetKeys() {
             keys.left = keys.right = keys.up = keys.down = keys.jump = keys.action = keys.attack = keys.special = false;
@@ -1489,18 +1224,7 @@
             window.addEventListener('blur', resetKeys);
         }
 
-        function startGame() {
-            stageNumber = 1; weaponLocked=false;
-            document.getElementById('gameScreen').classList.remove('hidden');
-            document.getElementById('gameScreen').classList.add('flex');
 
-            initStage();
-            gameRunning = true;
-            requestAnimationFrame(gameLoop);
-        }
-
-        function triggerVictory(){ if(bossDefeated&&!rescueState)startRescueSequence(); }
-        function startEagleSequence(){ startRescueSequence(); }
 
         function runVictoryCelebration() {
             const cv = document.getElementById('victoryCelebrationCanvas');
@@ -1521,18 +1245,16 @@
                 for (let r = 0; r < 10; r++) { const a = r * Math.PI / 5; c.beginPath(); c.moveTo(cx + Math.cos(a) * 5, cy + Math.sin(a) * 5); c.lineTo(cx + Math.cos(a) * (16 + pulse * 28), cy + Math.sin(a) * (16 + pulse * 28)); c.stroke(); }
             }
             c.globalAlpha = 1;
-            // Couple standing together, with a large heart between them.
+            // Show both heroes together after the victory.
             const left = w / 2 - 75, right = w / 2 + 75, ground = h - 34;
             drawChibi3D(c, left, ground, heroPlayer.data, { facing: 'right', isActive: true });
             drawChibi3D(c, right, ground, partnerGoal.data, { facing: 'left', isActive: true });
-            const heartY = ground - 92 + Math.sin(victoryFrame * .08) * 5;
-            c.save(); c.translate(w / 2, heartY); c.scale(1.8, 1.8); c.fillStyle = '#f43f5e'; c.beginPath(); c.moveTo(0, 10); c.bezierCurveTo(-28, -8, -16, -26, 0, -13); c.bezierCurveTo(16, -26, 28, -8, 0, 10); c.fill(); c.restore();
-            c.fillStyle = 'rgba(255,255,255,.9)'; c.font = 'bold 18px Fredoka'; c.textAlign = 'center'; c.fillText('❤️  TOGETHER  ❤️', w / 2, h - 8); c.textAlign = 'left';
+            c.fillStyle = 'rgba(255,255,255,.9)'; c.font = 'bold 18px Fredoka'; c.textAlign = 'center'; c.fillText('VICTORY', w / 2, h - 8); c.textAlign = 'left';
             victoryRaf = requestAnimationFrame(runVictoryCelebration);
         }
 
         function restartLevelBase() {
-            stageNumber=1; stage2=null; rescueState=null; stage2Health=100; stage2DamageCooldown=0; weaponLocked=false; gameOver = false;
+            stageNumber=1; stage2=null; rescueState=null; heroHealth=100; stage2DamageCooldown=0; weaponLocked=false; gameOver = false;
             victoryCelebrating = false;
             if (victoryRaf) cancelAnimationFrame(victoryRaf);
             document.getElementById('victoryModal').classList.add('hidden');
@@ -1542,85 +1264,29 @@
             requestAnimationFrame(gameLoop);
         }
 
-        function returnToSetup() {
-            stage2=null; rescueState=null; stageNumber=1; stage2Health=100; stage2DamageCooldown=0; victoryCelebrating = false;
-            if (victoryRaf) cancelAnimationFrame(victoryRaf);
-            gameRunning = false; paused=false; clearInterval(timerInterval);
-            document.getElementById('victoryModal').classList.add('hidden');
-            document.getElementById('gameOverModal').classList.add('hidden');
-            newGender=playerGender==='female'?'female':'male';populateCharacterScreen();showOnly('characterScreen');
-        }
 
-        /* =====================================================================
-           LOVE ADVENTURE 2.0 MENU        /* =====================================================================
-           LOVE ADVENTURE 2.0 MENU / CHARACTER / SAVE / RPG SYSTEM
-        ====================================================================== */
-        const ROLE_DATA = {
-          warrior:{name:'Warrior',weapon:'sword',normal:'Slash with big sword',ultimate:'Warlord’s Cleave',power:4,ultType:'arc'},
-          knight:{name:'Knight',weapon:'sword',normal:'Strike with sword and shield',ultimate:'Aegis Fortress',power:4,ultType:'taunt'},
-          goblin:{name:'Goblin',weapon:'sword',normal:'Stab with small dagger',ultimate:'Trap Barrage',power:4,ultType:'traps'},
-          ogre:{name:'Ogre',weapon:'sword',normal:'Swing giant wooden club',ultimate:'Ground Shatter',power:5,ultType:'ground'},
-          titan:{name:'Titan',weapon:'sword',normal:'Punch with huge fist',ultimate:'Colossal Stomp',power:5,ultType:'stomp'},
-          mage:{name:'Mage',weapon:'wand',normal:'Shoot small energy orb',ultimate:'Arcane Cataclysm',power:4,ultType:'meteor'},
-          swordUser:{name:'Sword User',weapon:'sword',normal:'Quick slash with sword',ultimate:'Blade Dash',power:4,ultType:'dash'},
-          doubleSword:{name:'Double Sword User',weapon:'sword',normal:'Fast slice with two swords',ultimate:'Blade Dance',power:5,ultType:'dance'},
-          gunUser:{name:'Gun User',weapon:'gun',normal:'Shoot single pistol bullet',ultimate:'Sniper Precision',power:4,ultType:'sniper'},
-          archer:{name:'Archer',weapon:'bow',normal:'Shoot single arrow',ultimate:'Rain of Arrows',power:4,ultType:'rain'},
-          doubleGun:{name:'Double Gun User',weapon:'gun',normal:'Fire two guns quickly',ultimate:'Bullet Storm',power:5,ultType:'storm'},
-          magicSword:{name:'Magic Sword User',weapon:'sword',normal:'Slash with glowing magic blade',ultimate:'Spellblade Tempest',power:6,ultType:'tempest'}
-        };
-        const STARTER_ROLES=['warrior','knight','goblin','mage','swordUser','gunUser','archer'];
-        const STORE_ROLE_PRICES={warrior:20,knight:20,goblin:20,ogre:20,titan:20,mage:20,swordUser:20,doubleSword:30,gunUser:20,archer:20,doubleGun:30,magicSword:40};
-        const COUNTRIES=['Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium','Belize','Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei','Bulgaria','Burkina Faso','Burundi','Cabo Verde','Cambodia','Cameroon','Canada','Central African Republic','Chad','Chile','China','Colombia','Comoros','Congo','Costa Rica','Croatia','Cuba','Cyprus','Czechia','Denmark','Djibouti','Dominica','Dominican Republic','Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia','Eswatini','Ethiopia','Fiji','Finland','France','Gabon','Gambia','Georgia','Germany','Ghana','Greece','Grenada','Guatemala','Guinea','Guinea-Bissau','Guyana','Haiti','Honduras','Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Italy','Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kiribati','Kuwait','Kyrgyzstan','Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg','Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Mauritania','Mauritius','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Myanmar','Namibia','Nauru','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria','North Korea','North Macedonia','Norway','Oman','Pakistan','Palau','Palestine','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal','Qatar','Romania','Russia','Rwanda','Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines','Samoa','San Marino','Sao Tome and Principe','Saudi Arabia','Senegal','Serbia','Seychelles','Sierra Leone','Singapore','Slovakia','Slovenia','Solomon Islands','Somalia','South Africa','South Korea','South Sudan','Spain','Sri Lanka','Sudan','Suriname','Sweden','Switzerland','Syria','Tajikistan','Tanzania','Thailand','Timor-Leste','Togo','Tonga','Trinidad and Tobago','Tunisia','Türkiye','Turkmenistan','Tuvalu','Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan','Vanuatu','Vatican City','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe','Israel'];
+        const ROLE_DATA = { warrior:{name:'Warrior',weapon:'sword',normal:'Slash with sword',ultimate:'Warlord’s Cleave',power:4,ultType:'arc'} };
         let newGender='male', selectedRole='warrior', characterLevel=1, ultimateCharge=0, soulCounters={bird:0,archer:0,gate:0,boss:0}, cheatUltimate=false;
         const SAVE_KEY='loveAdventureSaveSlotsV2';
-        const roleAvatar=(role,gender)=>{const base=(gender==='male'?MALE_AVATARS[0]:FEMALE_AVATARS[0]); const colors=['#2563eb','#7c3aed','#16a34a','#f97316','#dc2626','#06b6d4','#f43f5e','#eab308','#0ea5e9','#22c55e','#6366f1','#d946ef']; const idx=Object.keys(ROLE_DATA).indexOf(role); return {...base,id:`${gender}_${role}`,name:ROLE_DATA[role].name,country:(document.getElementById('countrySelect')?.value||base.country),outfit:colors[idx%colors.length],outfitDark:'#172554',role};};
+        const roleAvatar=(role,gender)=>{const base=gender==='male'?MALE_AVATARS[0]:FEMALE_AVATARS[0];return {...base,id:`${gender}_warrior`,name:gender==='male'?'Male Warrior':'Female Warrior',country:'Æthelos',role:'warrior'};};
         function loadSaveSlots(){try{return JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');}catch(_){return []}}
         function writeSaveSlots(x){try{localStorage.setItem(SAVE_KEY,JSON.stringify(x));}catch(_){} }
-        function showOnly(id){['welcomeScreen','mainMenu','characterScreen','setupContainer','gameScreen'].forEach(x=>{const e=$(x);if(e)e.classList.add('hidden');}); const e=$(id);if(e)e.classList.remove('hidden'); if(id==='gameScreen')e.classList.add('flex');}
+        function showOnly(id){['welcomeScreen','mainMenu','characterScreen','gameScreen'].forEach(x=>{const e=$(x);if(e)e.classList.add('hidden');}); const e=$(id);if(e)e.classList.remove('hidden'); if(id==='gameScreen')e.classList.add('flex');}
         function openMainMenu(){initAudio();showOnly('mainMenu');}
         function showMainMenu(){gameRunning=false;paused=false;clearInterval(timerInterval);showOnly('mainMenu');}
-        function quitGame(){gameRunning=false;paused=true;if(timerInterval){clearInterval(timerInterval);timerInterval=null;}window.close();if(!window.closed)setTimeout(()=>alert('Your browser did not allow Aethelos to close this tab. Close the tab or window to exit.'),50);}
+        function quitGame(){gameRunning=false;paused=true;if(timerInterval){clearInterval(timerInterval);timerInterval=null;}window.close();if(!window.closed)setTimeout(()=>alert('Your browser did not allow Æthelos to close this tab. Close the tab or window to exit.'),50);}
         function startNewGameFlow(){newGender=playerGender==='female'?'female':'male';cheatUltimate=false;populateCharacterScreen();showOnly('characterScreen');}
-        function selectAethelosHero(gender){newGender=gender==='female'?'female':'male';const male=$('heroCardMale'),female=$('heroCardFemale');[[male,'male'],[female,'female']].forEach(([card,g])=>{const active=g===newGender;if(!card)return;card.classList.toggle('selected',active);card.setAttribute('aria-pressed',String(active));const check=card.querySelector('.hero-check');if(check){check.innerHTML=active?'<i class="fa-solid fa-circle-check"></i>':'<i class="fa-regular fa-circle"></i>';check.className='hero-check '+(active?'text-amber-200':'text-slate-500')+' text-2xl';}});}
-        function tiltAethelosCard(event,card){const r=card.getBoundingClientRect(),x=(event.clientX-r.left)/r.width-.5,y=(event.clientY-r.top)/r.height-.5;card.style.setProperty('--tilt-x',(x*9)+'deg');card.style.setProperty('--tilt-y',(-y*8)+'deg');}
-        function resetAethelosCard(card){card.style.setProperty('--tilt-x','0deg');card.style.setProperty('--tilt-y','0deg');}
-        function populateCharacterScreen(){selectAethelosHero(newGender);}
-        function beginSelectedCharacter(){playerGender=newGender==='female'?'female':'male';selectedRole='warrior';const heroName=playerGender==='female'?'Female Warrior':'Male Warrior';selectedHeroAvatar=roleAvatar('warrior',playerGender);selectedHeroAvatar.name=heroName;selectedHeroAvatar.country='Aethelos';selectedPartnerAvatar=roleAvatar('warrior',playerGender==='male'?'female':'male');selectedPartnerAvatar.name=playerGender==='male'?'Female Warrior':'Male Warrior';weapon=ROLE_DATA.warrior.weapon;characterLevel=progression.characterLevels?.[playerGender+'_warrior']||1;ultimateCharge=0;soulCounters={bird:0,archer:0,gate:0,boss:0};cheatUltimate=false;localStorage.setItem('loveAdventureHeroGender',playerGender);saveProgress();startGame();}
+        function selectÆthelosHero(gender){newGender=gender==='female'?'female':'male';const male=$('heroCardMale'),female=$('heroCardFemale');[[male,'male'],[female,'female']].forEach(([card,g])=>{const active=g===newGender;if(!card)return;card.classList.toggle('selected',active);card.setAttribute('aria-pressed',String(active));const check=card.querySelector('.hero-check');if(check){check.innerHTML=active?'<i class="fa-solid fa-circle-check"></i>':'<i class="fa-regular fa-circle"></i>';check.className='hero-check '+(active?'text-amber-200':'text-slate-500')+' text-2xl';}});}
+        function tiltÆthelosCard(event,card){const r=card.getBoundingClientRect(),x=(event.clientX-r.left)/r.width-.5,y=(event.clientY-r.top)/r.height-.5;card.style.setProperty('--tilt-x',(x*9)+'deg');card.style.setProperty('--tilt-y',(-y*8)+'deg');}
+        function resetÆthelosCard(card){card.style.setProperty('--tilt-x','0deg');card.style.setProperty('--tilt-y','0deg');}
+        function populateCharacterScreen(){selectÆthelosHero(newGender);}
+        function beginSelectedCharacter(){playerGender=newGender==='female'?'female':'male';selectedRole='warrior';const heroName=playerGender==='female'?'Female Warrior':'Male Warrior';selectedHeroAvatar=roleAvatar('warrior',playerGender);selectedHeroAvatar.name=heroName;selectedHeroAvatar.country='Æthelos';selectedPartnerAvatar=roleAvatar('warrior',playerGender==='male'?'female':'male');selectedPartnerAvatar.name=playerGender==='male'?'Female Warrior':'Male Warrior';weapon='sword';characterLevel=1;ultimateCharge=0;soulCounters={bird:0,archer:0,gate:0,boss:0};cheatUltimate=false;localStorage.setItem('loveAdventureHeroGender',playerGender);startGame();}
         function continueGameFlow(){const slots=loadSaveSlots();if(!slots.length){alert('No saved adventure found. Start a New Game first.');return;}const wrap=$('saveSlots');wrap.innerHTML=slots.map((x,i)=>x?`<button onclick="loadSaveSlot(${i})" class="text-left p-4 bg-slate-800 hover:bg-slate-700 rounded-xl"><b class="text-white">SLOT ${i+1}</b><div class="text-sm text-slate-300">Stage ${x.stageNumber} • ${x.roleName||'Hero'} • ${x.gender}</div><div class="text-xs text-slate-500">${new Date(x.savedAt).toLocaleString()}</div></button>`:`<div class="p-4 bg-slate-950 rounded-xl text-slate-500">SLOT ${i+1} — Empty</div>`).join('');$('saveModal').classList.remove('hidden');$('saveModal').classList.add('flex');}
         function closeSaveModal(){$('saveModal').classList.add('hidden');$('saveModal').classList.remove('flex');}
-        function saveCurrentSlot(i){const slots=loadSaveSlots();slots[i]={stageNumber,stage2:stageNumber===2?stage2:null,role:selectedRole,roleName:ROLE_DATA[selectedRole]?.name||selectedHeroAvatar.name,gender:playerGender,heroName:heroPlayer?.name||selectedHeroAvatar.name,country:selectedHeroAvatar.country,weapon,characterLevel,ultimateCharge,progression,selectedHeroAvatar,selectedPartnerAvatar,savedAt:Date.now()};while(slots.length<3)slots.push(null);writeSaveSlots(slots);flash(`Game saved to Slot ${i+1}`);closeSaveModal();}
-        function loadSaveSlot(i){const x=loadSaveSlots()[i];if(!x)return;playerGender=x.gender==='female'?'female':'male';selectedRole='warrior';selectedHeroAvatar=roleAvatar('warrior',playerGender);selectedHeroAvatar.name=x.heroName||(playerGender==='female'?'Female Warrior':'Male Warrior');selectedHeroAvatar.country='Aethelos';selectedPartnerAvatar=roleAvatar('warrior',playerGender==='male'?'female':'male');selectedPartnerAvatar.name=playerGender==='male'?'Female Warrior':'Male Warrior';weapon='sword';characterLevel=x.characterLevel||1;ultimateCharge=x.ultimateCharge||0;progression={...progression,...(x.progression||{})};localStorage.setItem('loveAdventureHeroGender',playerGender);closeSaveModal();startGame();if(x.stageNumber===2){stageNumber=2;initStage2();if(x.stage2)stage2=x.stage2;} }
+        function saveCurrentSlot(i){const slots=loadSaveSlots();slots[i]={stageNumber,stage2:stageNumber===2?stage2:null,gender:playerGender,heroName:heroPlayer?.name||selectedHeroAvatar.name,weapon,ultimateCharge,savedAt:Date.now()};while(slots.length<3)slots.push(null);writeSaveSlots(slots);flash(`Game saved to Slot ${i+1}`);closeSaveModal();}
+        function loadSaveSlot(i){const x=loadSaveSlots()[i];if(!x)return;playerGender=x.gender==='female'?'female':'male';selectedRole='warrior';selectedHeroAvatar=roleAvatar('warrior',playerGender);selectedHeroAvatar.name=x.heroName||(playerGender==='female'?'Female Warrior':'Male Warrior');selectedHeroAvatar.country='Æthelos';selectedPartnerAvatar=roleAvatar('warrior',playerGender==='male'?'female':'male');selectedPartnerAvatar.name=playerGender==='male'?'Female Warrior':'Male Warrior';weapon='sword';characterLevel=1;ultimateCharge=x.ultimateCharge||0;localStorage.setItem('loveAdventureHeroGender',playerGender);closeSaveModal();startGame();if(x.stageNumber===2){stageNumber=2;initStage2();if(x.stage2)stage2=x.stage2;} }
         function openSaveGame(){const wrap=$('saveSlots'),slots=loadSaveSlots();const arr=[...slots,null,null,null].slice(0,3);wrap.innerHTML=arr.map((x,i)=>x?`<button onclick="saveCurrentSlot(${i})" class="text-left p-4 bg-slate-800 rounded-xl"><b>SLOT ${i+1}</b><div class="text-xs text-slate-400">Overwrite ${x.roleName||'Hero'} • Stage ${x.stageNumber}</div></button>`:`<button onclick="saveCurrentSlot(${i})" class="text-left p-4 bg-emerald-950/40 border border-emerald-700 rounded-xl"><b>SLOT ${i+1}</b><div class="text-xs text-emerald-300">EMPTY — SAVE HERE</div></button>`).join('');$('saveModal').classList.remove('hidden');$('saveModal').classList.add('flex');}
         function openSettingsFromMenu(){paused=true;toggleSettings();}
-        function openMainStore(){toggleStore();}
-        function purchaseGem(kind){if(!['blue','red'].includes(kind))return;if(progression.diamonds<1){flash('You need 1 💎 Diamond.');return;}progression.diamonds--;progression[kind==='blue'?'gems':'redGems']=(progression[kind==='blue'?'gems':'redGems']||0)+1;saveProgress();syncEconomyUI();flash(`${kind==='blue'?'Blue':'Red'} gem purchased.`);}
-        function buyStoreCharacterRoleBase(r,g){const price=STORE_ROLE_PRICES[r];const key=g==='male'?'ownedMaleRoles':'ownedFemaleRoles';progression[key]??=[];if(progression[key].includes(r)){flash(`${ROLE_DATA[r].name} already owned.`);return;}if(progression.diamonds<price){flash(`Need ${price} 💎 Diamonds.`);return;}progression.diamonds-=price;progression[key].push(r);saveProgress();syncEconomyUI();flash(`${ROLE_DATA[r].name} purchased.`);}
-        function upgradeWeapon(w){if(!Object.values(ROLE_DATA).some(d=>d.weapon===w))return;const lv=progression.weaponLevels[w]||0;if(lv>=10){flash('Weapon is already Level 10.');return;}if((progression.gems||0)<lv+1){flash(`Need ${lv+1} 🔷 Blue Gems.`);return;}progression.gems-=lv+1;progression.weaponLevels[w]=lv+1;saveProgress();syncEconomyUI();flash(`${w.toUpperCase()} upgraded to level ${lv+1}.`);}
-        function upgradeCharacter(){characterLevel=progression.characterLevels?.[playerGender+'_'+selectedRole]||1;if(characterLevel>=10){flash('Character is already Level 10.');return;}if((progression.redGems||0)<characterLevel){flash(`Need ${characterLevel} 🔴 Red Gems.`);return;}progression.redGems-=characterLevel;characterLevel++;progression.characterLevels??={};progression.characterLevels[playerGender+'_'+selectedRole]=characterLevel;saveProgress();syncEconomyUI();flash(`Character Level ${characterLevel}!`);}
-        const storeOwnsRole = (r,g) => STARTER_ROLES.includes(r) || (progression[g==='male'?'ownedMaleRoles':'ownedFemaleRoles']||[]).includes(r);
-        function storeAction(action,label,disabled=false){return `<button onclick="${action}" ${disabled?'disabled':''} class="store-action">${label}</button>`;}
-        function renderStore(){
-            const sw=$('storeWeapons'),sc=$('storeCharacters');if(!sw||!sc)return;
-            sw.innerHTML=[...new Set(Object.values(ROLE_DATA).map(d=>d.weapon))].map(w=>{
-                const lv=progression.weaponLevels[w]||0,cost=lv+1;
-                return `<div class="store-card"><b>${w.toUpperCase()}</b><p>Upgrade level ${lv}/10</p>${storeAction(`upgradeWeapon('${w}')`,lv>=10?'MAX LEVEL':`Upgrade · ${cost} 🔷`,lv>=10||(progression.gems||0)<cost)}</div>`;
-            }).join('');
-            $('storeGenderNote').textContent=gameRunning?'Unlock characters here. Choose your hero from New Game after returning to the menu.':'Starter heroes are free. Purchased heroes are available in New Game.';
-            sc.innerHTML=Object.entries(ROLE_DATA).map(([r,d])=>`<div class="store-card"><b>${d.name}</b><p>${d.weapon.toUpperCase()} · ${d.ultimate}</p>${['male','female'].map(g=>{
-                const owned=storeOwnsRole(r,g),selected=playerGender===g&&selectedRole===r;
-                const label=`${g==='male'?'♂ Male':'♀ Female'} · ${owned?(selected?'Selected':gameRunning?'Owned':'Select'):`${STORE_ROLE_PRICES[r]} 💎`}`;
-                return storeAction(`buyStoreCharacterRole('${r}','${g}')`,label,owned?(selected||gameRunning):(progression.diamonds||0)<STORE_ROLE_PRICES[r]);
-            }).join('')}</div>`).join('');
-            const level=progression.characterLevels?.[playerGender+'_'+selectedRole]||1;
-            $('storeUpgrades').innerHTML=`<div class="store-card"><b>${playerGender==='male'?'♂':'♀'} ${ROLE_DATA[selectedRole].name}</b><p>Character level ${level}/10</p>${storeAction('upgradeCharacter()',level>=10?'MAX LEVEL':`Upgrade · ${level} 🔴`,level>=10||(progression.redGems||0)<level)}</div>`;
-            $('storeClothes').innerHTML=CLOTHES.map(c=>{const owned=progression.ownedClothes.includes(c.id),selected=progression.selectedClothes===c.id;return `<div class="store-card"><b>👕 ${c.name}</b>${storeAction(`buyClothes('${c.id}')`,selected?'Equipped':owned?'Equip':`Buy · $${c.price}`,selected||(!owned&&(progression.money||0)<c.price))}</div>`}).join('');
-            document.querySelectorAll('#storeModal [onclick^="purchaseGem"]').forEach(b=>b.disabled=(progression.diamonds||0)<1);
-            syncStoreCounters();
-        }
-        function syncStoreCounters(){$('storeDiamonds')&&($('storeDiamonds').innerText=progression.diamonds||0);$('storeGems')&&($('storeGems').innerText=progression.gems||0);const rg=document.getElementById('storeRedGems');if(rg)rg.innerText=progression.redGems||0;}
-        let storeWasPaused=false;
-        function toggleStore(){const m=$('storeModal'),opening=m.classList.contains('hidden');if(opening){storeWasPaused=paused;paused=true;Object.keys(keys).forEach(k=>keys[k]=false);m.classList.remove('hidden');m.classList.add('flex');$('storeMessage').textContent='Earn money from enemies and diamonds by clearing stages.';syncEconomyUI();}else{m.classList.add('hidden');m.classList.remove('flex');paused=storeWasPaused;}}
         function toggleSettings(){const m=$('settingsModal');m.classList.toggle('hidden');m.classList.toggle('flex');paused=!m.classList.contains('hidden');refreshSettings();}
         function setSpecialKey(){keys.special=true;}
         function ultimateReady(){return cheatUltimate||ultimateCharge>=100;}
@@ -1628,14 +1294,10 @@
         function enemyLevelRoll(max=2){return Math.random()<.05?Math.min(max,2):1;}
         function enemyWeaponRoll(max=2){return Math.random()<.20?Math.min(max,2):1;}
         const originalDoAttack=doAttackBase;
-        function doAttack(){if(atkCd>0)return;const d=ROLE_DATA[selectedRole]||ROLE_DATA.warrior;const wl=Math.min(10,1+(progression.weaponLevels[d.weapon]||0));atkCd=WINFO[d.weapon]?.cd||20;heroPlayer.weaponLevel=wl;playSound('switch');if(d.weapon==='sword'){swing={t:12,hit:new Set(),power:1,dir:aimDir()};return;}const dir=aimDir();if(dir.x)heroPlayer.facing=dir.x<0?'left':'right';const shotsCount=selectedRole==='doubleGun'?2:1;for(let i=0;i<shotsCount;i++)projs.push({k:d.weapon,x:heroPlayer.x+dir.x*18,y:heroPlayer.y-4+dir.y*18,vx:dir.x*(WINFO[d.weapon]?.sp||8),vy:dir.y*(WINFO[d.weapon]?.sp||8)+(i?-.4:0),r:d.weapon==='wand'?9:5,power:1,level:wl});}
-        function useUltimate(){if(!ultimateReady()){flash('Ultimate is not fully charged.');return;}ultimateCharge=0;soulCounters={bird:0,archer:0,gate:0,boss:0};const d=ROLE_DATA[selectedRole]||ROLE_DATA.warrior;const base=d.power;const mult=1+Math.max(0,(progression.weaponLevels[d.weapon]||0)*.15);const targets=foeBoxes();const hit=(t,p=base)=>{if(!t||!t.o)return;const o=t.o;o.hp=Math.max(0,o.hp-p*mult);o.flash=15;if(o.hp<=0)damage({o,k:t.k,x:t.x,y:t.y,w:t.w,h:t.h});};if(d.ultType==='dash'||d.ultType==='sniper'){targets.filter(t=>Math.abs(t.x-heroPlayer.x)<700).forEach(t=>hit(t,base));}else if(d.ultType==='storm'||d.ultType==='dance'||d.ultType==='arc'||d.ultType==='ground'||d.ultType==='stomp'||d.ultType==='meteor'||d.ultType==='rain'||d.ultType==='tempest'||d.ultType==='traps'){targets.filter(t=>Math.hypot(t.x-heroPlayer.x,t.y-heroPlayer.y)<220).forEach(t=>hit(t,1));}else{targets.filter(t=>Math.hypot(t.x-heroPlayer.x,t.y-t.y)<180).forEach(t=>hit(t,base));}flash(`${d.ultimate}!`);}
+        function doAttack(){if(atkCd>0)return;const d=ROLE_DATA[selectedRole]||ROLE_DATA.warrior;const wl=1;atkCd=WINFO[d.weapon]?.cd||20;heroPlayer.weaponLevel=wl;playSound('switch');if(d.weapon==='sword'){swing={t:12,hit:new Set(),power:1,dir:aimDir()};return;}const dir=aimDir();if(dir.x)heroPlayer.facing=dir.x<0?'left':'right';const shotsCount=selectedRole==='doubleGun'?2:1;for(let i=0;i<shotsCount;i++)projs.push({k:d.weapon,x:heroPlayer.x+dir.x*18,y:heroPlayer.y-4+dir.y*18,vx:dir.x*(WINFO[d.weapon]?.sp||8),vy:dir.y*(WINFO[d.weapon]?.sp||8)+(i?-.4:0),r:d.weapon==='wand'?9:5,power:1,level:wl});}
         const originalDamage=damageBase;
-        function damage(t){const o=t.o;const enemyLv=o.level||1;const heroLv=characterLevel;const weaponLv=o.weaponLevel||1;const heroWeaponLv=Math.min(10,1+(progression.weaponLevels[(ROLE_DATA[selectedRole]||ROLE_DATA.warrior).weapon]||0));const levelDiff=heroLv-enemyLv;let mult=levelDiff>0?Math.pow(2,Math.min(3,levelDiff)):1; if(t.k==='bird'||t.k==='archer'||t.k==='gate'||t.k==='boss'){addSoul(t.k==='gate'?'gate':t.k);} if(mult>1){o.hp-=mult-1;if(o.hp<=0)o.hp=1;}originalDamage(t);}
-        function updateEnemyLevelRules(){const all=[...birds.map(x=>({o:x,k:'bird'})),...archers.map(x=>({o:x,k:'archer'})),...gates.map(x=>({o:x,k:'gate'})),{o:boss,k:'boss'}];all.forEach(({o})=>{if(o&&!o._rolled){o.level=enemyLevelRoll(stageNumber===1?2:10);o.weaponLevel=enemyWeaponRoll(stageNumber===1?2:10);o._rolled=true;}});}
         const originalKill=killBase;
-        function kill(){if(invuln>0)return;const enemyLv=1;const hitsNeeded=characterLevel>enemyLv?Math.pow(2,Math.min(3,characterLevel-enemyLv)):1;heroPlayer._lifeHits=(heroPlayer._lifeHits||0)+1;if(heroPlayer._lifeHits<hitsNeeded){invuln=60;flash(`Hit! ${hitsNeeded-heroPlayer._lifeHits} more hit(s) can defeat you.`);return;}heroPlayer._lifeHits=0;originalKill();}
-        function updateRescue(){if(!rescueState)return;rescueState.t++;if(rescueState.phase==='eagle'){rescueState.eagleX+=(partnerGoal.x-rescueState.eagleX)*.035;rescueState.eagleY=partnerGoal.y-120+Math.sin(frame*.08)*12;if(Math.abs(rescueState.eagleX-partnerGoal.x)<35){rescueState.phase='carry';flash('The eagle picked up your partner!');}}else if(rescueState.phase==='carry'){rescueState.portalX=partnerGoal.x-120;rescueState.portalY=380;rescueState.eagleX+=(rescueState.portalX-rescueState.eagleX)*.025;rescueState.eagleY+=(rescueState.portalY-100-rescueState.eagleY)*.025;if(Math.abs(rescueState.eagleX-rescueState.portalX)<25){rescueState.phase='portal';rescueState.portalReady=true;flash('The portal is open. Enter it to reach Stage 2.');}}}
+        function kill(){killBase();}
         function updateUltimateInput(){if((keys.special||keys.action)&&ultimateReady()){keys.special=false;useUltimate();}}
         // Stage 1 aunt/uncle: immediate first attack, then every 90 steps (1.5 seconds).
         function updateGate(g){if(!g.active||g.dead||g.stunned>0||g.silenced>0)return;if(g.flash>0)g.flash--;if(g.firstAttackDone===undefined){g.firstAttackDone=false;g.timer=1;}if(g.timer>0)g.timer--;if(g.timer<=0){const dx=heroPlayer.x-g.x,dy=heroPlayer.y-(g.y-20),dd=Math.hypot(dx,dy)||1;if(g.type==='aunty'){shots.push({k:'laser',x:g.x+(heroPlayer.x<g.x?-18:18),y:g.y-42,vx:dx/dd*7.2,vy:dy/dd*7.2,r:5,age:0,life:150});}else shots.push({k:'wave',x:g.x-24,y:g.y-20,vx:dx/dd*2.3,vy:dy/dd*2.3,r:12,age:0});g.timer=90;g.firstAttackDone=true;}}
@@ -1648,7 +1310,7 @@
             paused=false;
             last=0;
             acc=0;
-            const hideIds=['welcomeScreen','mainMenu','characterScreen','setupContainer'];
+            const hideIds=['welcomeScreen','mainMenu','characterScreen'];
             hideIds.forEach(id=>document.getElementById(id)?.classList.add('hidden'));
             const gs=document.getElementById('gameScreen');
             gs?.classList.remove('hidden');
@@ -1662,42 +1324,28 @@
         function startEagleSequence(){startRescueSequence();}
 
 
-        function saveBossAndStageProgress(){saveProgress();}
+        function saveBossAndStageProgress(){}
         const baseRestartLevelV2=restartLevelBase;
-        function restartLevel(){if(stageNumber===2&&stage2){stage2Health=100;stage2DamageCooldown=0;heroPlayer.x=180;heroPlayer.y=180;gameOver=false;gameRunning=true;paused=false;$('gameOverModal').classList.add('hidden');requestAnimationFrame(gameLoop);return;}baseRestartLevelV2();}
-        function returnToSetup(){stage2=null;rescueState=null;stageNumber=1;gameRunning=false;gameOver=false;paused=false;clearInterval(timerInterval);victoryCelebrating=false;if(victoryRaf)cancelAnimationFrame(victoryRaf);Object.keys(keys).forEach(k=>keys[k]=false);['gameOverModal','victoryModal','storeModal','settingsModal','saveModal'].forEach(id=>{const modal=$(id);if(modal){modal.classList.add('hidden');if(id!=='gameOverModal'&&id!=='victoryModal')modal.classList.remove('flex');}});newGender=playerGender==='female'?'female':'male';populateCharacterScreen();showOnly('characterScreen');}
-        function equipStoreRole(r,g){
-            if(!ROLE_DATA[r]||!['male','female'].includes(g)||!storeOwnsRole(r,g)){flash('Buy this character first.');return;}
-            if(gameRunning){flash('Return to the menu to select a different character.');return;}
-            playerGender=newGender=g;selectedRole=r;selectedHeroAvatar=roleAvatar(r,g);selectedPartnerAvatar=roleAvatar(r,g==='male'?'female':'male');weapon=ROLE_DATA[r].weapon;characterLevel=progression.characterLevels?.[g+'_'+r]||1;
-            flash(`${ROLE_DATA[r].name} selected. Choose New Game to play.`);renderStore();
-        }
-        function buyStoreCharacterRole(r,g){
-            if(!ROLE_DATA[r]||!['male','female'].includes(g))return;
-            if(storeOwnsRole(r,g)){equipStoreRole(r,g);return;}
-            buyStoreCharacterRoleBase(r,g);
-        }
+        function restartLevel(){if(stageNumber===2&&stage2){heroHealth=100;stage2DamageCooldown=0;heroPlayer.x=180;heroPlayer.y=180;gameOver=false;gameRunning=true;paused=false;$('gameOverModal').classList.add('hidden');requestAnimationFrame(gameLoop);return;}baseRestartLevelV2();}
+        function returnToSetup(){stage2=null;rescueState=null;stageNumber=1;gameRunning=false;gameOver=false;paused=false;clearInterval(timerInterval);victoryCelebrating=false;if(victoryRaf)cancelAnimationFrame(victoryRaf);Object.keys(keys).forEach(k=>keys[k]=false);['gameOverModal','victoryModal','settingsModal','saveModal'].forEach(id=>{const modal=$(id);if(modal){modal.classList.add('hidden');if(id!=='gameOverModal'&&id!=='victoryModal')modal.classList.remove('flex');}});newGender=playerGender==='female'?'female':'male';populateCharacterScreen();showOnly('characterScreen');}
         function rollEnemy(o,max=2){if(!o||o._rolled)return;o.level=enemyLevelRoll(max);o.weaponLevel=enemyWeaponRoll(max);o._rolled=true;o.baseHp=o.hp||1;if(o.level===2)o.hp*=2;o.max=o.hp;if(o.level===2&&o.weaponLevel===2)o.attackMultiplier=4;else if(o.weaponLevel===2)o.attackMultiplier=2;else o.attackMultiplier=1;}
         function updateEnemyLevelRules(){[...birds,...archers,...gates,boss].forEach(o=>rollEnemy(o,stageNumber===1?2:10));}
         const baseInitStageV2=initStageBase;
-        function initStage(){baseInitStageV2();lives=4;$('hudLives').innerText='4';heroPlayer.level=characterLevel;heroPlayer.weaponLevel=Math.min(10,1+(progression.weaponLevels[(ROLE_DATA[selectedRole]||ROLE_DATA.warrior).weapon]||0));updateEnemyLevelRules();}
+        function initStage(){baseInitStageV2();heroHealth=100;heroPlayer.level=1;heroPlayer.weaponLevel=1;updateEnemyLevelRules();updateHealthHUD();}
         const baseUpdatePhysicsV2=updatePhysicsBase;
         function updatePhysics(){updateEnemyLevelRules();updateUltimateInput();baseUpdatePhysicsV2();if($('hudUltimate'))$('hudUltimate').innerText=cheatUltimate?100:Math.round(ultimateCharge);}
         const baseEnterStage2V2=enterStage2TopViewBase;
         function enterStage2TopView(){baseEnterStage2V2();setTimeout(()=>openSaveGame(),300);}
         window.onload = function() {
-            bindControls(); refreshSettings(); renderWeapons();
-            const rg=document.getElementById('storeRedGems'); if(!rg){const e=document.createElement('span');e.id='storeRedGems';e.className='bg-red-950 px-3 py-2 rounded-lg';e.innerHTML='🔴 <b>0</b>';document.querySelector('#storeModal .flex.gap-2.flex-wrap.mb-5')?.appendChild(e);}
-            renderStore(); syncEconomyUI();
+            bindControls(); refreshSettings();
         };
 
-        // Combat, ultimate effects, and progression share one damage/reward path.
+        // Combat and ultimate effects share one damage and reward path.
         let ultimateEffects=[], heroGuard=0;
         function combatTargets(){return stage2 ? [...stage2.monsters.map(o=>({o,k:'monster',x:o.x,y:o.y})),...stage2.cats.map(o=>({o,k:'cat',x:o.x,y:o.y}))].filter(t=>!t.o.dead) : foeBoxes().filter(t=>!t.o.dead);}
-        function awardDefeat(t){if(t.o._rewarded)return;t.o._rewarded=true;progression.money+=t.k==='bird'?1:t.k==='boss'?20:5;addSoul(t.k==='cat'?'bird':t.k==='monster'?'archer':t.k);syncEconomyUI();saveProgress();}
-        function damage(t,power=1){const o=t.o;if(!o||o.dead||o.flash>0)return;if((t.k==='gate'||t.k==='boss')&&!o.firstAttackDone)return;const level=o.level||1;const hp=Number.isFinite(o.hp)?o.hp:Math.pow(2,level-1);o.hp=hp-power*Math.pow(2,characterLevel-level);o.flash=8;pop(o.x,o.y,8);playSound('heart');if(o.hp>0)return;o.dead=true;awardDefeat(t);if(t.k==='gate'&&arena===o){arena=null;checkpoint=heroPlayer.x;flash('Path clear!');}if(t.k==='boss'){bossDefeated=true;boss.dead=true;arena=null;boss.swords=[];birds=[];shots=[];if(!progression.clearedStages.includes(stageNumber)){progression.diamonds+=2;progression.clearedStages.push(stageNumber);saveProgress();syncEconomyUI();}flash('Go meet your partner!');}}
-        function syncEconomyUI(){renderStore();syncStoreCounters();['hudMoney','storeMoney'].forEach(id=>{if($(id))$(id).innerText=progression.money||0;});if($('hudDiamonds'))$('hudDiamonds').innerText=progression.diamonds||0;if($('hudGems'))$('hudGems').innerText=progression.gems||0;}
-        function useUltimate(){if(!ultimateReady()){flash('Defeat enemies to charge your ultimate.');return;}const d=ROLE_DATA[selectedRole];ultimateCharge=cheatUltimate?100:0;const line=['dash','sniper'].includes(d.ultType);const f=heroPlayer.facing==='left'?-1:1;const e={type:d.ultType,name:d.ultimate,x:heroPlayer.x,y:heroPlayer.y,f,t:0,duration:90,power:d.power,hit:new Set()};if(d.ultType==='taunt'){e.duration=300;heroGuard=300;}if(d.ultType==='stomp'){heroGuard=90;stage2Health=Math.min(100,stage2Health+25);updateHealthHUD();}if(d.ultType==='arc')heroGuard=60;if(d.ultType==='traps')e.duration=600;ultimateEffects.push(e);flash(d.ultimate+'!');}
+        function awardDefeat(t){if(t.o._rewarded)return;t.o._rewarded=true;addSoul(t.k==='cat'?'bird':t.k==='monster'?'archer':t.k);}
+        function damage(t,power=1){const o=t.o;if(!o||o.dead||o.flash>0)return;if((t.k==='gate'||t.k==='boss')&&!o.firstAttackDone)return;const level=o.level||1;const hp=Number.isFinite(o.hp)?o.hp:Math.pow(2,level-1);o.hp=hp-power*Math.pow(2,characterLevel-level);o.flash=8;pop(o.x,o.y,8);playSound('hit');if(o.hp>0)return;o.dead=true;awardDefeat(t);if(t.k==='gate'&&arena===o){arena=null;checkpoint=heroPlayer.x;flash('Path clear!');}if(t.k==='boss'){bossDefeated=true;boss.dead=true;arena=null;boss.swords=[];birds=[];shots=[];flash('Go meet your partner!');}}
+        function useUltimate(){if(!ultimateReady()){flash('Defeat enemies to charge your ultimate.');return;}const d=ROLE_DATA[selectedRole];ultimateCharge=cheatUltimate?100:0;const line=['dash','sniper'].includes(d.ultType);const f=heroPlayer.facing==='left'?-1:1;const e={type:d.ultType,name:d.ultimate,x:heroPlayer.x,y:heroPlayer.y,f,t:0,duration:90,power:d.power,hit:new Set()};if(d.ultType==='taunt'){e.duration=300;heroGuard=300;}if(d.ultType==='stomp'){heroGuard=90;heroHealth=Math.min(100,heroHealth+25);updateHealthHUD();}if(d.ultType==='arc')heroGuard=60;if(d.ultType==='traps')e.duration=600;ultimateEffects.push(e);flash(d.ultimate+'!');}
         function buildUltimatePlan(targets,power,single){
             const rank={bird:0,cat:0,archer:1,monster:1,gate:2,boss:3};
             const ranked=targets.map(t=>({t,tie:Math.random()})).sort((a,b)=>(rank[b.t.k]||0)-(rank[a.t.k]||0)||(b.t.o.level||1)-(a.t.o.level||1)||a.tie-b.tie).map(x=>x.t);
@@ -1738,13 +1386,7 @@
         function updateRescue(){const r=rescueState;if(!r)return;r.t++;if(r.phase==='eagle'){r.eagleX+=(partnerGoal.x-r.eagleX)*.05;r.eagleY+=(partnerGoal.y-50-r.eagleY)*.05;if(Math.hypot(r.eagleX-partnerGoal.x,r.eagleY-(partnerGoal.y-50))<10){r.phase='carry';r.t=0;}}else if(r.phase==='carry'){r.eagleX+=(r.portalX-r.eagleX)*.045;r.eagleY+=(r.portalY-28-r.eagleY)*.045;if(r.t>100){r.phase='portal';flash('Follow your partner into the blue portal!');}}else if(Math.hypot(heroPlayer.x-r.portalX,heroPlayer.y-r.portalY)<60)enterStage2TopView();}
         function drawUltimateEffects(){ctx.save();ctx.translate(-(stage2?stage2.camX:camX),-(stage2?stage2.camY:0));for(const e of ultimateEffects){const a=e.t/e.duration;if(e.targetX!==undefined&&e.t-(e.strikeFrame||0)<10){ctx.strokeStyle='#fde68a';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.targetX,e.targetY);ctx.stroke();ctx.beginPath();ctx.arc(e.targetX,e.targetY,20+(e.t-e.strikeFrame)*3,0,Math.PI*2);ctx.stroke();}ctx.save();ctx.translate(e.x,e.y);ctx.strokeStyle='#c4b5fd';ctx.fillStyle='rgba(168,85,247,.25)';ctx.lineWidth=5;ctx.globalAlpha=Math.min(1,(1-a)*2);ctx.beginPath();if(e.type==='arc'){ctx.arc(0,0,180,-1.2+(e.f<0?Math.PI:0),1.2+(e.f<0?Math.PI:0));}else if(e.type==='taunt'){ctx.fillStyle='rgba(56,189,248,.25)';ctx.roundRect(-45,-70,90,110,20);}else if(e.type==='traps'){for(let i=0;i<5;i++)ctx.rect((i-2)*65-12,-12,24,24);}else if(e.type==='meteor'){ctx.fillStyle='#fb923c';ctx.arc(80,-220+Math.min(220,e.t*6),35,0,Math.PI*2);}else if(['sniper','dash'].includes(e.type)){ctx.moveTo(0,0);ctx.lineTo(e.f*Math.min(750,e.t*35),0);}else if(e.type==='rain'){for(let i=0;i<12;i++){const x=Math.sin(i*19)*200;ctx.moveTo(x,-200+(e.t*8+i*17)%220);ctx.lineTo(x+8,-180+(e.t*8+i*17)%220);}}else if(e.type==='storm'){for(let i=0;i<16;i++){const ang=i*Math.PI/8+e.t*.1;ctx.moveTo(0,0);ctx.lineTo(Math.cos(ang)*200,Math.sin(ang)*200);}}else if(e.type==='dance'){for(let i=0;i<5;i++)ctx.arc(0,0,60+i*30,e.t*.15+i,e.t*.15+i+1);}else if(e.type==='tempest'){for(let i=0;i<6;i++){ctx.moveTo(0,0);ctx.lineTo(Math.cos(e.t*.08+i)*220,Math.sin(e.t*.08+i)*220);}}else{ctx.strokeStyle=e.type==='stomp'?'#fbbf24':'#fb923c';ctx.arc(0,0,Math.min(300,e.t*9),0,Math.PI*2);}ctx.fill();ctx.stroke();ctx.restore();}ctx.restore();}
         const renderV3=renderCanvas;renderCanvas=function(){renderV3();drawUltimateEffects();ctx.save();ctx.translate(-(stage2?stage2.camX:camX),-(stage2?stage2.camY:0));ctx.font='bold 12px sans-serif';ctx.textAlign='center';for(const t of combatTargets()){ctx.fillStyle='#0f172a';const labelY=t.o.y-({bird:48,cat:75,monster:110,archer:110,gate:t.o.type==='aunty'?156:140,boss:225}[t.k]||100);ctx.fillRect(t.o.x-30,labelY,60,18);ctx.fillStyle='#fff';ctx.fillText('Lv '+(t.o.level||1),t.o.x,labelY+13);}ctx.restore();const charge=cheatUltimate?100:ultimateCharge;ctx.fillStyle='#1e1b4b';ctx.fillRect(12,465,270,24);ctx.fillStyle='#a855f7';ctx.fillRect(12,465,270*charge/100,24);ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.fillText(ROLE_DATA[selectedRole].ultimate+' • '+Math.round(charge)+'% • '+keyLabel(binds.special),20,482);};
-        function openCharacters(){let m=$('charactersModal');if(!document.getElementById('charactersModal')){m=document.createElement('div');m.id='charactersModal';m.className='fixed inset-0 bg-slate-950/90 flex items-center justify-center p-4 z-50';document.body.appendChild(m);}m.classList.remove('hidden');renderCharacterManager();}
-        function renderCharacterManager(){const m=$('charactersModal');m.innerHTML=`<div class="bg-slate-900 p-6 rounded-2xl max-w-xl w-full text-white"><h2 class="text-2xl font-bold mb-3">Characters</h2><canvas id="managedPortrait" width="180" height="220" style="float:right"></canvas><p>${ROLE_DATA[selectedRole].name} • ${playerGender} • Level ${characterLevel}/10</p><p>🔴 ${progression.redGems||0} Red Gems • 🔷 ${progression.gems||0} Blue Gems</p><label>Name <input id="editCharacterName" class="bg-slate-800 p-2 my-3 rounded" value=""></label><div class="flex gap-2 flex-wrap"><button class="bg-red-700 p-2 rounded" onclick="upgradeCharacter();renderCharacterManager()">Upgrade character (${characterLevel} red gems)</button><button class="bg-blue-700 p-2 rounded" onclick="upgradeWeapon(ROLE_DATA[selectedRole].weapon);renderCharacterManager()">Upgrade weapon (blue gems)</button><button class="bg-purple-700 p-2 rounded" onclick="saveCharacterEdits()">Save name</button><button class="bg-slate-700 p-2 rounded" onclick="document.getElementById('charactersModal').classList.add('hidden')">Close</button></div><div id="ownedCharacterButtons" class="flex gap-2 flex-wrap mt-4"></div></div>`;const pc=$('managedPortrait');if(pc)drawArtEntity(playerGender+'_'+selectedRole,90,180,190,'right',{},pc.getContext('2d'));$('editCharacterName').value=selectedHeroAvatar.name||'Hero';$('ownedCharacterButtons').innerHTML=['male','female'].flatMap(g=>[...new Set([...STARTER_ROLES,...(progression[g==='male'?'ownedMaleRoles':'ownedFemaleRoles']||[])])].map(r=>`<button class="bg-slate-800 p-2 rounded" onclick="chooseManagedRole('${r}','${g}')">${g==='male'?'♂':'♀'} ${ROLE_DATA[r].name}</button>`)).join('');}
-        function chooseManagedRole(r,g){selectedRole=r;playerGender=newGender=g;selectedHeroAvatar=roleAvatar(r,g);selectedPartnerAvatar=roleAvatar(r,g==='male'?'female':'male');weapon=ROLE_DATA[r].weapon;characterLevel=progression.characterLevels?.[g+'_'+r]||1;saveProgress();renderCharacterManager();}
-        function saveCharacterEdits(){selectedHeroAvatar.name=$('editCharacterName').value.trim()||'Hero';if(heroPlayer)heroPlayer.name=selectedHeroAvatar.name;saveProgress();flash('Character updated.');}
-
-    
-const ART_SOURCES={"male_warrior": "assets/images/art-01.webp", "female_warrior": "assets/images/art-02.webp", "male_knight": "assets/images/art-03.webp", "female_knight": "assets/images/art-04.webp", "male_goblin": "assets/images/art-05.webp", "female_goblin": "assets/images/art-06.webp", "male_ogre": "assets/images/art-07.webp", "female_ogre": "assets/images/art-08.webp", "male_titan": "assets/images/art-09.webp", "female_titan": "assets/images/art-10.webp", "male_mage": "assets/images/art-11.webp", "female_mage": "assets/images/art-12.webp", "male_swordUser": "assets/images/art-13.webp", "female_swordUser": "assets/images/art-14.webp", "male_doubleSword": "assets/images/art-15.webp", "female_doubleSword": "assets/images/art-16.webp", "male_gunUser": "assets/images/art-17.webp", "female_gunUser": "assets/images/art-18.webp", "male_archer": "assets/images/art-19.webp", "female_archer": "assets/images/art-20.webp", "male_doubleGun": "assets/images/art-21.webp", "female_doubleGun": "assets/images/art-22.webp", "male_magicSword": "assets/images/art-23.webp", "female_magicSword": "assets/images/art-24.webp", "uncle": "assets/images/art-25.webp", "aunt": "assets/images/art-26.webp", "boss": "assets/images/art-27.webp", "bird": "assets/images/art-28.webp", "monster": "assets/images/art-29.webp", "cat": "assets/images/art-30.webp", "eagle": "assets/images/art-31.webp", "stage1bg": "assets/images/art-32.webp", "stage2bg": "assets/images/art-33.webp", "tree": "assets/images/art-34.webp"};
+const ART_SOURCES={"male_warrior":"assets/images/art-01.webp","female_warrior":"assets/images/art-02.webp","uncle":"assets/images/art-25.webp","aunt":"assets/images/art-26.webp","boss":"assets/images/art-27.webp","bird":"assets/images/art-28.webp","monster":"assets/images/art-29.webp","cat":"assets/images/art-30.webp","eagle":"assets/images/art-31.webp","stage1bg":"assets/images/art-32.webp","stage2bg":"assets/images/art-33.webp","tree":"assets/images/art-34.webp"};
 const ART={};let artLoaded=0;
 const artReady=Promise.all(Object.entries(ART_SOURCES).map(([key,src])=>new Promise(resolve=>{const image=new Image();ART[key]=image;image.onload=()=>{artLoaded++;resolve();};image.onerror=()=>{console.warn('Art failed:',key);resolve();};image.src=src;})));
 function drawArtEntity(key,x,y,height,facing='right',state={},context=ctx){
@@ -1795,27 +1437,14 @@ const entityMotionBase=drawArtEntity;drawArtEntity=function(key,x,y,height,facin
 const renderMotionBase=renderCanvas;renderCanvas=function(){renderMotionBase();ctx.save();ctx.translate(-(stage2?stage2.camX:camX),-(stage2?stage2.camY:0));for(const p of [...(stage2?stage2.projectiles:projs),...(!stage2?shots:[])]){if(p.dead)continue;const color=p.k==='wand'?'#c4b5fd':p.k==='laser'?'#fb7185':'#fde68a';ctx.strokeStyle=color;ctx.lineWidth=p.k==='wand'?5:3;ctx.shadowColor=color;ctx.shadowBlur=10;if(p.trail?.length){ctx.beginPath();ctx.moveTo(p.trail[0].x,p.trail[0].y);for(const pt of p.trail)ctx.lineTo(pt.x,pt.y);ctx.lineTo(p.x,p.y);ctx.stroke();}}if(heroPlayer.attackMotion>0){const d=heroPlayer.attackDir||aimDir(),angle=Math.atan2(d.y,d.x),progress=1-heroPlayer.attackMotion/16;ctx.save();ctx.translate(heroPlayer.x,heroPlayer.y-8);ctx.rotate(angle);ctx.strokeStyle=weapon==='sword'?'#bae6fd':'#fef08a';ctx.lineWidth=7;ctx.shadowBlur=18;ctx.shadowColor=ctx.strokeStyle;ctx.beginPath();if(weapon==='sword')ctx.arc(0,0,58,-1.3, -1.3+progress*2.6);else ctx.arc(26,0,6+progress*9,0,Math.PI*2);ctx.stroke();ctx.restore();}for(const t of combatTargets())if(t.o.attackMotion>0){ctx.strokeStyle=t.k==='gate'?'#fb7185':'#fbbf24';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.o.x,t.o.y-25,22+(18-t.o.attackMotion),-.8,.8);ctx.stroke();}ctx.restore();};
 
 drawWeapon=function(){};drawStage2Weapon=function(){};
-/* Animated combat and world effects for Love Adventure's illustrated build. */
+/* Animated combat and world effects for Æthelos. */
 (() => {
     const villainArcherImage=new Image();
     ART.enemy_archer=villainArcherImage;
     villainArcherImage.src='assets/images/art-35.webp';
 
-    const ROLE_COMBOS = {
-        warrior: [{type:'slash',angle:-.7},{type:'vertical',angle:-1.25},{type:'horizontal',angle:0},{type:'x',angle:0}],
-        knight: [{type:'bash',angle:0},{type:'thrust',angle:0},{type:'slash',angle:-.8},{type:'cleave',angle:0}],
-        goblin: [{type:'feint',angle:-.35},{type:'low',angle:.42},{type:'reverse',angle:.75},{type:'x',angle:0}],
-        ogre: [{type:'heavy',angle:-1.25},{type:'sweep',angle:0},{type:'reverse',angle:Math.PI},{type:'slam',angle:Math.PI/2}],
-        titan: [{type:'punch',angle:0},{type:'hook',angle:-.45},{type:'stomp',angle:Math.PI/2},{type:'doublefist',angle:Math.PI/2}],
-        mage: [{type:'orb',angle:0},{type:'arcane',angle:-.7},{type:'spiral',angle:0},{type:'burst',angle:0}],
-        swordUser: [{type:'slash',angle:-.7},{type:'vertical',angle:-1.25},{type:'reverse',angle:.7},{type:'spin',angle:0}],
-        doubleSword: [{type:'highlow',angle:-.75},{type:'cross',angle:0},{type:'spin',angle:0},{type:'x',angle:0}],
-        gunUser: [{type:'draw',angle:0},{type:'shot',angle:0},{type:'stepShot',angle:0},{type:'precision',angle:0}],
-        archer: [{type:'draw',angle:0},{type:'quickArrow',angle:0},{type:'fanArrow',angle:0},{type:'pierce',angle:0}],
-        doubleGun: [{type:'alternating',angle:0},{type:'crossfire',angle:0},{type:'turnVolley',angle:0},{type:'crossfire',angle:0}],
-        magicSword: [{type:'ember',angle:-.7},{type:'vertical',angle:-1.25},{type:'wave',angle:0},{type:'x',angle:0}]
-    };
-    const ROLE_COLORS = {warrior:'#bae6fd',knight:'#e2e8f0',goblin:'#a3e635',ogre:'#fbbf24',titan:'#fb923c',mage:'#c4b5fd',swordUser:'#7dd3fc',doubleSword:'#f9a8d4',gunUser:'#fde68a',archer:'#86efac',doubleGun:'#fca5a5',magicSword:'#c084fc'};
+    const ROLE_COMBOS = {warrior: [{type:'slash',angle:-.7},{type:'vertical',angle:-1.25},{type:'horizontal',angle:0},{type:'x',angle:0}]};
+    const ROLE_COLORS = {warrior:'#bae6fd'};
     const FRAME_HITS = [5, 11, 17, 23];
     const POSE_STEPS = 2; // 26 artwork poses, each held for two simulation ticks.
     let combo = null, attackLatch = false, slashFX = [], screenShake = 0, wasAirborne = false, landingSquash = 0;
@@ -2077,23 +1706,9 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 
 </script>
 <div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">R run · Ctrl sprint · Space attack · Full-body combo</div>
-<script>window.LoveAdventureModelParts={male:[],female:[]};</script>
+<script>window.AethelosModelParts={male:[],female:[]};</script>
 <script src="assets/models/male-01.js?v=14"></script>
-<script src="assets/models/male-02.js?v=14"></script>
-<script src="assets/models/male-03.js?v=14"></script>
-<script src="assets/models/male-04.js?v=14"></script>
-<script src="assets/models/male-05.js?v=14"></script>
-<script src="assets/models/male-06.js?v=14"></script>
-<script src="assets/models/male-07.js?v=14"></script>
-<script src="assets/models/male-08.js?v=14"></script>
 <script src="assets/models/female-01.js?v=14"></script>
-<script src="assets/models/female-02.js?v=14"></script>
-<script src="assets/models/female-03.js?v=14"></script>
-<script src="assets/models/female-04.js?v=14"></script>
-<script src="assets/models/female-05.js?v=14"></script>
-<script src="assets/models/female-06.js?v=14"></script>
-<script src="assets/models/female-07.js?v=14"></script>
-<script src="assets/models/female-08.js?v=14"></script>
 <script>
 
 const THREE=(()=>{const exports={};const module={exports};
@@ -79538,8 +79153,8 @@ exports.createCanvasElement = createCanvasElement;
 
 return module.exports;})();
 
-const WARRIOR_MODEL=window.LoveAdventureModelParts.male.join('');window.LoveAdventureModelParts.male=null;
-const FEMALE_WARRIOR_MODEL=window.LoveAdventureModelParts.female.join('');window.LoveAdventureModelParts.female=null;
+const WARRIOR_MODEL=window.AethelosModelParts.male.join('');window.AethelosModelParts.male=null;
+const FEMALE_WARRIOR_MODEL=window.AethelosModelParts.female.join('');window.AethelosModelParts.female=null;
 /* Original GLB loader and animation sampler, shared by game and inspection view. */
 function createMaleWarriorAsset(THREE,encoded,options={}){
  return createWarriorAsset(THREE,encoded,options);
@@ -79650,7 +79265,7 @@ function createWarriorEffects(THREE,scene,rig){
   heroPlayer.attackMotion=0;heroPlayer.comboPose=-1;
  };
  const previousStart=startGame;startGame=function(){reset();previousStart()};const previousBegin=beginSelectedCharacter;beginSelectedCharacter=async function(){if(selectedRole==='warrior'){chooseRig(newGender);const button=document.querySelector('[onclick="beginSelectedCharacter()"]');if(button){button.disabled=true;button.textContent='LOADING 3D WARRIOR…'}await ready;if(rigError){if(button){button.disabled=false;button.textContent='START ADVENTURE'}flash('The 3D warrior could not load. Try Chrome or Edge.');return}}const result=previousBegin();const b=document.querySelector('[onclick="beginSelectedCharacter()"]');if(b){b.disabled=false;b.textContent="START ADVENTURE"}return result};
- const previousKill=kill;kill=function(){const before=lives;previousKill();if(lives<before)reset()};
+ const previousKill=kill;kill=function(){const before=heroHealth;previousKill();if(heroHealth<before)reset()};
  function createView(){chooseRig();if(view||rigError||!rig)return view;try{const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setSize(512,512,false);renderer.setPixelRatio(1);renderer.setClearColor(0,0);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;const scene=new THREE.Scene();scene.add(rig.root);scene.add(new THREE.HemisphereLight('#eff7ff','#3e4851',2.3));for(const [c,power,pos] of [['#fff0dc',2.1,[2,3,3]],['#acddff',1.3,[-2,2,-3]]]){const l=new THREE.DirectionalLight(c,power);l.position.set(...pos);scene.add(l)}const camera=new THREE.OrthographicCamera(-1.05,1.05,1.05,-1.05,.01,30);camera.position.set(0,.80,3);camera.lookAt(0,.80,0);view={renderer,scene,camera,effects:createWarriorEffects(THREE,scene,rig),rendered:false};views[rigGender]=view;return view}catch(e){rigError=e;console.error(e);flash('WebGL is unavailable; the 3D character cannot render.');return null}}
  function animateAsset(){rig.root.position.set(0,0,0);const phased=!!rig.channels.Fall,falling=stage2?jumpVelocity<0:heroPlayer.vy>0;
  const mode=combo?'Combo':jumpPrep>0?'Jump':wasAir?(phased&&falling?'Fall':'Jump'):landTime>0?(phased?'Land':'Jump'):phased&&turnClock<.18?'Turn':heroPlayer.isMoving?(heroPlayer.isSprinting&&phased?'Sprint':heroPlayer.isRunning&&rig.channels.Run?'Run':'Walk'):phased&&stopClock<.25?'Stop':phased&&turnClock<.3?'Turn':'Idle';
