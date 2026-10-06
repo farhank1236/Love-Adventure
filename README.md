@@ -1,12 +1,14 @@
 # Love Adventure
 
-Version 18 with the Female Warrior V9 model and animations.
+Version 18 with the Female Warrior V10 model and animations.
 
-Open index.html, then select New Game → Female → Warrior. Default controls: arrow keys move, Space attacks, Shift jumps, and holding R while moving runs. Run has its own animation and can be remapped in Settings. Each press triggers one cut; four presses queue the combo. A one-second input gap resets it. Attacking while jumping works in both stages.
+Open index.html, then select New Game → Female → Warrior. Default controls: arrow keys move, Space attacks, Shift jumps, and holding R while moving runs; holding Ctrl sprints. Run and Sprint have their own animations and can be remapped in Settings. Each press triggers one cut; five presses queue the female combo (the male warrior retains four cuts). A one-second input gap resets it. Attacking while jumping works in both stages.
 
-Keep the entire assets folder beside index.html. Model data is divided into script files so no repository file exceeds the single-file limit. All chunks are loaded before the 3D combat code runs. The original self-contained game has the same model and animation data.
+Keep the entire assets folder beside index.html. Model data is divided into script files so no repository file exceeds the single-file limit. All chunks are loaded before the 3D combat code runs.
 
-The female sword stays rigidly attached to the hand. Shoulder-led cuts use a bounded elbow hinge and coordinated torso rotation. Sword sweeps cancel nearby incoming arrows, waves, lasers and boss blades, including low attacks; Stage 2 close attacks are interrupted too. Rear attacks and the recovery tail remain vulnerable. The original geometry and texture are retained, including the existing cloth/sleeve deformation limitations. Software WebGL rendering and Blender import were checked; hardware GPU rendering was not verified.
+The female warrior uses five connected full-body cuts: diagonal, reverse, advancing, pivot sweep, and a stronger rising finisher. Hips and torso lead the shoulder; the elbow remains a bounded hinge, while the wrist and blade rotate around the grip. Two-bone leg solving plants the supporting foot during the stepping combo. Movement accelerates and decelerates, facing turns smoothly, and jumping has anticipation, takeoff, falling and landing poses. Hair and garments have keyed secondary motion; this is skeletal animation rather than a cloth simulation.
+
+Cape and coat panels are rebound to cloth/torso bones so nearby hands cannot pull them into sword poses. Positions, topology, normals, UVs, textures and rest proportions are preserved. Red body/blade energy appears during attacks, with a fading curved sword trail and stronger finisher. Sword sweeps cancel nearby incoming arrows, waves, lasers and boss blades, including low attacks; Stage 2 close attacks are interrupted too. Rear attacks and the recovery tail remain vulnerable. Software WebGL rendering and Blender import were checked; hardware GPU rendering was not verified.
 
 Use 3D Warrior · Animation view inside the game to inspect the character.
 
@@ -26,8 +28,10 @@ Run the warrior animation and combat regression checks with the same Playwright 
 
 ```sh
 NODE_PATH=/tmp/love-adventure-tests/node_modules node tests/warrior-combat.cjs
+NODE_PATH=/tmp/love-adventure-tests/node_modules node tests/character-preview.cjs
+python3 tests/female-model-integrity.py
 ```
 
-`tools/rebuild-female-warrior.py` reproducibly bakes the shoulder-led attack tracks and running loop into the eight model parts without changing mesh geometry or textures. Run `python3 tools/rebuild-female-warrior.py --export /tmp/female-warrior-v9.glb` to regenerate the bundled animation and produce an editable GLB for Blender.
+`tools/rebuild-female-warrior.py` reproducibly bakes the full-body combo, locomotion and jump tracks, and repairs garment bindings with `tools/female-cloth-bindings.json` into the eight model parts without changing mesh geometry or textures. Run `python3 tools/rebuild-female-warrior.py --export /tmp/female-warrior-v10.glb` to regenerate the bundled animation and produce an editable GLB for Blender.
 
 Inspect the female warrior in `character-preview.html`: choose guard, walking, running, jumping, the full combo or an individual cut, then rotate, zoom, pause or scrub the animation. This page uses the bundled model parts and has no CDN dependencies.

@@ -3,11 +3,10 @@
 
 Uses only Python's standard library. Run from any directory. Optionally supply
 --export /path/to/female-warrior.glb for Blender inspection. Repeatable: existing
-Run accessors are reused, and no mesh, skin weights or textures are rewritten.
+V10 accessors are reused. Garment skin bindings are repaired; geometry, UVs and textures are preserved.
 """
 import argparse
 import base64
-import copy
 import json
 import math
 from pathlib import Path
@@ -16,77 +15,129 @@ import struct
 ROOT = Path(__file__).resolve().parents[1]
 PARTS = ROOT / 'assets/models'
 PREFIX = 'window.LoveAdventureModelParts.female.push('
-STARTS = [0., .9, 1.7, 2.5]
-ENDS = [.9, 1.7, 2.5, 3.6]
-HITS = [.56, 1.36, 2.16, 3.19]
-# XYZ degrees: shoulder drives the cut; elbow only flexes in its hinge plane.
-GUARD = (-35, 8, -10)
-SWINGS = [
-    ((-140, -15, -12), (-30, 12, 16), (8, 18, 10), -12, 14),
-    ((-55, -75, -20), (-60, 75, 20), (-30, 90, 10), -25, 25),
-    ((-55, 70, 20), (-60, -75, -20), (-30, -90, -10), 25, -25),
-    ((15, -20, -25), (-125, 30, 10), (-140, 15, -10), -18, 18),
-]
-
+# All angles in degrees, authored on the existing skeleton. Positive cloth pitch trails backwards.
+STARTS=[0.,.72,1.38,2.15,2.93]
+ENDS=[.72,1.38,2.15,2.93,4.05]
+HITS=[.42,1.10,1.85,2.63,3.55]
+GUARD=(-38,8,-10)
 
 def quaternion(degrees):
-    x, y, z = [math.radians(v)/2 for v in degrees]
-    cx, sx, cy, sy, cz, sz = math.cos(x), math.sin(x), math.cos(y), math.sin(y), math.cos(z), math.sin(z)
-    return (sx*cy*cz+cx*sy*sz, cx*sy*cz-sx*cy*sz, cx*cy*sz+sx*sy*cz, cx*cy*cz-sx*sy*sz)
+ x,y,z=[math.radians(v)/2 for v in degrees]
+ cx,sx,cy,sy,cz,sz=math.cos(x),math.sin(x),math.cos(y),math.sin(y),math.cos(z),math.sin(z)
+ return (sx*cy*cz+cx*sy*sz,cx*sy*cz-sx*cy*sz,cx*cy*sz+sx*sy*cz,cx*cy*cz-sx*sy*sz)
+
+def interpolate(a,b,u):
+ u=max(0.,min(1.,u));u=u*u*(3-2*u)
+ return tuple(x+(y-x)*u for x,y in zip(a,b))
+
+def pose(shoulder=GUARD,elbow=-57,wrist=(0,0,0),blade=(0,0,0),turn=0,drop=0,step=0,lead=0):
+ return dict(RShoulder=shoulder,RElbow=(elbow,0,0),RWrist=wrist,RHand=(0,0,0),Sword=blade,
+ Hips=(0,turn*.22,0),Spine=(4,turn*.32,0),Chest=(2,turn*.46,0),Neck=(-3,-turn*.15,0),Head=(0,-turn*.12,0),
+ LShoulder=(-18,-turn*.30,14),LElbow=(-50,0,0),LWrist=(0,0,0),LHand=(0,0,0),
+ RHip=(-lead,0,-2),RKnee=(drop*650+max(0,lead)*.6,0,0),RAnkle=(lead-drop*650-max(0,lead)*.6,0,0),RFoot=(0,0,0),
+ LHip=(lead*.5,0,2),LKnee=(drop*650+max(0,-lead)*.6,0,0),LAnkle=(-lead*.5-drop*650-max(0,-lead)*.6,0,0),LFoot=(0,0,0),
+ CapeTop=(4,turn*-.12,0),CapeMid=(7,turn*-.18,0),CapeBottom=(9,turn*-.12,0),
+ Hair=(2,-turn*.05,0),HairMid=(5,-turn*.12,0),HairTip=(6,-turn*.18,0),SkirtFront=(2,0,0),SkirtR=(4,0,1),SkirtL=(4,0,-1),
+ _drop=drop,_step=step)
+
+# The shared boundary pose is also the next cut's preparation; there is no guard reset between cuts.
+KEYS=[
+ (0.,pose()),
+ (.23,pose((-132,-22,-15),-68,(-10,-12,6),(-3,0,3),-32,.025,.008,-9)),
+ (.42,pose((-48,38,20),-30,(16,22,-6),(7,0,-7),29,.013,.057,18)),
+ (.72,pose((-20,57,24),-47,(-10,10,-8),(0,0,-3),38,.018,.075,8)),
+ (.90,pose((-42,72,19),-60,(-12,20,8),(-4,0,5),43,.032,.080,2)),
+ (1.10,pose((-48,-65,-16),-32,(12,-25,-6),(5,0,-6),-36,.019,.120,-14)),
+ (1.38,pose((-65,-61,-12),-50,(-8,-14,7),(0,0,3),-39,.022,.130,-5)),
+ (1.61,pose((-115,-52,-22),-70,(-14,-18,8),(-4,0,4),-49,.049,.141,-10)),
+ (1.85,pose((-37,60,25),-28,(18,26,-7),(8,0,-8),47,.022,.225,25)),
+ (2.15,pose((-40,72,24),-49,(-8,17,-5),(0,0,-2),53,.024,.240,12)),
+ (2.38,pose((-54,68,18),-61,(-9,17,5),(-3,0,4),65,.036,.249,6)),
+ (2.63,pose((-50,-79,-14),-33,(15,-24,-8),(6,0,-6),-68,.021,.265,-17)),
+ (2.93,pose((8,-32,-23),-55,(-12,-15,6),(-3,0,3),-47,.036,.270,-7)),
+ (3.24,pose((24,-35,-23),-72,(-18,-20,8),(-5,0,4),-56,.062,.279,-12)),
+ (3.55,pose((-130,36,16),-24,(20,25,-8),(9,0,-8),57,.004,.408,28)),
+ (3.77,pose((-143,24,4),-36,(8,15,-4),(3,0,-3),44,.011,.430,15)),
+ (4.05,pose(step=.430))]
+
+def attack_pose(t):
+ k=next((i for i in range(len(KEYS)-1) if t<=KEYS[i+1][0]),len(KEYS)-2)
+ a,A=KEYS[k];b,B=KEYS[k+1];u=max(0,min(1,(t-a)/(b-a)))
+ out={}
+ for n,v in A.items():
+  if isinstance(v,(int,float)):out[n]=interpolate((v,),(B[n],),u)[0];continue
+  prev_t,prev=KEYS[max(0,k-1)];next_t,nex=KEYS[min(len(KEYS)-1,k+2)]
+  tangent_a=[(y-x)/max(1e-6,b-prev_t) for x,y in zip(prev[n],B[n])]
+  tangent_b=[(y-x)/max(1e-6,next_t-a) for x,y in zip(A[n],nex[n])]
+  if a not in HITS:tangent_a=[x*.55 for x in tangent_a]
+  if b not in HITS:tangent_b=[x*.55 for x in tangent_b]
+  out[n]=tuple((2*u**3-3*u*u+1)*x+(u**3-2*u*u+u)*(b-a)*m+(-2*u**3+3*u*u)*y+(u**3-u*u)*(b-a)*q for x,y,m,q in zip(v,B[n],tangent_a,tangent_b))
+ return out
 
 
-def interpolate(a, b, u):
-    # Smooth keyed transitions, evaluated into uniform GLTF samples.
-    u = max(0., min(1., u)); u = u*u*(3-2*u)
-    return tuple(x+(y-x)*u for x, y in zip(a, b))
+def authored(clip,t):
+ if clip=='Combo' or clip.startswith('Attack'):
+  return attack_pose(t if clip=='Combo' else STARTS[int(clip[-1])-1]+t)
+ r=pose()
+ if clip in ['Walk','Run','Sprint']:
+  duration={'Walk':.9,'Run':.72,'Sprint':.62}[clip];a=math.sin(2*math.pi*t/duration);b=math.cos(2*math.pi*t/duration)
+  amp={'Walk':24,'Run':42,'Sprint':53}[clip];lean={'Walk':2,'Run':7,'Sprint':12}[clip]
+  r.update(RHip=(-amp*a,0,-2),LHip=(amp*a,0,2),RKnee=(9+amp*1.1*max(0,a),0,0),LKnee=(9+amp*1.1*max(0,-a),0,0),
+   RAnkle=(amp*a*.48-6,0,0),LAnkle=(-amp*a*.48-6,0,0),Hips=(0,4*a,2*a),Spine=(lean,-3*a,0),Chest=(lean*.5,-5*a,0),Neck=(-lean,0,0),
+   RShoulder=(-38-amp*.25*a,8,-10),RElbow=(-57-4*a,0,0),RWrist=(2*b,3*a,0),Sword=(a,0,-a),
+   LShoulder=(-12+amp*.65*a,-8,10),LElbow=(-40-lean*3-5*a,0,0),
+   CapeTop=(lean*.6,0,0),CapeMid=(lean+3+2*math.sin(2*math.pi*t/duration-.7),2*a,0),CapeBottom=(lean+5+4*math.sin(2*math.pi*t/duration-1.1),3*a,0),
+   HairMid=(lean*.8+2*b,0,0),HairTip=(lean+3*math.sin(2*math.pi*t/duration-.6),2*a,0),SkirtFront=(lean*.5,0,0),SkirtR=(lean*.6+4*a,0,0),SkirtL=(lean*.6-4*a,0,0),
+   _drop=.006+.009*(1-math.cos(4*math.pi*t/duration)))
+ elif clip in ['Jump','Fall','Land','Stop','Turn']:
+  # Anticipation, extension, tuck, fall preparation, and landing compression are distinct poses.
+  if clip=='Jump':
+   frames=[(0,pose()),(.13,pose(drop=.055,lead=6)),(.25,pose((-63,8,-9),-68,drop=0,lead=0)),(.52,pose((-53,12,-10),-65,drop=.015,lead=30)),(.78,pose((-43,8,-10),-58,drop=.018,lead=12)),(.90,pose(drop=.052,lead=7)),(1.12,pose())]
+  elif clip=='Fall':frames=[(0,pose((-53,12,-10),-65,drop=.015,lead=30)),(.6,pose((-43,8,-10),-58,drop=.018,lead=12))]
+  elif clip=='Land':frames=[(0,pose(drop=.018,lead=12)),(.08,pose(drop=.056,lead=7)),(.25,pose())]
+  elif clip=='Stop':frames=[(0,pose(drop=.025,lead=12)),(.25,pose())]
+  else:frames=[(0,pose(turn=-18,drop=.015,lead=6)),(.30,pose())]
+  k=next((i for i in range(len(frames)-1) if t<=frames[i+1][0]),len(frames)-2);a,A=frames[k];b,B=frames[k+1];u=(t-a)/(b-a)
+  r={n:(interpolate((v,),(B[n],),u)[0] if isinstance(v,(int,float)) else interpolate(v,B[n],u)) for n,v in A.items()}
+  r['CapeMid']=(5,0,0);r['CapeBottom']=(8,0,0)
+ else:
+  a=math.sin(t*2*math.pi/3);r.update(RShoulder=(-38+1.2*a,8,-10),Chest=(2+.6*a,0,0),CapeMid=(2+a,0,0),CapeBottom=(3+1.5*a,0,0),HairTip=(2+a,0,0))
+ return r
 
 
-def attack_pose(time):
-    i = next((i for i, end in enumerate(ENDS) if time <= end), 3)
-    t = time-STARTS[i]; duration = ENDS[i]-STARTS[i]; hit = HITS[i]-STARTS[i]
-    windup, strike, follow, turn_from, turn_to = SWINGS[i]
-    frames = [0., hit*.52, hit, min(duration*.88, hit+.16), duration]
-    values = [(GUARD, -60., 0.), (windup, -55., turn_from),
-              (strike, -30., turn_to), (follow, -35., turn_to*.75), (GUARD, -60., 0.)]
-    k = min(len(frames)-2, next((j for j in range(len(frames)-1) if t <= frames[j+1]), len(frames)-2))
-    u = (t-frames[k])/(frames[k+1]-frames[k])
-    shoulder = interpolate(values[k][0], values[k+1][0], u)
-    elbow, turn = interpolate(values[k][1:], values[k+1][1:], u)
-    return shoulder, elbow, turn
-
-
-def rotations(clip, t):
-    if clip == 'Combo' or clip.startswith('Attack'):
-        full_t = t if clip == 'Combo' else STARTS[int(clip[-1])-1]+t
-        shoulder, elbow, turn = attack_pose(full_t)
-        return {'RShoulder': shoulder, 'RElbow': (elbow, 0, 0), 'RWrist': (0, 0, 0),
-                'RHand': (0, 0, 0), 'Sword': (0, 0, 0), 'Spine': (3, turn*.4, 0),
-                'Chest': (4, turn*.6, 0), 'LShoulder': (-20, -8, 12), 'LElbow': (-65, 0, 0)}
-    phase = 2*math.pi*t/(.8 if clip == 'Run' else 2.4)
-    wave = math.sin(phase)
-    result = {'RHand': (0, 0, 0), 'Sword': (0, 0, 0), 'RWrist': (0, 0, 0)}
-    if clip == 'Run':
-        result.update(RShoulder=(-30-14*wave, 10, -12), RElbow=(-65+8*wave, 0, 0),
-                      LShoulder=(-20+32*wave, -8, 12), LElbow=(-75-8*wave, 0, 0),
-                      LWrist=(0, 0, 0), LHand=(0, 0, 0), Hips=(8, 3*wave, 2*wave),
-                      Spine=(5, -4*wave, 0), Chest=(5, -5*wave, 0), Neck=(-5, 0, 0), Head=(-4, 0, 0),
-                      RHip=(-48*wave, 0, 0), LHip=(48*wave, 0, 0),
-                      RKnee=(20+55*max(0, wave), 0, 0), LKnee=(20+55*max(0, -wave), 0, 0),
-                      RAnkle=(-12-15*max(0, wave), 0, 0), LAnkle=(-12-15*max(0, -wave), 0, 0),
-                      RFoot=(5, 0, 0), LFoot=(5, 0, 0), CapeTop=(-12, 0, 0), CapeMid=(-18, 3*wave, 0),
-                      CapeBottom=(-15, 5*wave, 0), Hair=(5, 0, 0), HairMid=(12, 2*wave, 0),
-                      HairTip=(8, 3*wave, 0), SkirtFront=(-10, 0, 0), SkirtR=(-8-8*wave, 0, 0), SkirtL=(-8+8*wave, 0, 0))
-    elif clip == 'Walk':
-        result.update(RShoulder=(-35-8*wave, 8, -10), RElbow=(-60+4*wave, 0, 0),
-                      LShoulder=(-12+20*wave, -8, 10), LElbow=(-35, 0, 0))
-    elif clip == 'Jump':
-        lift = math.sin(math.pi*min(1, t/1.))
-        result.update(RShoulder=(-35-18*lift, 8, -10), RElbow=(-60-10*lift, 0, 0))
-    else:
-        breath = math.sin(t*2*math.pi/3)
-        result.update(RShoulder=(-35+1.5*breath, 8, -10), RElbow=(-60, 0, 0))
-    return result
-
+def add(a,b):return tuple(x+y for x,y in zip(a,b))
+def sub(a,b):return tuple(x-y for x,y in zip(a,b))
+def mul(a,k):return tuple(x*k for x in a)
+def dot(a,b):return sum(x*y for x,y in zip(a,b))
+def norm(a):return math.sqrt(dot(a,a))
+def unit(a):return mul(a,1/max(1e-9,norm(a)))
+def cross(a,b):return (a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0])
+def qmul(a,b):
+ x,y,z,w=a;X,Y,Z,W=b
+ return (w*X+x*W+y*Z-z*Y,w*Y-x*Z+y*W+z*X,w*Z+x*Y-y*X+z*W,w*W-x*X-y*Y-z*Z)
+def inverse(q):return (-q[0],-q[1],-q[2],q[3])
+def rotate(q,v):return qmul(qmul(q,(*v,0)),inverse(q))[:3]
+def align(a,b):
+ a,b=unit(a),unit(b);q=(*cross(a,b),1+dot(a,b));return mul(q,1/max(1e-9,norm(q)))
+def foot_target(side,t):
+ steps={'R':[(.23,.55,.065),(1.61,2.02,.225),(3.24,3.77,.43)],'L':[(.90,1.26,.125),(2.38,2.84,.28),(3.77,4.05,.43)]}[side]
+ z=0.;lift=0.
+ for start,end,target in steps:
+  if t>=end:z=target
+  elif t>start:
+   u=(t-start)/(end-start);z=interpolate((z,),(target,),u)[0];lift=.036*math.sin(math.pi*u);break
+  else:break
+ return ((-.158 if side=='R' else .158),.074+lift,.001+z)
+# Solve both legs to scheduled world-space foot plants and lifting steps.
+def attack_legs(g,pose,t):
+ result={};hipq=quaternion(pose['Hips']);hippos=(0,.59-pose['_drop'],-.01+pose['_step'])
+ for side in ['R','L']:
+  nodes={n['name']:n for n in g['nodes'][:32]};H=nodes[side+'Hip']['translation'];U=nodes[side+'Knee']['translation'];V=nodes[side+'Ankle']['translation']
+  origin=add(hippos,rotate(hipq,H));goal=rotate(inverse(hipq),sub(foot_target(side,t),origin));d=min(norm(goal),norm(U)+norm(V)-.0001);axis=unit(goal)
+  along=(norm(U)**2-norm(V)**2+d*d)/(2*d);height=math.sqrt(max(0,norm(U)**2-along*along));pole=unit(sub((0,0,1),mul(axis,dot((0,0,1),axis))))
+  knee=add(mul(axis,along),mul(pole,height));upper=align(U,knee);lower=align(V,rotate(inverse(upper),sub(mul(axis,d),knee)))
+  result[side+'Hip']=upper;result[side+'Knee']=lower;result[side+'Ankle']=inverse(qmul(hipq,qmul(upper,lower)));result[side+'Foot']=(0,0,0,1)
+ return result
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__); parser.add_argument('--export', type=Path); args = parser.parse_args()
@@ -118,36 +169,55 @@ def main():
         g['accessors'].append({'bufferView':len(g['bufferViews'])-1, 'componentType':5126, 'count':len(flat)//width, 'type':kind})
         return len(g['accessors'])-1
 
-    if not any(a['name']=='Run' for a in g['animations']):
-        run = copy.deepcopy(next(a for a in g['animations'] if a['name']=='Idle')); run['name']='Run'
-        ts = [i*.8/48 for i in range(49)]; ti = accessor(ts, 'SCALAR')
-        g['accessors'][ti].update(min=[0], max=[.8])
-        for channel in run['channels']:
-            sampler = run['samplers'][channel['sampler']]
-            kind = 'VEC4' if channel['target']['path']=='rotation' else 'VEC3'
-            sampler['input']=ti; sampler['output']=accessor([0.]*(len(ts)*(4 if kind=='VEC4' else 3)), kind)
-        g['animations'].append(run)
+    durations={'Idle':3.,'Walk':.9,'Run':.72,'Sprint':.62,'Jump':1.12,'Fall':.6,'Land':.25,'Stop':.25,'Turn':.3,'Combo':4.05}
+    durations.update({f'Attack{i+1}':ENDS[i]-STARTS[i] for i in range(5)})
+    old={a['name']:a for a in g['animations']} if g.get('extras',{}).get('revision')=='BODY_AND_SWORD_V10' else {}
+    animations=[]
+    for name,duration in durations.items():
+        count=math.ceil(duration*60)+1;ts=[i*duration/(count-1) for i in range(count)]
+        previous=old.get(name);reuse={ (c['target']['node'],c['target']['path']):previous['samplers'][c['sampler']] for c in previous['channels']} if previous else {}
+        ti=next(iter(reuse.values()))['input'] if reuse else accessor(ts,'SCALAR')
+        write(ti,ts);g['accessors'][ti].update(min=[0],max=[duration])
+        animation={'name':name,'samplers':[],'channels':[]}
+        poses=[authored(name,t) for t in ts]
+        legposes=[attack_legs(g,pose,t if name=='Combo' else STARTS[int(name[-1])-1]+t) for pose,t in zip(poses,ts)] if name=='Combo' or name.startswith('Attack') else [{} for _ in ts]
+        for index,node in enumerate(g['nodes'][:32]):
+            for path in ['rotation','translation']:
+                flat=[]
+                for pose,legs in zip(poses,legposes):
+                    if path=='rotation':
+                        angles=pose.get(node['name'],(0,0,0))
+                        if name=='Combo' or name.startswith('Attack'):
+                            delay={'Spine':.012,'Chest':.020,'RShoulder':.024,'RElbow':.028,'RWrist':.034,'Sword':.040}.get(node['name'],0)
+                            full_t=ts[len(flat)//4]+(0 if name=='Combo' else STARTS[int(name[-1])-1])
+                            angles=attack_pose(max(0,full_t-delay)).get(node['name'],angles)
+                        flat.extend(legs.get(node['name'],quaternion(angles)))
+                    else:
+                        pos=list(node.get('translation',[0,0,0]))
+                        if node['name']=='Root':pos[2]+=pose['_step']
+                        if node['name']=='Hips':pos[1]-=pose['_drop']
+                        flat.extend(pos)
+                oi=reuse[(index,path)]['output'] if reuse else accessor(flat,'VEC4' if path=='rotation' else 'VEC3')
+                write(oi,flat)
+                animation['channels'].append({'sampler':len(animation['samplers']),'target':{'node':index,'path':path}})
+                animation['samplers'].append({'input':ti,'output':oi,'interpolation':'LINEAR'})
+        animations.append(animation)
+    g['animations']=animations
 
-    for animation in g['animations']:
-        for channel in animation['channels']:
-            node = g['nodes'][channel['target']['node']]; name = node['name']; path = channel['target']['path']
-            sampler = animation['samplers'][channel['sampler']]; ts = values(sampler['input']); flat = []
-            if path == 'rotation':
-                authored = [rotations(animation['name'], t).get(name) for t in ts]
-                if authored[0] is None: continue
-                for degrees in authored: flat.extend(quaternion(degrees))
-            elif path == 'translation' and name == 'RHand':
-                flat = node['translation']*len(ts)
-            elif path == 'translation' and animation['name']=='Run':
-                for t in ts:
-                    pos = list(node.get('translation', [0,0,0]))
-                    if name=='Hips': pos[1] += .012*math.cos(4*math.pi*t/.8)
-                    flat.extend(pos)
-            else: continue
-            write(sampler['output'], flat)
+    # Garment panels follow the cloth/torso chain, never the nearby hands.
+    cloth=json.loads((ROOT/'tools/female-cloth-bindings.json').read_text())
+    primitive=g['meshes'][0]['primitives'][0]
+    ji=primitive['attributes']['JOINTS_0'];wi=primitive['attributes']['WEIGHTS_0']
+    assert g['accessors'][ji]['count']==cloth['geometry_vertices']
+    def patch_vertex(accessor,vertex,values,code):
+        a=g['accessors'][accessor];v=g['bufferViews'][a['bufferView']]
+        offset=v.get('byteOffset',0)+a.get('byteOffset',0)+vertex*struct.calcsize('<4'+code)
+        struct.pack_into('<4'+code,binary,offset,*values)
+    for vertex,bones,weights,kind in cloth['patches']:
+        patch_vertex(ji,vertex,bones,'H');patch_vertex(wi,vertex,weights,'f')
 
-    g['extras'].update(revision='BODY_AND_SWORD_V9', swordControl='Rigid hand grip; no independent blade rotation or hand translation',
-                       combatNote='Shoulder-led four cuts, hinge-constrained elbow, coordinated chest rotation; separate Run loop')
+    g['extras'].update(revision='BODY_AND_SWORD_V10', swordControl='Shoulder-led arcs with bounded elbow flex, wrist articulation and small grip rotation',
+                       combatNote='Five continuous full-body cuts, distinct locomotion and jump phases; repaired garment skin bindings')
     g['buffers'][0]['byteLength']=len(binary)
     json_bytes=json.dumps(g,separators=(',',':')).encode();json_bytes+=b' '*((-len(json_bytes))%4)
     output=struct.pack('<4sII',b'glTF',2,28+len(json_bytes)+len(binary))+struct.pack('<I4s',len(json_bytes),b'JSON')+json_bytes+struct.pack('<I4s',len(binary),b'BIN\0')+binary

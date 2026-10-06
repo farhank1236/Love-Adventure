@@ -19,41 +19,57 @@ const { chromium } = require('playwright');
             const check=(ok,message)=>{if(!ok)throw Error(message);checks++};
             const rig=createWarriorAsset(THREE,FEMALE_WARRIOR_MODEL,{loadTexture:false});
             check(!!rig.channels.Run, 'Female warrior includes a distinct Run clip');
+            check(['Sprint','Fall','Land','Stop','Turn','Attack5'].every(n=>rig.channels[n]),'Distinct locomotion, jump and five attack clips exist');
             const hand=rig.byName.RHand.position.clone();
-            for(const name of Object.keys(rig.channels)){
-                for(let i=0;i<=12;i++){
-                    rig.sample(name,rig.channels[name].duration*i/12);
-                    check(rig.byName.RHand.position.distanceTo(hand)<1e-6,'Grip must not slide during '+name);
-                    check(rig.byName.Sword.quaternion.angleTo(rig.byName.RHand.quaternion)<1e-6,'Blade must not rotate independently during '+name);
-                    check(rig.byName.Sword.getWorldPosition(new THREE.Vector3()).distanceTo(rig.byName.RHand.getWorldPosition(new THREE.Vector3()))<1e-6,'Sword stays at the hand in '+name);
-                    const q=rig.byName.RElbow.quaternion;
-                    check(Math.abs(q.y)<1e-6&&Math.abs(q.z)<1e-6&&2*Math.acos(Math.min(1,Math.abs(q.w)))<1.6,'Elbow must flex as a bounded hinge in '+name);
-                }
+            for(const name of Object.keys(rig.channels))for(let i=0;i<=12;i++){
+                rig.sample(name,rig.channels[name].duration*i/12);
+                check(rig.byName.RHand.position.distanceTo(hand)<1e-6,'Grip does not slide during '+name);
+                check(rig.byName.Sword.getWorldPosition(new THREE.Vector3()).distanceTo(rig.byName.RHand.getWorldPosition(new THREE.Vector3()))<1e-6,'Sword pivots at the hand in '+name);
+                const q=rig.byName.RElbow.quaternion;
+                check(Math.abs(q.y)<1e-6&&Math.abs(q.z)<1e-6&&2*Math.acos(Math.min(1,Math.abs(q.w)))<1.6,'Elbow has bounded hinge flex in '+name);
+                check(rig.bones.every(b=>b.quaternion.toArray().every(Number.isFinite)),'All rotations are finite in '+name);
             }
-            rig.sample('Combo',.28);const raised=rig.byName.RShoulder.quaternion.clone();
-            rig.sample('Combo',.56);check(raised.angleTo(rig.byName.RShoulder.quaternion)>1,'Upper arm drives the downward cut');
-            rig.sample('Idle',0);const idleHand=rig.byName.RHand.position.clone();
-            rig.sample('Combo',1.36);rig.sample('Walk',.2);
-            check(rig.byName.RHand.position.distanceTo(idleHand)<1e-6,'Attack transform cannot leak into walking');
-            rig.sample('Run',0);const initial=rig.bones.map(b=>({q:b.quaternion.clone(),p:b.position.clone()}));
-            rig.sample('Run',rig.channels.Run.duration);
-            check(rig.bones.every((b,i)=>b.quaternion.angleTo(initial[i].q)<1e-5&&b.position.distanceTo(initial[i].p)<1e-6),'Run loop has a continuous seam');
-            rig.sample('Run',.2);check(rig.byName.RHip.quaternion.angleTo(rig.byName.LHip.quaternion)>1,'Running uses opposing leg strides');
+            for(const name of ['Walk','Run','Sprint']){
+                rig.sample(name,0);const initial=rig.bones.map(b=>({q:b.quaternion.clone(),p:b.position.clone()}));
+                rig.sample(name,rig.channels[name].duration);
+                check(rig.bones.every((b,i)=>b.quaternion.angleTo(initial[i].q)<1e-5&&b.position.distanceTo(initial[i].p)<1e-6),name+' has a continuous loop seam');
+            }
+            const joints=['Hips','Chest','RShoulder','RElbow','RWrist','Sword'];
+            for(let i=1;i<=5;i++){
+                const name='Attack'+i;rig.sample(name,.12);const first=joints.map(n=>rig.byName[n].quaternion.clone());const hip=rig.byName.Hips.position.y;
+                rig.sample(name,rig.channels[name].duration*.70);
+                joints.forEach((n,j)=>check(first[j].angleTo(rig.byName[n].quaternion)>.03,n+' contributes to '+name));
+                const heights=[];for(let j=0;j<=20;j++){rig.sample(name,rig.channels[name].duration*j/20);heights.push(rig.byName.Hips.position.y)}check(Math.max(...heights)-Math.min(...heights)>.005,'Body rises and falls in '+name);
+                if(i<5){rig.sample(name,rig.channels[name].duration);const end=rig.bones.map(b=>({q:b.quaternion.clone(),p:b.position.clone()}));rig.sample('Attack'+(i+1),0);check(rig.bones.every((b,j)=>b.quaternion.angleTo(end[j].q)<1e-5&&b.position.distanceTo(end[j].p)<1e-5),'Consecutive cuts share their boundary pose');}
+            }
+            rig.sample('Combo',.06);const planted=rig.byName.LAnkle.getWorldPosition(new THREE.Vector3());rig.sample('Combo',.60);
+            check(planted.distanceTo(rig.byName.LAnkle.getWorldPosition(new THREE.Vector3()))<.002,'Supporting foot remains planted during the first advancing cut');
+            rig.sample('Jump',.13);const crouch=rig.byName.Hips.position.y;rig.sample('Jump',.25);check(rig.byName.Hips.position.y-crouch>.04,'Jump crouch extends into takeoff');
+            rig.sample('Combo',3.55);check(rig.aura.visible&&rig.mana.visible,'Finisher has transient body and blade energy');rig.sample('Idle',0);check(!rig.aura.visible&&!rig.mana.visible,'Attack energy clears on idle');
+            const cloth=await (await fetch('tools/female-cloth-bindings.json')).json(),indices=rig.mesh.geometry.attributes.skinIndex.array,weights=rig.mesh.geometry.attributes.skinWeight.array;
+            check(cloth.patches.every(([v])=>{for(let j=0;j<4;j++)if([6,7,8,9,11,12,13,14].includes(indices[v*4+j])&&weights[v*4+j]>1e-6)return false;return true}),'Cape and coat bindings contain no hand or arm influence');
+            const kinds=new Uint8Array(rig.mesh.geometry.attributes.position.count);cloth.patches.forEach(([v,b,w,k])=>kinds[v]=k);
+            const pos=rig.mesh.geometry.attributes.position,idx=rig.mesh.geometry.index.array,edges=[];
+            for(let k=0;k<idx.length;k+=3){const a=idx[k],b=idx[k+1];if(kinds[a]&&kinds[a]===kinds[b]){const A=new THREE.Vector3().fromBufferAttribute(pos,a),B=new THREE.Vector3().fromBufferAttribute(pos,b),length=A.distanceTo(B);if(length>.004)edges.push([a,b,length])}}
+            const va=new THREE.Vector3(),vb=new THREE.Vector3();let maxStretch=0;
+            for(const t of [.23,.42,1.10,1.85,2.63,3.55]){rig.sample('Combo',t);for(const [a,b,length] of edges){va.fromBufferAttribute(pos,a);vb.fromBufferAttribute(pos,b);rig.mesh.applyBoneTransform(a,va);rig.mesh.applyBoneTransform(b,vb);maxStretch=Math.max(maxStretch,va.distanceTo(vb)/length)}}
+            check(maxStretch<1.8,'Garment triangles must not stretch into long hand-driven spikes; max='+maxStretch.toFixed(2));
             startNewGameFlow();setNewGender('female');await beginSelectedCharacter();paused=true;
-            check(binds.run==='KeyR'&&binds.jump==='ShiftLeft','Old saved controls gain R without replacing Jump');
+            check(binds.run==='KeyR'&&binds.sprint==='ControlLeft'&&binds.jump==='ShiftLeft','Old saved controls gain R without replacing Jump');
             return checks;
         });
         await page.keyboard.down('ArrowRight');
         const walk = await page.evaluate(() => {const x=heroPlayer.x;for(let i=0;i<10;i++)updatePhysics();return heroPlayer.x-x});
         await page.keyboard.down('r');
-        const run = await page.evaluate(() => {const x=heroPlayer.x;for(let i=0;i<10;i++)updatePhysics();return {distance:heroPlayer.x-x,running:heroPlayer.isRunning}});
-        if(run.distance<=walk*1.5||!run.running)throw Error('R must make movement faster');
+        const run = await page.evaluate(() => {const x=heroPlayer.x;for(let i=0;i<20;i++)updatePhysics();return {distance:heroPlayer.x-x,running:heroPlayer.isRunning}});
+        if(run.distance<=walk*2||!run.running)throw Error('R must make movement faster');
         await page.keyboard.up('r');
-        const released = await page.evaluate(() => {updatePhysics();return !heroPlayer.isRunning&&heroPlayer.vx===4});
+        const released = await page.evaluate(() => {for(let i=0;i<25;i++)updatePhysics();return !heroPlayer.isRunning&&Math.abs(heroPlayer.vx-4)<.01});
         if(!released)throw Error('Releasing R must return to walking');
         await page.keyboard.up('ArrowRight');
-        await page.evaluate(()=>remap('run'));await page.keyboard.press('ControlLeft');
-        if(!(await page.evaluate(()=>binds.run==='ControlLeft'&&binds.jump==='ShiftLeft')))throw Error('Run key must be remappable separately');
+        await page.keyboard.down('ArrowRight');await page.keyboard.down('ControlLeft');const sprinting=await page.evaluate(()=>{for(let i=0;i<20;i++)updatePhysics();return heroPlayer.isSprinting&&heroPlayer.vx>8.9});if(!sprinting)throw Error('Ctrl triggers faster sprint');await page.keyboard.up('ControlLeft');await page.keyboard.up('ArrowRight');
+        await page.evaluate(()=>remap('run'));await page.keyboard.press('KeyT');
+        if(!(await page.evaluate(()=>binds.run==='KeyT'&&binds.jump==='ShiftLeft')))throw Error('Run key must be remappable separately');
         const combatChecks = await page.evaluate(() => {
             let checks=0;const check=(ok,message)=>{if(!ok)throw Error(message);checks++};
             function setup(){
@@ -79,7 +95,7 @@ const { chromium } = require('playwright');
             check(!far.dead,'Distant attacks are not erased');
             setup();shots=[shot('wave',4,16,0,12)];updatePhysics();
             check(lives===3,'Low wave damages normally without a sword swing');
-            setup();keys.attack=true;updatePhysics();keys.attack=false;for(let i=0;i<24;i++)updatePhysics();
+            setup();keys.attack=true;updatePhysics();keys.attack=false;for(let i=0;i<22;i++)updatePhysics();
             const recovered=shot('wave',4,16,0,12);shots=[recovered];updatePhysics();
             check(lives===3&&!recovered.dead,'Recovery does not provide permanent immunity');
             setup();boss.active=true;bossDefeated=false;boss.bx=3000;boss.st='cool';boss.t=1000;
@@ -94,17 +110,25 @@ const { chromium } = require('playwright');
             const enemyBehind={x:heroPlayer.x-24,y:heroPlayer.y,hp:10,dead:false};stage2.monsters=[enemyBehind];keys.attack=true;updatePhysics();
             check(stage2Health===92,'Stage 2 rear contact still damages');
             setup();initStage2();paused=true;stage2.trees=[];stage2.monsters=[];stage2.cats=[];keys.right=true;keys.down=true;
-            const x=heroPlayer.x,y=heroPlayer.y;updatePhysics();const step=Math.hypot(heroPlayer.x-x,heroPlayer.y-y);
-            keys.run=true;const sx=heroPlayer.x,sy=heroPlayer.y;updatePhysics();const sprint=Math.hypot(heroPlayer.x-sx,heroPlayer.y-sy);
-            check(Math.abs(step-4.2)<1e-6&&Math.abs(sprint-7.2)<1e-6,'Stage 2 run speed is normalized diagonally');
+            for(let i=0;i<25;i++)updatePhysics();const x=heroPlayer.x,y=heroPlayer.y;updatePhysics();const step=Math.hypot(heroPlayer.x-x,heroPlayer.y-y);
+            keys.run=true;for(let i=0;i<25;i++)updatePhysics();const sx=heroPlayer.x,sy=heroPlayer.y;updatePhysics();const running=Math.hypot(heroPlayer.x-sx,heroPlayer.y-sy);
+            check(Math.abs(step-4.2)<.02&&Math.abs(running-7.2)<.02,'Stage 2 speeds converge smoothly and are normalized diagonally');
             setup();const originalTargets=combatTargets;const target={x:heroPlayer.x+60,y:heroPlayer.y,hp:10,flash:0,dead:false};combatTargets=()=>[{o:target,k:'monster'}];
-            for(let i=0;i<4;i++){keys.attack=true;updatePhysics();keys.attack=false;updatePhysics()}
+            for(let i=0;i<5;i++){keys.attack=true;updatePhysics();keys.attack=false;updatePhysics()}
             for(let i=0;i<120;i++){target.flash=0;target.x=heroPlayer.x+60;updatePhysics()}
-            check(target.hp===5,'Four presses still produce four cuts, with a stronger finisher');combatTargets=originalTargets;
+            check(target.hp===4,'Five presses produce five cuts, with a stronger finisher');combatTargets=originalTargets;
+            setup();initStage2();paused=true;stage2.trees=[];stage2.monsters=[];stage2.cats=[];
+            keys.right=true;updatePhysics();const firstSpeed=heroPlayer.moveSpeed;
+            for(let i=0;i<25;i++)updatePhysics();check(firstSpeed<2&&heroPlayer.moveSpeed>4.1,'Locomotion accelerates smoothly');
+            keys.right=false;const coastX=heroPlayer.x;updatePhysics();check(heroPlayer.x>coastX&&heroPlayer.moveSpeed<4.2,'Releasing direction decelerates instead of snapping to a stop');
+            for(let i=0;i<25;i++)updatePhysics();check(!heroPlayer.isMoving,'Deceleration settles to a stop');
+            keys.jump=true;updatePhysics();check(WarriorCombat.pose()==='Jump'&&WarriorCombat.snapshot().jumpZ===0,'Jump anticipation bends before leaving the ground');
+            keys.jump=false;const modes=new Set();for(let i=0;i<70;i++){updatePhysics();modes.add(WarriorCombat.pose())}
+            check(['Jump','Fall','Land','Idle'].every(m=>modes.has(m)),'Gameplay transitions through jump, fall and landing');
             returnToSetup();check(!keys.run&&!gameRunning,'Leaving the game releases sprint');
             return checks;
         });
         if(errors.length)throw Error('Browser errors: '+errors.join('; '));
-        console.log(`${modelChecks} animation assertions, ${combatChecks} combat checks, and 4 keyboard/run checks passed.`);
+        console.log(`${modelChecks} animation assertions, ${combatChecks} combat checks, and keyboard/run/sprint checks passed.`);
     } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode=1; });
