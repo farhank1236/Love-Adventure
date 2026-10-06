@@ -79241,7 +79241,7 @@ function createWarriorEffects(THREE,scene,rig){
  };
  function hit(index){if(!combo)return;const d=combo.dir,limit=index===CUTS.length-1?128:112,touched=new Set();const targets=combatTargets().filter(t=>{const dx=t.o.x-heroPlayer.x,dy=t.o.y-heroPlayer.y,dist=Math.hypot(dx,dy);return !t.o.dead&&dist<limit&&(dx*d.x+dy*d.y>dist*.12||dist<36)}).sort((a,b)=>Math.hypot(a.o.x-heroPlayer.x,a.o.y-heroPlayer.y)-Math.hypot(b.o.x-heroPlayer.x,b.o.y-heroPlayer.y));for(const t of targets.slice(0,index===CUTS.length-1?3:1)){if(touched.has(t.o))continue;touched.add(t.o);damage(t,index===CUTS.length-1?2:1);pop(t.o.x,t.o.y,index===CUTS.length-1?7:3)}playSound('switch')}
  const previousPhysics=updatePhysics;updatePhysics=function(){
-  if(!isWarrior()){previousPhysics();return}
+  if(!isWarrior()||rigError||!rig){previousPhysics();return}
   chooseRig();
   if(stageRef!==stage2){reset();stageRef=stage2}
   const requested={left:keys.left,right:keys.right,up:keys.up,down:keys.down,jump:keys.jump,run:keys.run,sprint:keys.sprint,attack:keys.attack};combatClock+=1/60;if(!keys.attack)latch=false;else if(!latch)beginCombo();keys.attack=false;
@@ -79264,7 +79264,20 @@ function createWarriorEffects(THREE,scene,rig){
   if(combo){const oldTime=combo.time;combo.time+=ATTACK_SPEED/60;if(rig.channels.Combo){const nextTime=Math.min(combo.time,SEGMENTS[combo.index].to),attackAge=(oldTime-SEGMENTS[combo.index].from)/ATTACK_SPEED,carry=combo.entryVelocity*Math.exp(-attackAge/.065),advance=(rootAt(nextTime)-rootAt(oldTime))*rig.rootMotionScale+carry;heroPlayer.x+=advance*combo.dir.x;if(stage2)heroPlayer.y+=advance*combo.dir.y;heroPlayer.x=Math.max(stage2?35:arena?camX+16:20,Math.min(stage2?stage2.worldW-35:arena?(arena.type==='boss'?camX+VW-20:Math.min(camX+VW-20,arena.x-45)):WORLD_W-20,heroPlayer.x));if(stage2)heroPlayer.y=Math.max(20,Math.min(stage2.worldH-20,heroPlayer.y))}if(!combo.hit&&combo.time+1e-8>=CUTS[combo.index].at){hit(combo.index);combo.hit=true}if(combo.time>=SEGMENTS[combo.index].to){combo=null;atkCd=0;if(pendingCuts.length)startCut(pendingCuts.shift(),true)}}
   heroPlayer.attackMotion=0;heroPlayer.comboPose=-1;
  };
- const previousStart=startGame;startGame=function(){reset();previousStart()};const previousBegin=beginSelectedCharacter;beginSelectedCharacter=async function(){if(selectedRole==='warrior'){chooseRig(newGender);const button=document.querySelector('[onclick="beginSelectedCharacter()"]');if(button){button.disabled=true;button.textContent='LOADING 3D WARRIOR…'}await ready;if(rigError){if(button){button.disabled=false;button.textContent='START ADVENTURE'}flash('The 3D warrior could not load. Try Chrome or Edge.');return}}const result=previousBegin();const b=document.querySelector('[onclick="beginSelectedCharacter()"]');if(b){b.disabled=false;b.textContent="START ADVENTURE"}return result};
+ const previousStart=startGame;startGame=function(){reset();previousStart()};
+ beginSelectedCharacter=function(){
+  playerGender=newGender==='female'?'female':'male';selectedRole='warrior';
+  const heroName=playerGender==='female'?'Female Warrior':'Male Warrior';
+  selectedHeroAvatar=roleAvatar('warrior',playerGender);selectedHeroAvatar.name=heroName;selectedHeroAvatar.country='Æthelos';
+  selectedPartnerAvatar=roleAvatar('warrior',playerGender==='male'?'female':'male');selectedPartnerAvatar.name=playerGender==='male'?'Female Warrior':'Male Warrior';
+  weapon='sword';characterLevel=1;ultimateCharge=0;soulCounters={bird:0,archer:0,gate:0,boss:0};cheatUltimate=false;
+  try{localStorage.setItem('loveAdventureHeroGender',playerGender)}catch(e){}
+  try{chooseRig(playerGender)}catch(e){rigError=e;console.warn('3D warrior unavailable; starting with fallback art.',e)}
+  const button=document.querySelector('[onclick="beginSelectedCharacter()"]');
+  if(button){button.disabled=true;button.textContent='STARTING ADVENTURE…'}
+  try{startGame()}catch(e){console.error('Could not start the adventure.',e);showOnly('characterScreen');flash('The adventure could not start. Please try again.');}
+  finally{if(button){button.disabled=false;button.textContent='START ADVENTURE'}}
+ };
  const previousKill=kill;kill=function(){const before=heroHealth;previousKill();if(heroHealth<before)reset()};
  function createView(){chooseRig();if(view||rigError||!rig)return view;try{const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setSize(512,512,false);renderer.setPixelRatio(1);renderer.setClearColor(0,0);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;const scene=new THREE.Scene();scene.add(rig.root);scene.add(new THREE.HemisphereLight('#eff7ff','#3e4851',2.3));for(const [c,power,pos] of [['#fff0dc',2.1,[2,3,3]],['#acddff',1.3,[-2,2,-3]]]){const l=new THREE.DirectionalLight(c,power);l.position.set(...pos);scene.add(l)}const camera=new THREE.OrthographicCamera(-1.05,1.05,1.05,-1.05,.01,30);camera.position.set(0,.80,3);camera.lookAt(0,.80,0);view={renderer,scene,camera,effects:createWarriorEffects(THREE,scene,rig),rendered:false};views[rigGender]=view;return view}catch(e){rigError=e;console.error(e);flash('WebGL is unavailable; the 3D character cannot render.');return null}}
  function animateAsset(){rig.root.position.set(0,0,0);const phased=!!rig.channels.Fall,falling=stage2?jumpVelocity<0:heroPlayer.vy>0;
