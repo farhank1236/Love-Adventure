@@ -41,9 +41,9 @@ const { chromium } = require('playwright');
                 male.sample('Attack' + (i + 1), 0);
                 check(male.bones.every((b, j) => b.quaternion.angleTo(end[j].q) < 1e-5 && b.position.distanceTo(end[j].p) < 1e-5), 'Male cuts flow through a shared boundary');
             }
-            male.sample('Combo', .06); const planted = male.byName.LAnkle.getWorldPosition(new THREE.Vector3());
+            male.sample('Combo', .06); const planted = male.byName.LFoot.getWorldPosition(new THREE.Vector3());
             male.sample('Combo', .60);
-            check(planted.distanceTo(male.byName.LAnkle.getWorldPosition(new THREE.Vector3())) < .002, 'Male supporting foot stays planted');
+            check(planted.distanceTo(male.byName.LFoot.getWorldPosition(new THREE.Vector3())) < .002, 'Male supporting foot stays planted');
             male.sample('Combo', 3.55); check(male.mana.visible && male.aura.visible, 'Male finisher has blade and body energy');
             male.sample('Idle', 0); check(!male.mana.visible && !male.aura.visible, 'Male attack energy clears on idle');
             startNewGameFlow(); setNewGender('male'); await beginSelectedCharacter(); paused = true;

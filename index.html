@@ -2091,21 +2091,21 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 </script>
 <div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">R run · Ctrl sprint · Space attack · Five-hit combo</div>
 <script>window.LoveAdventureModelParts={male:[],female:[]};</script>
-<script src="assets/models/male-01.js?v=11"></script>
-<script src="assets/models/male-02.js?v=11"></script>
-<script src="assets/models/male-03.js?v=11"></script>
-<script src="assets/models/male-04.js?v=11"></script>
-<script src="assets/models/male-05.js?v=11"></script>
-<script src="assets/models/male-06.js?v=11"></script>
-<script src="assets/models/male-07.js?v=11"></script>
-<script src="assets/models/female-01.js?v=10"></script>
-<script src="assets/models/female-02.js?v=10"></script>
-<script src="assets/models/female-03.js?v=10"></script>
-<script src="assets/models/female-04.js?v=10"></script>
-<script src="assets/models/female-05.js?v=10"></script>
-<script src="assets/models/female-06.js?v=10"></script>
-<script src="assets/models/female-07.js?v=10"></script>
-<script src="assets/models/female-08.js?v=10"></script>
+<script src="assets/models/male-01.js?v=12"></script>
+<script src="assets/models/male-02.js?v=12"></script>
+<script src="assets/models/male-03.js?v=12"></script>
+<script src="assets/models/male-04.js?v=12"></script>
+<script src="assets/models/male-05.js?v=12"></script>
+<script src="assets/models/male-06.js?v=12"></script>
+<script src="assets/models/male-07.js?v=12"></script>
+<script src="assets/models/female-01.js?v=12"></script>
+<script src="assets/models/female-02.js?v=12"></script>
+<script src="assets/models/female-03.js?v=12"></script>
+<script src="assets/models/female-04.js?v=12"></script>
+<script src="assets/models/female-05.js?v=12"></script>
+<script src="assets/models/female-06.js?v=12"></script>
+<script src="assets/models/female-07.js?v=12"></script>
+<script src="assets/models/female-08.js?v=12"></script>
 <script>
 
 const THREE=(()=>{const exports={};const module={exports};
@@ -79606,7 +79606,7 @@ function createWarriorEffects(THREE,scene,rig){
  const oldAim=aimDir;aimDir=function(){if(stage2){let x=Number(!!keys.right)-Number(!!keys.left),y=Number(!!keys.down)-Number(!!keys.up);if(x||y){const length=Math.hypot(x,y);return {x:x/length,y:y/length}}if(heroPlayer?.moveAim3D)return {...heroPlayer.moveAim3D}}return oldAim()};
  function active(){return combo&&combo.time>=CUTS[combo.index].start&&combo.time<=CUTS[combo.index].end}
  function reset(){movementSpeed=movementVelocity=0;jumpPrep=0;stopClock=turnClock=1;previousMoving=false;previousFacing=null;combatClock=0;lastPress=-Infinity;nextCut=0;pendingCuts=[];combo=null;latch=false;jumpLatch=false;jumpZ=0;jumpVelocity=0;airTime=landTime=walkClock=0;wasAir=false;rigMode='Idle';blendFrom=null;stageRef=stage2;if(heroPlayer){heroPlayer.comboPose=-1;heroPlayer.attackMotion=0;heroPlayer.jump3D=0;heroPlayer.motionSpeed3D=undefined;heroPlayer.motionVelocity3D=undefined}}
- function startCut(index){const dir=aimDir();if(dir.x)heroPlayer.facing=dir.x<0?'left':'right';combo={index,time:SEGMENTS[index].from,hit:false,dir:{...dir},facing:heroPlayer.facing};heroPlayer.attackDir={...dir};heroPlayer.comboPose=-1;heroPlayer.attackMotion=0;swing=null;atkCd=0;heroPlayer.vx=0;playSound('switch')}
+ function startCut(index,continued=false){const dir=aimDir();const moving=heroPlayer.isMoving&&!continued,travelDir=stage2?(heroPlayer.moveAim3D||dir):{x:heroPlayer.vx<0?-1:1,y:0},entryVelocity=moving?Math.max(0,travelDir.x*dir.x+travelDir.y*dir.y)*Math.min(9.2,Math.abs(stage2?heroPlayer.moveSpeed:heroPlayer.vx)):0;if(dir.x)heroPlayer.facing=dir.x<0?'left':'right';combo={index,time:SEGMENTS[index].from,entryVelocity,hit:false,dir:{...dir},facing:heroPlayer.facing};heroPlayer.attackDir={...dir};heroPlayer.comboPose=-1;heroPlayer.attackMotion=0;swing=null;atkCd=0;heroPlayer.vx=0;playSound('switch')}
  function beginCombo(){if(!isWarrior()||latch)return;chooseRig();latch=true;if(combatClock-lastPress>=1-1e-8){nextCut=0;pendingCuts=[]}if(pendingCuts.length>=CUTS.length-1)return;const index=nextCut;nextCut=(nextCut+1)%CUTS.length;lastPress=combatClock;if(combo)pendingCuts.push(index);else startCut(index)}
  const previousAttack=doAttack,previousStageAttack=doStage2Attack;doAttack=function(){if(isWarrior())beginCombo();else previousAttack()};doStage2Attack=function(){if(isWarrior())beginCombo();else previousStageAttack()};
  // A sword sweep protects the space from the grip to the blade, padded down to the feet.
@@ -79652,7 +79652,7 @@ function createWarriorEffects(THREE,scene,rig){
   if(previousFacing!==null&&heroPlayer.facing!==previousFacing)turnClock=0;previousFacing=heroPlayer.facing;turnClock+=1/60;
   heroPlayer.isSprinting=!!requested.sprint&&heroPlayer.isMoving&&!combo;
   if(heroPlayer.isMoving&&!combo)walkClock+=1/60*Math.max(.2,movementSpeed/(heroPlayer.isSprinting?9:heroPlayer.isRunning?7:4));
-  if(combo){const oldTime=combo.time;combo.time+=ATTACK_SPEED/60;if(rig.channels.Combo){const nextTime=Math.min(combo.time,SEGMENTS[combo.index].to),advance=(rootAt(nextTime)-rootAt(oldTime))*rig.rootMotionScale;heroPlayer.x+=advance*combo.dir.x;if(stage2)heroPlayer.y+=advance*combo.dir.y;heroPlayer.x=Math.max(stage2?35:arena?camX+16:20,Math.min(stage2?stage2.worldW-35:arena?(arena.type==='boss'?camX+VW-20:Math.min(camX+VW-20,arena.x-45)):WORLD_W-20,heroPlayer.x));if(stage2)heroPlayer.y=Math.max(20,Math.min(stage2.worldH-20,heroPlayer.y))}if(!combo.hit&&combo.time+1e-8>=CUTS[combo.index].at){hit(combo.index);combo.hit=true}if(combo.time>=SEGMENTS[combo.index].to){combo=null;atkCd=0;if(pendingCuts.length)startCut(pendingCuts.shift())}}
+  if(combo){const oldTime=combo.time;combo.time+=ATTACK_SPEED/60;if(rig.channels.Combo){const nextTime=Math.min(combo.time,SEGMENTS[combo.index].to),attackAge=(oldTime-SEGMENTS[combo.index].from)/ATTACK_SPEED,carry=combo.entryVelocity*Math.exp(-attackAge/.065),advance=(rootAt(nextTime)-rootAt(oldTime))*rig.rootMotionScale+carry;heroPlayer.x+=advance*combo.dir.x;if(stage2)heroPlayer.y+=advance*combo.dir.y;heroPlayer.x=Math.max(stage2?35:arena?camX+16:20,Math.min(stage2?stage2.worldW-35:arena?(arena.type==='boss'?camX+VW-20:Math.min(camX+VW-20,arena.x-45)):WORLD_W-20,heroPlayer.x));if(stage2)heroPlayer.y=Math.max(20,Math.min(stage2.worldH-20,heroPlayer.y))}if(!combo.hit&&combo.time+1e-8>=CUTS[combo.index].at){hit(combo.index);combo.hit=true}if(combo.time>=SEGMENTS[combo.index].to){combo=null;atkCd=0;if(pendingCuts.length)startCut(pendingCuts.shift(),true)}}
   heroPlayer.attackMotion=0;heroPlayer.comboPose=-1;
  };
  const previousStart=startGame;startGame=function(){reset();previousStart()};const previousBegin=beginSelectedCharacter;beginSelectedCharacter=async function(){if(selectedRole==='warrior'){chooseRig(newGender);const button=document.querySelector('[onclick="beginSelectedCharacter()"]');if(button){button.disabled=true;button.textContent='LOADING 3D WARRIOR…'}await ready;if(rigError){if(button){button.disabled=false;button.textContent='START ADVENTURE'}flash('The 3D warrior could not load. Try Chrome or Edge.');return}}const result=previousBegin();const b=document.querySelector('[onclick="beginSelectedCharacter()"]');if(b){b.disabled=false;b.textContent="START ADVENTURE"}return result};
@@ -79666,7 +79666,7 @@ function createWarriorEffects(THREE,scene,rig){
  const names=['RHip','RKnee','RAnkle','RFoot','LHip','LKnee','LAnkle','LFoot','LShoulder','LElbow','LWrist','LHand'];
  const jumpPose=names.map(name=>({bone:rig.byName[name],q:rig.byName[name].quaternion.clone(),p:rig.byName[name].position.clone()}));const hipY=rig.byName.Hips.position.y;
  rig.sample(mode,time);for(const j of jumpPose){j.bone.quaternion.copy(j.q);j.bone.position.copy(j.p)}rig.byName.Hips.position.y=hipY;
- }else rig.sample(mode,time);blendClock+=1/60;const u=Math.min(1,blendClock/(mode==='Combo'?.12/ATTACK_SPEED:.12)),blend=u*u*(3-2*u);if(blendFrom&&u<1){rig.bones.forEach((b,i)=>{b.quaternion.copy(blendFrom[i].q.clone().slerp(b.quaternion,blend));b.position.copy(blendFrom[i].p.clone().lerp(b.position,blend))})}rig.byName.Root.position.z=0;const targetYaw=stage2?Math.atan2((combo?.dir||heroPlayer.moveAim3D||{x:1,y:0}).x,(combo?.dir||heroPlayer.moveAim3D||{x:1,y:0}).y):((combo?.facing||heroPlayer.facing)==='left'?-1.05:1.05);visualYaw+=Math.atan2(Math.sin(targetYaw-visualYaw),Math.cos(targetYaw-visualYaw))*(combo?.35:.18);rig.root.rotation.y=visualYaw;rig.root.updateMatrixWorld(true);rig.skeleton.update();return mode}
+ }else rig.sample(mode,time);blendClock+=1/60;const u=Math.min(1,blendClock/(mode==='Combo'?(combo?.entryVelocity>.5?.12:.12/ATTACK_SPEED):.12)),blend=u*u*(3-2*u);if(blendFrom&&u<1){rig.bones.forEach((b,i)=>{b.quaternion.copy(blendFrom[i].q.clone().slerp(b.quaternion,blend));b.position.copy(blendFrom[i].p.clone().lerp(b.position,blend))})}rig.byName.Root.position.z=0;const targetYaw=stage2?Math.atan2((combo?.dir||heroPlayer.moveAim3D||{x:1,y:0}).x,(combo?.dir||heroPlayer.moveAim3D||{x:1,y:0}).y):((combo?.facing||heroPlayer.facing)==='left'?-1.05:1.05);visualYaw+=Math.atan2(Math.sin(targetYaw-visualYaw),Math.cos(targetYaw-visualYaw))*(combo?.35:.18);rig.root.rotation.y=visualYaw;rig.root.updateMatrixWorld(true);rig.skeleton.update();return mode}
  function updateTrail(v,mode){v.effects.update(mode,combo?.time||inspectClock)}
  const previousDraw=drawArtEntity;drawArtEntity=function(key,x,y,height,facing='right',state={},context=ctx){const hero=key===playerGender+'_warrior'&&isWarrior()&&(state.isActive||Math.abs(x-heroPlayer.x)<1&&Math.abs(y-heroPlayer.y)<1);if(!hero)return previousDraw(key,x,y,height,facing,state,context);const v=createView();if(!v||!rig.material.map)return previousDraw(key,x,y,height,facing,state,context);if(lastRigFrame!==frame||!v.rendered){lastRigFrame=frame;const mode=animateAsset();updateTrail(v,mode);v.renderer.render(v.scene,v.camera);v.rendered=true}const scale=height/(rigGender==='female'?1.054:.854),size=1.7*scale,groundY=y+18-(stage2?jumpZ:0);context.save();context.globalAlpha=.25;context.fillStyle='#000';context.beginPath();const below=!stage2&&!heroPlayer.isGrounded?[...platforms,...bridges.filter(b=>b.active)].filter(p=>x>=p.x&&x<=p.x+p.w&&p.y>=y+18).sort((a,b)=>a.y-b.y)[0]:null;context.ellipse(x,below?below.y:y+19,height*.20,3.5,0,0,Math.PI*2);context.fill();context.restore();context.drawImage(v.renderer.domElement,x-size/2,groundY-1.5*scale,size,size);return true};
  // Inspect the exact same mesh and clips while gameplay is paused.
@@ -79674,7 +79674,7 @@ function createWarriorEffects(THREE,scene,rig){
  const openButton=document.createElement('button');openButton.textContent='3D Warrior · Animation view';openButton.style.cssText='margin:8px;padding:8px 13px;border-radius:8px;background:#264958;color:#fff';document.getElementById('gameScreen').appendChild(openButton);openButton.onclick=()=>{if(!isWarrior()){flash('Select a warrior to inspect its 3D animations.');return}chooseRig();priorPaused=paused;paused=true;inspecting=true;inspectClock=0;inspectLast=performance.now();inspector.style.display='flex';inspectFrame()};document.getElementById('closeWarriorView').onclick=()=>{inspecting=false;inspector.style.display='none';paused=priorPaused;lastRigFrame=-1};document.getElementById('warriorViewSpeed').oninput=e=>inspectSpeed=+e.target.value;inspector.querySelectorAll('[data-clip]').forEach(b=>b.onclick=()=>{inspectClip=!rig.channels[b.dataset.clip]?'Walk':b.dataset.clip;inspectClock=0});const inspectionCanvas=document.getElementById('warriorViewCanvas');let drag=null;inspectionCanvas.onpointerdown=e=>{inspectionCanvas.setPointerCapture(e.pointerId);drag=e.clientX};inspectionCanvas.onpointerup=inspectionCanvas.onpointercancel=()=>drag=null;inspectionCanvas.onpointermove=e=>{if(drag!==null){inspectYaw+=(e.clientX-drag)*.008;drag=e.clientX}};
  function inspectFrame(){if(!inspecting)return;requestAnimationFrame(inspectFrame);const now=performance.now(),dt=Math.min(.05,(now-inspectLast)/1000);inspectLast=now;inspectClock=(inspectClock+dt*inspectSpeed)%rig.channels[inspectClip].duration;const v=createView();if(!v)return;rig.sample(inspectClip,inspectClock);rig.root.position.y=inspectClip==='Jump'?.16*Math.sin(Math.PI*Math.max(0,Math.min(1,(inspectClock-.12)/.76))):0;rig.root.rotation.y=inspectYaw;rig.root.updateMatrixWorld(true);rig.skeleton.update();updateTrail(v,inspectClip);v.renderer.render(v.scene,v.camera);inspectionCanvas.getContext('2d').clearRect(0,0,512,512);inspectionCanvas.getContext('2d').drawImage(v.renderer.domElement,0,0);document.getElementById('warriorViewLabel').textContent=inspectClip==='Combo'?(CUTS[comboStep(inspectClock)].label+(rig.mana.visible?' · RED MANA':'')):inspectClip;lastRigFrame=-1}
  function comboStep(t){return Math.min(SEGMENTS.length-1,SEGMENTS.findIndex(s=>t<s.to)<0?SEGMENTS.length-1:SEGMENTS.findIndex(s=>t<s.to))}
- window.WarriorCombat={ready,get rig(){chooseRig();return rig},get cuts(){chooseRig();return CUTS},chooseRig,reset,snapshot:()=>({combo:combo?{time:combo.time,index:combo.index,hit:combo.hit,dir:{...combo.dir}}:null,nextCut,pendingCuts:[...pendingCuts],sincePress:combatClock-lastPress,jumpZ,airTime,walkClock,gender:rigGender,revision:rig?.revision,active:!!active()}),pose:animateAsset,inspect:openButton.onclick};
+ window.WarriorCombat={ready,get rig(){chooseRig();return rig},get cuts(){chooseRig();return CUTS},chooseRig,reset,snapshot:()=>({combo:combo?{time:combo.time,index:combo.index,hit:combo.hit,entryVelocity:combo.entryVelocity,dir:{...combo.dir}}:null,nextCut,pendingCuts:[...pendingCuts],sincePress:combatClock-lastPress,jumpZ,airTime,walkClock,gender:rigGender,revision:rig?.revision,active:!!active()}),pose:animateAsset,inspect:openButton.onclick};
 })();
 
 </script>

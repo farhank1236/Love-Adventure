@@ -29,35 +29,6 @@ def read_model(gender):
     return files, json.loads(raw[20:20+size]), bytearray(raw[28+size:])
 
 
-def solve_legs(g, pose, t, scale):
-    nodes = {n['name']: n for n in g['nodes']}
-    hipq = motion.quaternion(pose['Hips'])
-    hippos = list(nodes['Hips']['translation'])
-    hippos[1] -= pose['_drop'] * scale
-    hippos[2] += pose['_step'] * scale
-    result = {}
-    for side in ['R', 'L']:
-        H, U, V = [nodes[side+n]['translation'] for n in ['Hip', 'Knee', 'Ankle']]
-        rest = motion.add(nodes['Hips']['translation'], motion.add(H, motion.add(U, V)))
-        reference = motion.foot_target(side, t)
-        reference_rest = motion.foot_target(side, 0)
-        target = motion.add(rest, motion.mul(motion.sub(reference, reference_rest), scale))
-        origin = motion.add(hippos, motion.rotate(hipq, H))
-        goal = motion.rotate(motion.inverse(hipq), motion.sub(target, origin))
-        distance = min(motion.norm(goal), motion.norm(U)+motion.norm(V)-.0001)
-        axis = motion.unit(goal)
-        along = (motion.norm(U)**2-motion.norm(V)**2+distance**2)/(2*distance)
-        height = math.sqrt(max(0, motion.norm(U)**2-along**2))
-        pole = motion.unit(motion.sub((0, 0, 1), motion.mul(axis, axis[2])))
-        knee = motion.add(motion.mul(axis, along), motion.mul(pole, height))
-        upper = motion.align(U, knee)
-        lower = motion.align(V, motion.rotate(motion.inverse(upper), motion.sub(motion.mul(axis, distance), knee)))
-        result[side+'Hip'] = upper
-        result[side+'Knee'] = lower
-        result[side+'Ankle'] = motion.inverse(motion.qmul(hipq, motion.qmul(upper, lower)))
-        result[side+'Foot'] = (0, 0, 0, 1)
-    return result
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -97,9 +68,8 @@ def main():
 
     durations = {'Idle': 3., 'Walk': .9, 'Run': .72, 'Sprint': .62, 'Jump': 1.12, 'Fall': .6, 'Land': .25, 'Stop': .25, 'Turn': .3, 'Combo': 4.05}
     durations.update({f'Attack{i+1}': motion.ENDS[i]-motion.STARTS[i] for i in range(5)})
-    old = {a['name']: a for a in g['animations']} if g.get('extras', {}).get('revision') == 'MALE_BODY_AND_SWORD_V11' else {}
+    old = {a['name']: a for a in g['animations']} if g.get('extras', {}).get('revision') in ['MALE_BODY_AND_SWORD_V11','MALE_BODY_AND_SWORD_V12'] else {}
     animations = []
-    delays = {'Spine': .012, 'Chest': .020, 'RShoulder': .024, 'RElbow': .028, 'RWrist': .034, 'Sword': .040}
     for name, duration in durations.items():
         count = math.ceil(duration*60)+1
         times = [i*duration/(count-1) for i in range(count)]
@@ -114,27 +84,30 @@ def main():
         for t in times:
             full_t = t if name == 'Combo' or not attack else motion.STARTS[int(name[-1])-1]+t
             pose = motion.authored(name, t)
+            if attack:
+                pose = motion.grounded_attack_pose(g, pose, full_t, scale)
             source_world, target_world, local = {}, {}, {}
+            authored_qs = motion.attack_rotations(full_t) if attack else {}
             for i, node in enumerate(g['nodes'][:count_bones]):
                 bone_name = node['name']
                 angles = pose.get(bone_name, (0, 0, 0))
-                if attack:
-                    angles = motion.attack_pose(max(0, full_t-delays.get(bone_name, 0))).get(bone_name, angles)
-                source_q = motion.quaternion(angles)
+                source_q = authored_qs.get(bone_name, motion.quaternion(angles))
                 parent = parents.get(i)
                 source_world[i] = motion.qmul(source_world[parent], source_q) if parent is not None else source_q
                 # Retarget limb bind axes in world space, then recover local joint rotations.
                 target_world[i] = motion.qmul(source_world[i], basis.get(bone_name, (0, 0, 0, 1)))
                 local[bone_name] = motion.qmul(motion.inverse(target_world[parent]), target_world[i]) if parent is not None else target_world[i]
             if attack:
-                local.update(solve_legs(g, pose, full_t, scale))
+                local.update(motion.attack_legs(g, pose, full_t, scale))
             positions = {}
             for node in g['nodes'][:count_bones]:
                 pos = list(node['translation'])
                 if node['name'] == 'Root':
                     pos[2] += pose['_step']*scale
                 if node['name'] == 'Hips':
+                    pos[0] += pose.get('_shift_x',0)*scale
                     pos[1] -= pose['_drop']*scale
+                    pos[2] += pose.get('_shift_z',0)*scale
                 positions[node['name']] = pos
             rotations.append(local)
             translations.append(positions)
@@ -147,8 +120,8 @@ def main():
                 animation['samplers'].append({'input': ti, 'output': oi, 'interpolation': 'LINEAR'})
         animations.append(animation)
     g['animations'] = animations
-    g.setdefault('extras', {}).update(revision='MALE_BODY_AND_SWORD_V11', gender='male', swordTip=male_tip, motionScale=scale,
-                                     combatNote='Approved five-hit motion retargeted to original male bind axes and foot proportions')
+    g.setdefault('extras', {}).update(revision='MALE_BODY_AND_SWORD_V12', gender='male', swordTip=male_tip, motionScale=scale,
+                                     combatNote='Grounded body rhythm and pivots retargeted to male proportions; approved blade orientation preserved')
     g['buffers'][0]['byteLength'] = len(binary)
     header = json.dumps(g, separators=(',', ':')).encode()
     header += b' '*((-len(header)) % 4)

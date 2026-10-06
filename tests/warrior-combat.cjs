@@ -42,8 +42,8 @@ const { chromium } = require('playwright');
                 const heights=[];for(let j=0;j<=20;j++){rig.sample(name,rig.channels[name].duration*j/20);heights.push(rig.byName.Hips.position.y)}check(Math.max(...heights)-Math.min(...heights)>.005,'Body rises and falls in '+name);
                 if(i<5){rig.sample(name,rig.channels[name].duration);const end=rig.bones.map(b=>({q:b.quaternion.clone(),p:b.position.clone()}));rig.sample('Attack'+(i+1),0);check(rig.bones.every((b,j)=>b.quaternion.angleTo(end[j].q)<1e-5&&b.position.distanceTo(end[j].p)<1e-5),'Consecutive cuts share their boundary pose');}
             }
-            rig.sample('Combo',.06);const planted=rig.byName.LAnkle.getWorldPosition(new THREE.Vector3());rig.sample('Combo',.60);
-            check(planted.distanceTo(rig.byName.LAnkle.getWorldPosition(new THREE.Vector3()))<.002,'Supporting foot remains planted during the first advancing cut');
+            rig.sample('Combo',.06);const planted=rig.byName.LFoot.getWorldPosition(new THREE.Vector3());rig.sample('Combo',.60);
+            check(planted.distanceTo(rig.byName.LFoot.getWorldPosition(new THREE.Vector3()))<.002,'Supporting foot remains planted during the first advancing cut');
             rig.sample('Jump',.13);const crouch=rig.byName.Hips.position.y;rig.sample('Jump',.25);check(rig.byName.Hips.position.y-crouch>.04,'Jump crouch extends into takeoff');
             rig.sample('Combo',3.55);check(rig.aura.visible&&rig.mana.visible,'Finisher has transient body and blade energy');rig.sample('Idle',0);check(!rig.aura.visible&&!rig.mana.visible,'Attack energy clears on idle');
             const cloth=await (await fetch('tools/female-cloth-bindings.json')).json(),indices=rig.mesh.geometry.attributes.skinIndex.array,weights=rig.mesh.geometry.attributes.skinWeight.array;

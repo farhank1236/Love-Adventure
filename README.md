@@ -1,6 +1,6 @@
 # Love Adventure
 
-Version 18 with Female Warrior V10 and Hero Warrior V11 animations.
+Version 18 with V12 body mechanics for both warriors animations.
 
 Open index.html, then select New Game → Female or Male → Warrior. Default controls: arrow keys move, Space attacks, Shift jumps, and holding R while moving runs; holding Ctrl sprints. Run and Sprint have their own animations and can be remapped in Settings. Each press triggers one cut; five presses queue the combo for either warrior. A one-second input gap resets it. Attacking while jumping works in both stages.
 
@@ -30,14 +30,17 @@ Run the warrior animation and combat regression checks with the same Playwright 
 NODE_PATH=/tmp/love-adventure-tests/node_modules node tests/warrior-combat.cjs
 NODE_PATH=/tmp/love-adventure-tests/node_modules node tests/character-preview.cjs
 NODE_PATH=/tmp/love-adventure-tests/node_modules node tests/male-warrior.cjs
+NODE_PATH=/tmp/love-adventure-tests/node_modules node tests/warrior-body.cjs
 python3 tests/female-model-integrity.py
 python3 tests/male-model-integrity.py
 ```
 
-`tools/rebuild-female-warrior.py` reproducibly bakes the full-body combo, locomotion and jump tracks, and repairs garment bindings with `tools/female-cloth-bindings.json` into the eight model parts without changing mesh geometry or textures. Run `python3 tools/rebuild-female-warrior.py --export /tmp/female-warrior-v10.glb` to regenerate the bundled animation and produce an editable GLB for Blender.
+`tools/rebuild-female-warrior.py` reproducibly bakes the full-body combo, locomotion and jump tracks, and repairs garment bindings with `tools/female-cloth-bindings.json` into the eight model parts without changing mesh geometry or textures. Run `python3 tools/rebuild-female-warrior.py --export /tmp/female-warrior-v12.glb` to regenerate the bundled animation and produce an editable GLB for Blender.
 
 Inspect the female warrior in `character-preview.html`: choose guard, walking, running, jumping, the full combo or an individual cut, then rotate, zoom, pause or scrub the animation. This page uses the bundled model parts and has no CDN dependencies.
 
-`tools/rebuild-male-warrior.py` retargets the approved movement recipe to the original male arm axes and leg proportions. It preserves his model, textures and skin weights, and solves supporting foot plants in his bind proportions. Run `python3 tools/rebuild-male-warrior.py --export /tmp/hero-warrior-v11.glb` to rebuild and export. Both warriors share five-hit combat timing, root travel, run/sprint, jump phases, red effects and attack interruption.
+`tools/rebuild-male-warrior.py` retargets the approved movement recipe to the original male arm axes and leg proportions. It preserves his model, textures and skin weights, and solves supporting foot plants in his bind proportions. Run `python3 tools/rebuild-male-warrior.py --export /tmp/hero-warrior-v12.glb` to rebuild and export. Both warriors share five-hit combat timing, root travel, run/sprint, jump phases, red effects and attack interruption.
 
 Use the character buttons in the preview to switch warriors, or open `character-preview.html?gender=male` to inspect the hero directly.
+
+V12 adds grounded body compression and rise, lateral and forward/back hip weight shifts, hip-led torso twist and lean, a balancing free arm, and head movement that stays closer to the attack direction. Foot pivots rotate around forefoot contacts; each rig solves leg reach so planted feet stay on the ground. The finisher has a deeper load and a short catching step. The approved sword orientation and five-hit timing are preserved. Running attacks retain brief forward momentum through the opening step instead of stopping immediately.

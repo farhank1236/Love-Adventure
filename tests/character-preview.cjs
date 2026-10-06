@@ -20,7 +20,7 @@ const { chromium } = require('playwright');
             if (!(await page.locator('#status').textContent()).startsWith(clip)) throw Error('Wrong clip: ' + clip);
         }
         await page.click('#maleWarrior');
-        await page.waitForFunction(() => window.previewReady && window.warriorPreview.rig.revision === 'MALE_BODY_AND_SWORD_V11', null, { timeout: 60000 });
+        await page.waitForFunction(() => window.previewReady && window.warriorPreview.rig.revision === 'MALE_BODY_AND_SWORD_V12', null, { timeout: 60000 });
         if (!(await page.locator('#characterName').textContent()).includes('Hero Warrior')) throw Error('Male selection did not update preview');
         await page.evaluate(clips => {
             for (const clip of clips) {
