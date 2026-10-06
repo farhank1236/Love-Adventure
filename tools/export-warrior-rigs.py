@@ -30,8 +30,8 @@ for action in bpy.data.actions:action.use_fake_user=True
 # Pack textures so the editable project opens without external paths.
 bpy.ops.file.pack_all()
 readme=bpy.data.texts.new('Warrior rig notes')
-readme.write('Game GLB uses 14 baked clips: idle, walk, run, sprint, jump, fall, land, stop, turn, combo and four individual attacks.\nChoose an action in the Action Editor to edit the FK keys. Optional R/L FootIK controls expose ik_blend; keep 0 for the original baked motion. Enable 1 for foot placement with KneePole controls. Bone stretching is disabled.\nHands use the existing sculpted grip; individual finger/toe articulation and extra clavicle/mid-spine deformation bones are not supplied by the original game skeleton.\n')
-assert len(bpy.data.actions)==14
+readme.write('Game GLB uses forward-leaning locomotion, phased jumping and full-body sword swings: five male / six female. Finger curl controls preserve the palm grip; individual fingers remain grouped.\nChoose an action in the Action Editor. R/L FootIK controls expose ik_blend; 0 preserves the game keys, 1 enables manual foot placement with KneePole. Bone stretching is disabled.\n')
+assert len(bpy.data.actions) in [15,16]
 assert all(b.name in rig.data.bones for b in [rig.data.bones['RHip'],rig.data.bones['RKnee']])
 bpy.ops.wm.save_as_mainfile(filepath=str(Path(destination).resolve()),compress=True)
 print('EDITABLE_RIG_EXPORTED',destination,len(rig.data.bones),'bones;',len(bpy.data.actions),'actions')

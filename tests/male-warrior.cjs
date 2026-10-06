@@ -16,13 +16,14 @@ const { chromium } = require('playwright');
             const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
             const male = createMaleWarriorAsset(THREE, WARRIOR_MODEL, { loadTexture: false });
             const female = createWarriorAsset(THREE, FEMALE_WARRIOR_MODEL, { loadTexture: false });
-            check(Object.keys(female.channels).every(n => male.channels[n]), 'Both warriors have the complete approved movement set');
+            check(male.attackStarts.length===5&&female.attackStarts.length===6, 'Five male and six female full-body attacks');
+            check(Object.keys(male.channels).every(n=>female.channels[n]),'Both warriors retain all locomotion and common attacks');
             const maleGrip = male.byName.RHand.position.clone();
             const vector = rig => rig.tip.getWorldPosition(new THREE.Vector3()).sub(rig.hilt.getWorldPosition(new THREE.Vector3())).normalize();
-            for (const clip of Object.keys(female.channels)) {
-                check(male.channels[clip].duration === female.channels[clip].duration, 'Matching clip timing: ' + clip);
+            for (const clip of Object.keys(male.channels)) {
+                check(clip==='Combo'||male.channels[clip].duration === female.channels[clip].duration, 'Matching clip timing: ' + clip);
                 for (let i = 0; i <= 12; i++) {
-                    const t = female.channels[clip].duration * i / 12;
+                    const t = male.channels[clip].duration * i / 12;
                     male.sample(clip, t); female.sample(clip, t);
                     check(male.bones.every(b => b.quaternion.toArray().every(Number.isFinite) && Math.abs(b.quaternion.length() - 1) < 1e-5), 'Finite, normalized male rotations: ' + clip);
                     check(male.byName.RHand.position.distanceTo(maleGrip) < 1e-6, 'Male hand does not slide: ' + clip);
@@ -35,7 +36,7 @@ const { chromium } = require('playwright');
                     check(male.bones.every((b, i) => b.quaternion.angleTo(first[i].q) < 1e-5 && b.position.distanceTo(first[i].p) < 1e-6), 'Male locomotion has a continuous loop: ' + clip);
                 }
             }
-            for (let i = 1; i < 4; i++) {
+            for (let i = 1; i < 5; i++) {
                 male.sample('Attack' + i, male.channels['Attack' + i].duration);
                 const end = male.bones.map(b => ({ q: b.quaternion.clone(), p: b.position.clone() }));
                 male.sample('Attack' + (i + 1), 0);
@@ -53,14 +54,14 @@ const { chromium } = require('playwright');
                 boss.active = false; bossDefeated = true; boss.swords = []; birdTimer = 9999;
                 heroPlayer.x = 100; heroPlayer.y = 412; heroPlayer.vy = 0; heroPlayer.isGrounded = true; heroPlayer.facing = 'right'; invuln = 0;
             }
-            setup(); check(WarriorCombat.cuts.length === 4, 'Male gameplay uses four cuts');
+            setup(); check(WarriorCombat.cuts.length === 5, 'Male gameplay uses five cuts');
             const originalTargets = combatTargets;
             const target = { x: heroPlayer.x + 60, y: heroPlayer.y, hp: 10, flash: 0, dead: false };
             combatTargets = () => [{ o: target, k: 'monster' }];
             const originX = heroPlayer.x;
-            for (let i = 0; i < 4; i++) { keys.attack = true; updatePhysics(); keys.attack = false; updatePhysics(); }
-            for (let i = 0; i < 130; i++) { target.flash = 0; target.x = heroPlayer.x + 60; updatePhysics(); }
-            check(target.hp === 5, 'Four male presses deliver four hits and a stronger finisher');
+            for (let i = 0; i < 5; i++) { keys.attack = true; updatePhysics(); keys.attack = false; updatePhysics(); }
+            for (let i = 0; i < 150; i++) { target.flash = 0; target.x = heroPlayer.x + 60; updatePhysics(); }
+            check(target.hp === 4, 'Five male presses deliver five hits and a stronger finisher');
             check(Math.abs(heroPlayer.x - originX - 47.3) < .1, 'Male advancing combo travels the same gameplay distance');
             combatTargets = originalTargets;
             setup(); const low = { k: 'wave', x: heroPlayer.x + 4, y: heroPlayer.y + 16, vx: 0, vy: 0, r: 12, age: 0 };

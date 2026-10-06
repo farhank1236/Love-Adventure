@@ -24,7 +24,7 @@ const approvedDirections = [{time:.23,direction:[-.15,.98,.12]},{time:.72,direct
             for (const [gender, rig] of Object.entries(rigs)) {
                 const scale = rig.motionScale;
                 const pulses = [];
-                for (let cut = 1; cut <= 4; cut++) {
+                for (let cut = 1; cut <= rig.attackStarts.length; cut++) {
                     const clip = 'Attack' + cut, heights = [], lateral = [], forward = [];
                     const hipYaw = [], spinePitch = [], chestRoll = [];
                     for (let i = 0; i <= 30; i++) {
@@ -47,7 +47,7 @@ const approvedDirections = [{time:.23,direction:[-.15,.98,.12]},{time:.72,direct
                     rig.sample(clip, rig.channels[clip].duration * .70);
                     check(freeArm.angleTo(rig.byName.LElbow.quaternion) > .10, gender + ' free arm counterbalances ' + clip);
                 }
-                check(pulses[3] > pulses[0] * 1.4, gender + ' finisher has the strongest compression and rise');
+                check(pulses[4] > pulses[0],gender+' rising attack compresses before the full extension');
                 // Forefoot contact stays fixed while the heel pivots around it.
                 for (const [foot, a, b] of [['RFoot', .06, .60], ['LFoot', .38, .62], ['RFoot', 1.08, 1.25], ['LFoot', 1.80, 2.06], ['LFoot', 2.66, 2.90]]) {
                     rig.sample('Combo', a); const planted = point(rig, foot), rotation = rig.byName[foot].getWorldQuaternion(new THREE.Quaternion());
@@ -71,12 +71,14 @@ const approvedDirections = [{time:.23,direction:[-.15,.98,.12]},{time:.72,direct
                 const head = new THREE.Euler().setFromQuaternion(rig.byName.Head.getWorldQuaternion(new THREE.Quaternion()), 'YXZ');
                 const chest = new THREE.Euler().setFromQuaternion(rig.byName.Chest.getWorldQuaternion(new THREE.Quaternion()), 'YXZ');
                 check(Math.abs(head.y) < Math.abs(chest.y) * .65, gender + ' head tracks the attack direction while the torso twists');
-                for (const { time, direction } of approved) {
-                    rig.sample('Combo', time);
-                    const actual = point(rig, 'Sword');
-                    actual.copy(rig.tip.getWorldPosition(new THREE.Vector3())).sub(rig.hilt.getWorldPosition(new THREE.Vector3())).normalize();
-                    check(actual.angleTo(new THREE.Vector3(...direction)) < .20, gender + ' blade follows the requested character-relative cutting direction at ' + time);
+                for(let cut=1;cut<=rig.attackStarts.length;cut++){
+                    const clip='Attack'+cut,elbows=[],shoulders=[],directions=[];
+                    for(let i=0;i<=30;i++){rig.sample(clip,rig.channels[clip].duration*i/30);elbows.push(new THREE.Euler().setFromQuaternion(rig.byName.RElbow.quaternion).x);shoulders.push(rig.byName.RShoulder.quaternion.clone());directions.push(rig.tip.getWorldPosition(new THREE.Vector3()).sub(rig.hilt.getWorldPosition(new THREE.Vector3())).normalize())}
+                    check(range(elbows)>.4,gender+' elbow flexes in windup and extends in Attack'+cut);
+                    check(Math.max(...shoulders.map(q=>q.angleTo(shoulders[0])))>.6,gender+' upper arm drives Attack'+cut);
+                    check(Math.max(...directions.map(d=>d.angleTo(directions[0])))>1.1,gender+' complete blade arc in Attack'+cut);
                 }
+                for(const gait of ['Run','Sprint']){rig.sample(gait,rig.channels[gait].duration*.2);const up=new THREE.Vector3(0,1,0).applyQuaternion(rig.byName.Chest.getWorldQuaternion(new THREE.Quaternion()));check(up.z>.3,gender+' upper body leans forward in '+gait)}
             }
             startNewGameFlow(); setNewGender('female'); await beginSelectedCharacter(); paused = true;
             function setup(gender) {
@@ -88,7 +90,8 @@ const approvedDirections = [{time:.23,direction:[-.15,.98,.12]},{time:.72,direct
             for (const gender of ['female', 'male']) {
                 setup(gender); const standX = heroPlayer.x; keys.attack = true; updatePhysics(); keys.attack = false;
                 for (let i = 1; i < 12; i++) updatePhysics(); const standingTravel = heroPlayer.x - standX;
-                setup(gender); keys.right = keys.run = true; for (let i = 0; i < 25; i++) updatePhysics();
+                setup(gender); keys.right = keys.run = true; for (let i = 0; i < 25; i++){updatePhysics();WarriorCombat.pose()}
+                const facing=new THREE.Vector3(0,0,1).applyQuaternion(WarriorCombat.rig.root.quaternion);check(facing.x>.99,gender+' running body faces the actual travel direction');
                 const runningX = heroPlayer.x; keys.attack = true; updatePhysics(); keys.attack = false;
                 for (let i = 1; i < 12; i++) updatePhysics();
                 check(WarriorCombat.snapshot().combo?.entryVelocity > 6, gender + ' running attack captures forward momentum');

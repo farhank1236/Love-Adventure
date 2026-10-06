@@ -38,6 +38,11 @@ def main():
     _, female, _ = read_model('female')
     import warrior_repairs
     warrior_repairs.apply(g,binary,'male')
+    warrior_repairs.align_male_boot(g,binary)
+    import importlib.util
+    detail_spec=importlib.util.spec_from_file_location('hand_rig',ROOT/'tools/warrior-hand-rig.py')
+    detail=importlib.util.module_from_spec(detail_spec);detail_spec.loader.exec_module(detail)
+    detail.apply(g,binary,'male')
     nodes = {n['name']: n for n in g['nodes']}
     source_nodes = {n['name']: n for n in female['nodes']}
     count_bones = len(g['skins'][0]['joints'])
@@ -50,6 +55,7 @@ def main():
     male_tip, female_tip = (.079, -.445, .474), (-.253, -.366, .176)
     # Orient the original grip and blade together; the sword still articulates around that grip.
     basis['RHand'] = basis['Sword'] = motion.align(male_tip, female_tip)
+    basis['RFingers']=basis['RThumb']=basis['RHand']
 
     def accessor(flat, kind):
         while len(binary) % 4:
@@ -68,9 +74,9 @@ def main():
         a.pop('min', None)
         a.pop('max', None)
 
-    durations = {'Idle': 3., 'Walk': .9, 'Run': .72, 'Sprint': .62, 'Jump': 1.12, 'Fall': .6, 'Land': .25, 'Stop': .25, 'Turn': .3, 'Combo': 3.25}
-    durations.update({f'Attack{i+1}': motion.ENDS[i]-motion.STARTS[i] for i in range(4)})
-    old = {a['name']: a for a in g['animations']} if g.get('extras', {}).get('revision') in ['MALE_BODY_AND_SWORD_V11','MALE_BODY_AND_SWORD_V12','MALE_BODY_AND_SWORD_V13'] else {}
+    durations = {'Idle': 3., 'Walk': .9, 'Run': .72, 'Sprint': .62, 'Jump': 1.12, 'Fall': .6, 'Land': .25, 'Stop': .25, 'Turn': .3, 'Combo': motion.ENDS[4]}
+    durations.update({f'Attack{i+1}': motion.ENDS[i]-motion.STARTS[i] for i in range(5)})
+    old = {a['name']: a for a in g['animations']} if g.get('extras', {}).get('revision') in ['MALE_BODY_AND_SWORD_V11','MALE_BODY_AND_SWORD_V12','MALE_BODY_AND_SWORD_V13','MALE_BODY_AND_SWORD_V14'] else {}
     animations = []
     for name, duration in durations.items():
         count = math.ceil(duration*60)+1
@@ -115,23 +121,21 @@ def main():
         for i, node in enumerate(g['nodes'][:count_bones]):
             for path, frames, kind in [('rotation', rotations, 'VEC4'), ('translation', translations, 'VEC3')]:
                 flat = [v for frame in frames for v in frame[node['name']]]
-                oi = reuse[(i, path)]['output'] if reuse else accessor(flat, kind)
+                oi = reuse[(i, path)]['output'] if (i,path) in reuse else accessor(flat, kind)
                 write(oi, flat)
                 animation['channels'].append({'sampler': len(animation['samplers']), 'target': {'node': i, 'path': path}})
                 animation['samplers'].append({'input': ti, 'output': oi, 'interpolation': 'LINEAR'})
         animations.append(animation)
     g['animations'] = animations
-    import warrior_repairs
-    warrior_repairs.apply(g,binary,'male')
-    g.setdefault('extras', {}).update(revision='MALE_BODY_AND_SWORD_V13', gender='male', motionScale=scale, gaitStride=motion.GAIT_STRIDE,
-                                     combatNote='Four directional cuts, repaired knee weights, trajectory-based locomotion and rigid grip')
+    g.setdefault('extras', {}).update(revision='MALE_BODY_AND_SWORD_V14', gender='male', motionScale=scale, gaitStride=motion.GAIT_STRIDE,gaitDuty=motion.GAIT_DUTY,
+                                     attackStarts=motion.STARTS[:5],attackEnds=motion.ENDS[:5],attackHits=motion.HITS[:5],attackLabels=['Overhead slash','Reverse sweep','Diagonal slash','Cross-body cut','Rising finisher'], combatNote='Five full-body swings with shoulder windup, elbow extension, grounded weight transfer and forward leaning run')
     g['buffers'][0]['byteLength'] = len(binary)
     header = json.dumps(g, separators=(',', ':')).encode()
     header += b' '*((-len(header)) % 4)
     raw = struct.pack('<4sII', b'glTF', 2, 28+len(header)+len(binary))+struct.pack('<I4s', len(header), b'JSON')+header+struct.pack('<I4s', len(binary), b'BIN\0')+binary
     encoded = base64.b64encode(raw).decode()
     size = 8*1024*1024
-    assert math.ceil(len(encoded)/size) == len(files)
+    files=[ROOT/'assets/models'/f'male-{i+1:02}.js' for i in range(math.ceil(len(encoded)/size))]
     for i, path in enumerate(files):
         path.write_text('window.LoveAdventureModelParts.male.push('+json.dumps(encoded[i*size:(i+1)*size])+');\n')
     if args.export:

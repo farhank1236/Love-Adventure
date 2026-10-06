@@ -14,10 +14,11 @@ for(const gender of ['female','male']){
   for(let j=0;j<rig.bones.length;j++)if(!['Root','Hips'].includes(rig.bones[j].name))check(rig.bones[j].position.distanceTo(rest[j])<1e-6,gender+' fixed limb length in '+clip);
   check(rig.byName.Sword.quaternion.angleTo(new T.Quaternion())<1e-6,gender+' blade never rotates independently from grip');
   check(point('Sword').distanceTo(point('RHand'))<1e-6,gender+' grip remains in palm');
-  if(['Combo','Attack1','Attack2','Attack3','Attack4'].includes(clip))check(rig.tip.getWorldPosition(new T.Vector3()).y>-.005,gender+' attack blade clears ground: '+clip+' '+i);
+  if((clip==='Combo'||clip.startsWith('Attack')))check(rig.tip.getWorldPosition(new T.Vector3()).y>-.005,gender+' attack blade clears ground: '+clip+' '+i);
  }
- for(const [clip,duty] of [['Walk',.62],['Run',.44],['Sprint',.40]]){
+ for(const [clip,duty] of Object.entries(rig.gaitDuty)){
   const duration=rig.channels[clip].duration;
+  if(clip!=='Walk')check(rig.gaitStride[clip]>2&&duty<.25,gender+' realistic running stride and contact duration');
   rig.sample(clip,duration*.08);const first=point('RFoot');first.z+=rig.gaitStride[clip]*rig.motionScale*.08;
   const thigh=rig.byName.RHip.quaternion.clone();let minBend=Infinity,maxBend=0,maxThigh=0,flight=false;
   for(let i=0;i<=30;i++){

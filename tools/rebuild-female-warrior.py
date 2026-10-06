@@ -18,9 +18,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PARTS = ROOT / 'assets/models'
 PREFIX = 'window.LoveAdventureModelParts.female.push('
 # All angles in degrees, authored on the existing skeleton. Positive cloth pitch trails backwards.
-STARTS=[0.,.72,1.38,2.15]
-ENDS=[.72,1.38,2.15,3.25]
-HITS=[.42,1.10,1.85,2.70]
+STARTS=[0.,.72,1.38,2.15,2.93,4.05]
+ENDS=[.72,1.38,2.15,2.93,4.05,5.05]
+HITS=[.42,1.10,1.85,2.63,3.55,4.62]
 GUARD=(-38,8,-10)
 
 def quaternion(degrees):
@@ -44,20 +44,27 @@ def pose(shoulder=GUARD,elbow=-57,wrist=(0,0,0),blade=(0,0,0),turn=0,drop=0,step
 
 # The shared boundary pose is also the next cut's preparation; there is no guard reset between cuts.
 KEYS=[
- (0.,pose(drop=.015)),
- (.23,pose((-89.21,20.21,3.05),-85.0,(6.81,-11.49,2.21),turn=-24,drop=.042,step=.010)),
- (.42,pose((-39.99,-6.1,38.06),-85.0,(28.0,-28.0,3.78),turn=18,drop=.036,step=.060)),
- (.72,pose((-14.78,-11.2,36.7),-85.0,(28.0,-27.4,11.17),turn=20,drop=.025,step=.080)),
- (.90,pose((-11.65,-2.41,22.69),-85.0,(28.0,-21.14,14.72),turn=12,drop=.030,step=.086)),
- (1.10,pose((-28.41,3.95,50.05),-85.0,(7.29,-6.77,1.84),turn=-40,drop=.038,step=.135)),
- (1.38,pose((-28.82,4.14,51.56),-84.65,(6.51,-5.08,1.39),turn=-44,drop=.031,step=.145)),
- (1.61,pose((-41.61,-0.04,62.5),-85.0,(7.11,-6.05,0.92),turn=-48,drop=.060,step=.158)),
- (1.85,pose((-24.58,28.11,-19.83),-85.0,(28.0,0.24,28.0),turn=44,drop=.042,step=.220)),
- (2.15,pose((-10.96,25.55,-38.64),-85.0,(18.05,-5.28,20.25),turn=38,drop=.040,step=.240)),
- (2.40,pose((-40.19,4.09,65.0),-76.09,(22.55,-28.0,-17.52),turn=-42,drop=.085,step=.255)),
- (2.70,pose((-65.08,34.31,-65.0),-85.0,(28.0,13.34,28.0),turn=45,drop=.020,step=.390)),
- (2.92,pose((-83.55,33.4,-65.0),-85.0,(20.4,6.29,28.0),turn=34,drop=.029,step=.430)),
- (3.25,pose(drop=.015,step=.430))]
+ (0.,pose()),
+ (.23,pose((-132,-22,-15),-68,(-10,-12,6),(-3,0,3),-32,.025,.008,-9)),
+ (.42,pose((-48,38,20),-30,(16,22,-6),(7,0,-7),29,.013,.057,18)),
+ (.72,pose((-20,57,24),-47,(-10,10,-8),(0,0,-3),38,.018,.075,8)),
+ (.90,pose((-42,72,19),-60,(-12,20,8),(-4,0,5),43,.032,.080,2)),
+ (1.10,pose((-48,-65,-16),-32,(12,-25,-6),(5,0,-6),-36,.019,.120,-14)),
+ (1.38,pose((-65,-61,-12),-50,(-8,-14,7),(0,0,3),-39,.022,.130,-5)),
+ (1.61,pose((-115,-52,-22),-70,(-14,-18,8),(-4,0,4),-49,.049,.141,-10)),
+ (1.85,pose((-37,60,25),-28,(18,26,-7),(8,0,-8),47,.022,.225,25)),
+ (2.15,pose((-40,72,24),-49,(-8,17,-5),(0,0,-2),53,.024,.240,12)),
+ (2.38,pose((-54,68,18),-61,(-9,17,5),(-3,0,4),65,.036,.249,6)),
+ (2.63,pose((-50,-79,-14),-33,(15,-24,-8),(6,0,-6),-68,.021,.265,-17)),
+ (2.93,pose((8,-32,-23),-55,(-12,-15,6),(-3,0,3),-47,.036,.270,-7)),
+ (3.24,pose((24,-35,-23),-72,(-18,-20,8),(-5,0,4),-56,.062,.279,-12)),
+ (3.55,pose((-130,36,16),-24,(20,25,-8),(9,0,-8),57,.004,.408,28)),
+ (3.77,pose((-143,24,4),-36,(8,15,-4),(3,0,-3),44,.011,.430,15)),
+ (4.05,pose(step=.430)),
+ (4.30,pose((-122,-38,-25),-74,(-8,-12,4),turn=-58,drop=.065,step=.445)),
+ (4.62,pose((-40,74,32),-22,(12,18,-6),turn=66,drop=.028,step=.555)),
+ (4.82,pose((-22,78,28),-38,(4,10,-3),turn=54,drop=.034,step=.585)),
+ (5.05,pose(step=.585))]
 
 def sword_attack_pose(t):
  k=next((i for i in range(len(KEYS)-1) if t<=KEYS[i+1][0]),len(KEYS)-2)
@@ -74,24 +81,31 @@ def sword_attack_pose(t):
  return out
 
 
-# Body keys define the four-cut rhythm, with grounded compression and
+# Body keys define the six-cut rhythm, with grounded compression and
 # shifts toward the supporting leg. Values: drop, lateral shift, fore/aft shift,
 # pelvis pitch/roll, lower-spine pitch, chest pitch/roll, free-arm pitch/elbow.
 BODY_KEYS=[
  (0.,(.015,0.,0.,2.,0.,4.,2.,0.,-18.,-50.)),
- (.23,(.042,.015,-.010,4.,-2.,7.,3.,-3.,-12.,-60.)),
- (.42,(.036,-.024,.022,4.,3.,10.,5.,4.,-34.,-38.)),
- (.72,(.025,-.018,.012,2.,2.,5.,2.,3.,-28.,-44.)),
- (.90,(.020,-.016,.006,2.,2.,4.,2.,2.,-20.,-52.)),
- (1.10,(.038,.024,.015,3.,-3.,6.,3.,-4.,-36.,-38.)),
- (1.38,(.031,.018,.008,2.,-2.,5.,2.,-3.,-26.,-47.)),
- (1.61,(.060,.023,-.012,4.,-3.,9.,4.,-4.,-14.,-59.)),
- (1.85,(.042,-.026,.024,4.,3.,10.,4.,5.,-38.,-35.)),
- (2.15,(.040,-.018,.010,3.,2.,6.,2.,3.,-27.,-48.)),
- (2.40,(.065,.025,-.020,5.,-3.,11.,4.,-4.,-12.,-65.)),
- (2.70,(.020,-.030,.030,2.,3.,3.,-4.,5.,-42.,-33.)),
- (2.92,(.029,-.020,.020,1.,2.,2.,-2.,3.,-32.,-43.)),
- (3.25,(.015,0.,0.,2.,0.,4.,2.,0.,-18.,-50.))]
+ (.23,(.044,-.022,-.018,4.,-2.,7.,3.,-4.,-10.,-64.)),
+ (.42,(.018,.025,.020,3.,3.,10.,5.,5.,-37.,-35.)),
+ (.72,(.026,.018,.013,2.,2.,5.,2.,3.,-30.,-43.)),
+ (.90,(.046,.020,-.006,3.,3.,4.,2.,4.,-14.,-60.)),
+ (1.10,(.021,-.025,.012,2.,-3.,6.,3.,-5.,-40.,-35.)),
+ (1.38,(.030,-.018,.006,2.,-2.,5.,2.,-3.,-28.,-47.)),
+ (1.61,(.073,-.026,-.019,5.,-3.,10.,5.,-5.,-9.,-66.)),
+ (1.85,(.021,.029,.026,4.,3.,12.,5.,6.,-44.,-30.)),
+ (2.15,(.035,.022,.016,2.,2.,6.,3.,4.,-29.,-48.)),
+ (2.38,(.056,.021,.001,3.,3.,7.,2.,5.,-15.,-57.)),
+ (2.63,(.027,-.028,.018,3.,-3.,8.,4.,-6.,-42.,-33.)),
+ (2.93,(.041,-.020,-.004,3.,-2.,5.,1.,-4.,-25.,-50.)),
+ (3.24,(.092,-.027,-.022,5.,-3.,11.,4.,-5.,-8.,-69.)),
+ (3.55,(.018,.030,.029,2.,3.,3.,-5.,6.,-48.,-30.)),
+ (3.77,(.033,.020,.019,1.,2.,1.,-2.,3.,-36.,-41.)),
+ (4.05,(.015,0.,0.,2.,0.,4.,2.,0.,-18.,-50.)),
+ (4.30,(.075,-.030,-.020,6.,-4.,14.,7.,-6.,-8.,-70.)),
+ (4.62,(.032,.035,.030,5.,4.,16.,6.,7.,-45.,-32.)),
+ (4.82,(.036,.022,.020,3.,2.,8.,3.,4.,-30.,-45.)),
+ (5.05,(.015,0.,0.,2.,0.,4.,2.,0.,-18.,-50.))]
 
 def attack_pose(t):
     result=sword_attack_pose(t)
@@ -104,6 +118,7 @@ def attack_pose(t):
                   Head=(-pitch*.5-spine*.35-chest*.3,-turn*.26,-roll),
                   LShoulder=(free,-turn*.25,20+abs(turn)*.12),LElbow=(elbow,0,0),
                   LWrist=(0,turn*.07,0),_drop=drop,_shift_x=-x,_shift_z=z)
+    result.update(RFingers=(-3,0,0),RThumb=(0,0,-2),LFingers=(8+5*math.sin(t*5),0,0),LThumb=(2,0,0))
     return result
 
 
@@ -126,10 +141,10 @@ def authored(clip,t):
  r=pose()
  if clip in ['Walk','Run','Sprint']:
   duration={'Walk':.9,'Run':.72,'Sprint':.62}[clip];a=math.sin(2*math.pi*t/duration);b=math.cos(2*math.pi*t/duration)
-  amp={'Walk':24,'Run':42,'Sprint':53}[clip];lean={'Walk':2,'Run':7,'Sprint':12}[clip]
+  amp={'Walk':24,'Run':42,'Sprint':53}[clip];lean={'Walk':2,'Run':16,'Sprint':22}[clip]
   r.update(RHip=(-amp*a,0,-2),LHip=(amp*a,0,2),RKnee=(9+amp*1.1*max(0,a),0,0),LKnee=(9+amp*1.1*max(0,-a),0,0),
-   RAnkle=(amp*a*.48-6,0,0),LAnkle=(-amp*a*.48-6,0,0),Hips=(0,4*a,2*a),Spine=(lean,-3*a,0),Chest=(lean*.5,-5*a,0),Neck=(-lean,0,0),
-   RShoulder=(-38-amp*.25*a,8,-10),RElbow=(-57-4*a,0,0),RWrist=(2*b,3*a,0),Sword=(a,0,-a),
+   RAnkle=(amp*a*.48-6,0,0),LAnkle=(-amp*a*.48-6,0,0),Hips=(0 if clip=='Walk' else 7,2*a,a),Spine=(lean,-3*a,0),Chest=(lean*.45,-4*a,0),Neck=(-lean*.65,0,0),Head=(-lean*.5,2*a,0),
+   RShoulder=(-30-amp*.55*a,8,-10),RElbow=(-55-14*a,0,0),RWrist=(2*b,3*a,0),Sword=(a,0,-a),
    LShoulder=(-12+amp*.65*a,-8,10),LElbow=(-40-lean*3-5*a,0,0),
    CapeTop=(lean*.6,0,0),CapeMid=(lean+3+2*math.sin(2*math.pi*t/duration-.7),2*a,0),CapeBottom=(lean+5+4*math.sin(2*math.pi*t/duration-1.1),3*a,0),
    HairMid=(lean*.8+2*b,0,0),HairTip=(lean+3*math.sin(2*math.pi*t/duration-.6),2*a,0),SkirtFront=(lean*.5,0,0),SkirtR=(lean*.6+4*a,0,0),SkirtL=(lean*.6-4*a,0,0),
@@ -147,6 +162,7 @@ def authored(clip,t):
   r['CapeMid']=(5,0,0);r['CapeBottom']=(8,0,0)
  else:
   a=math.sin(t*2*math.pi/3);r.update(RShoulder=(-38+1.2*a,8,-10),Chest=(2+.6*a,0,0),CapeMid=(2+a,0,0),CapeBottom=(3+1.5*a,0,0),HairTip=(2+a,0,0))
+ r.update(RFingers=(-3,0,0),RThumb=(0,0,-2),LFingers=(6 if clip=='Idle' else 10,0,0),LThumb=(2,0,0))
  return r
 
 
@@ -166,8 +182,8 @@ def align(a,b):
  a,b=unit(a),unit(b);q=(*cross(a,b),1+dot(a,b));return mul(q,1/max(1e-9,norm(q)))
 def foot_step(side,t):
     # The receiving foot plants before the strike transfers force into it.
-    steps={'L':[(.12,.36,.075),(1.49,1.77,.225),(2.25,2.62,.430)],
-           'R':[(.79,1.04,.145),(2.72,2.99,.360),(3.00,3.25,.430)]}[side]
+    steps={'L':[(.12,.36,.075),(1.49,1.77,.225),(3.07,3.48,.430),(4.17,4.54,.585)],
+           'R':[(.79,1.04,.145),(2.27,2.54,.270),(3.72,4.05,.430),(4.76,5.05,.585)]}[side]
     z=0.;lift=0.
     for start,end,target in steps:
         if t>=end:z=target
@@ -226,12 +242,13 @@ def attack_legs(g,pose,t,scale=1.,targets=None):
         result[side+'Foot']=(0,0,0,1)
     return result
 
-GAIT_STRIDE={'Walk':.32/.62,'Run':.38/.44,'Sprint':.44/.40}
+GAIT_DUTY={'Walk':.62,'Run':.18,'Sprint':.16}
+GAIT_STRIDE={'Walk':.32/.62,'Run':.38/.18,'Sprint':.44/.16}
 
 def gait_targets(clip,t,scale=1.):
     duration={'Walk':.9,'Run':.72,'Sprint':.62}[clip]
-    duty={'Walk':.62,'Run':.44,'Sprint':.40}[clip]
-    lift={'Walk':.035,'Run':.075,'Sprint':.095}[clip]
+    duty=GAIT_DUTY[clip]
+    lift={'Walk':.035,'Run':.14,'Sprint':.18}[clip]
     half=GAIT_STRIDE[clip]*duty/2
     targets={}
     for side,offset in [('R',0),('L',.5)]:
@@ -275,6 +292,10 @@ def main():
 
     import warrior_repairs
     warrior_repairs.apply(g,binary,'female')
+    import importlib.util
+    detail_spec=importlib.util.spec_from_file_location('hand_rig',ROOT/'tools/warrior-hand-rig.py')
+    detail=importlib.util.module_from_spec(detail_spec);detail_spec.loader.exec_module(detail)
+    detail.apply(g,binary,'female')
 
     def values(index):
         a = g['accessors'][index]; v = g['bufferViews'][a['bufferView']]
@@ -298,9 +319,9 @@ def main():
         g['accessors'].append({'bufferView':len(g['bufferViews'])-1, 'componentType':5126, 'count':len(flat)//width, 'type':kind})
         return len(g['accessors'])-1
 
-    durations={'Idle':3.,'Walk':.9,'Run':.72,'Sprint':.62,'Jump':1.12,'Fall':.6,'Land':.25,'Stop':.25,'Turn':.3,'Combo':3.25}
-    durations.update({f'Attack{i+1}':ENDS[i]-STARTS[i] for i in range(4)})
-    old={a['name']:a for a in g['animations']} if g.get('extras',{}).get('revision')in ['BODY_AND_SWORD_V10','BODY_AND_SWORD_V12','BODY_AND_SWORD_V13'] else {}
+    durations={'Idle':3.,'Walk':.9,'Run':.72,'Sprint':.62,'Jump':1.12,'Fall':.6,'Land':.25,'Stop':.25,'Turn':.3,'Combo':ENDS[-1]}
+    durations.update({f'Attack{i+1}':ENDS[i]-STARTS[i] for i in range(6)})
+    old={a['name']:a for a in g['animations']} if g.get('extras',{}).get('revision')in ['BODY_AND_SWORD_V10','BODY_AND_SWORD_V12','BODY_AND_SWORD_V13','BODY_AND_SWORD_V14'] else {}
     animations=[]
     for name,duration in durations.items():
         count=math.ceil(duration*60)+1;ts=[i*duration/(count-1) for i in range(count)]
@@ -313,7 +334,7 @@ def main():
         resolved=[resolved_pose(g,name,t) for t in ts]
         poses=[p for p,l in resolved];legposes=[l for p,l in resolved]
         rotationposes=[attack_rotations(t if name=='Combo' else STARTS[int(name[-1])-1]+t) for t in ts] if name=='Combo' or name.startswith('Attack') else [{} for _ in ts]
-        for index,node in enumerate(g['nodes'][:32]):
+        for index,node in enumerate(g['nodes'][:len(g['skins'][0]['joints'])]):
             for path in ['rotation','translation']:
                 flat=[]
                 for pose,legs in zip(poses,legposes):
@@ -328,34 +349,20 @@ def main():
                         if node['name']=='Hips':
                             pos[0]+=pose.get('_shift_x',0);pos[1]-=pose['_drop'];pos[2]+=pose.get('_shift_z',0)
                         flat.extend(pos)
-                oi=reuse[(index,path)]['output'] if reuse else accessor(flat,'VEC4' if path=='rotation' else 'VEC3')
+                oi=reuse[(index,path)]['output'] if (index,path) in reuse else accessor(flat,'VEC4' if path=='rotation' else 'VEC3')
                 write(oi,flat)
                 animation['channels'].append({'sampler':len(animation['samplers']),'target':{'node':index,'path':path}})
                 animation['samplers'].append({'input':ti,'output':oi,'interpolation':'LINEAR'})
         animations.append(animation)
     g['animations']=animations
 
-    # Garment panels follow the cloth/torso chain, never the nearby hands.
-    cloth=json.loads((ROOT/'tools/female-cloth-bindings.json').read_text())
-    primitive=g['meshes'][0]['primitives'][0]
-    ji=primitive['attributes']['JOINTS_0'];wi=primitive['attributes']['WEIGHTS_0']
-    assert g['accessors'][ji]['count']==cloth['geometry_vertices']
-    def patch_vertex(accessor,vertex,values,code):
-        a=g['accessors'][accessor];v=g['bufferViews'][a['bufferView']]
-        offset=v.get('byteOffset',0)+a.get('byteOffset',0)+vertex*struct.calcsize('<4'+code)
-        struct.pack_into('<4'+code,binary,offset,*values)
-    for vertex,bones,weights,kind in cloth['patches']:
-        patch_vertex(ji,vertex,bones,'H');patch_vertex(wi,vertex,weights,'f')
-
-    import warrior_repairs
-    warrior_repairs.apply(g,binary,'female')
-    g['extras'].update(revision='BODY_AND_SWORD_V13', swordControl='Rigid hand grip, bounded elbow and wrist, ten-percent blade extension',
-                       combatNote='Four directional attacks, repaired thighs and knee weights, grounded locomotion and rigid sword grip', gaitStride=GAIT_STRIDE)
+    g['extras'].update(revision='BODY_AND_SWORD_V14', swordControl='Rigid palm grip with shoulder-led full swings and elbow extension',
+                       combatNote='Six complete attacks with anticipation, weight transfer and follow-through; forward leaning run', gaitStride=GAIT_STRIDE, gaitDuty=GAIT_DUTY, attackStarts=STARTS, attackEnds=ENDS, attackHits=HITS, attackLabels=['Overhead slash','Reverse sweep','Diagonal slash','Cross-body cut','Rising strike','Sweeping finisher'])
     g['buffers'][0]['byteLength']=len(binary)
     json_bytes=json.dumps(g,separators=(',',':')).encode();json_bytes+=b' '*((-len(json_bytes))%4)
     output=struct.pack('<4sII',b'glTF',2,28+len(json_bytes)+len(binary))+struct.pack('<I4s',len(json_bytes),b'JSON')+json_bytes+struct.pack('<I4s',len(binary),b'BIN\0')+binary
     encoded=base64.b64encode(output).decode();chunk_size=8*1024*1024
-    assert math.ceil(len(encoded)/chunk_size)==len(files), 'Update HTML model script tags if the part count changes.'
+    files=[PARTS/f'female-{i+1:02}.js' for i in range(math.ceil(len(encoded)/chunk_size))]
     for i, p in enumerate(files): p.write_text(PREFIX+json.dumps(encoded[i*chunk_size:(i+1)*chunk_size])+');\n')
     if args.export: args.export.parent.mkdir(parents=True, exist_ok=True); args.export.write_bytes(output)
     print(f'Baked {len(g["animations"])} clips into {len(files)} model parts ({len(output):,} bytes).')
