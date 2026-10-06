@@ -29,3 +29,5 @@ NODE_PATH=/tmp/love-adventure-tests/node_modules node tests/warrior-combat.cjs
 ```
 
 `tools/rebuild-female-warrior.py` reproducibly bakes the shoulder-led attack tracks and running loop into the eight model parts without changing mesh geometry or textures. Run `python3 tools/rebuild-female-warrior.py --export /tmp/female-warrior-v9.glb` to regenerate the bundled animation and produce an editable GLB for Blender.
+
+Inspect the female warrior in `character-preview.html`: choose guard, walking, running, jumping, the full combo or an individual cut, then rotate, zoom, pause or scrub the animation. This page uses the bundled model parts and has no CDN dependencies.
