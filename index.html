@@ -128,6 +128,8 @@
         #settingsModal .settings-title{color:#263e57;text-shadow:0 2px rgba(255,255,255,.8)}
         #settingsModal .settings-copy{color:#718496}
         #settingsModal .settings-card{border:1px solid rgba(116,145,162,.17);border-radius:1.25rem;background:rgba(255,255,255,.68);box-shadow:0 8px 24px rgba(45,72,94,.055);padding:1.15rem}
+        #settingsModal .settings-bindings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:1rem}
+        #settingsModal .settings-aside{display:grid;align-content:start;gap:1rem}
         #settingsModal .settings-section-title{color:#425d73}
         #settingsModal .settings-row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-height:2.9rem;border-bottom:1px solid rgba(116,145,162,.13);color:#526a7d}
         #settingsModal .settings-row:last-child{border-bottom:0}
@@ -140,6 +142,7 @@
         #settingsModal .settings-primary{border:1px solid rgba(193,155,96,.42);background:linear-gradient(110deg,#506e89,#344e6b);color:#fff9e9;box-shadow:0 10px 22px rgba(44,68,91,.2);transition:all .18s ease}
         #settingsModal .settings-primary:hover{transform:translateY(-1px);background:linear-gradient(110deg,#607f98,#3d5875);box-shadow:0 13px 26px rgba(44,68,91,.25)}
         #settingsModal button:focus-visible{outline:3px solid rgba(199,160,99,.55);outline-offset:2px}
+        @media(max-width:760px){#settingsModal .settings-bindings{grid-template-columns:1fr}}
         @media(max-width:640px){#settingsModal.aeth-settings-screen{padding:.75rem}#settingsModal .settings-shell{border-radius:1.4rem;padding:1.1rem}#settingsModal .settings-card{padding:.9rem}}
         @media(prefers-reduced-motion:reduce){#settingsModal.aeth-settings-screen,#settingsModal .settings-key,#settingsModal .settings-secondary,#settingsModal .settings-primary{transition:none}#settingsModal .settings-key-listening{animation:none}}
 </style>
@@ -275,8 +278,9 @@
                     <button type="button" onclick="toggleSettings()" class="settings-secondary grid h-10 w-10 shrink-0 place-items-center rounded-full" aria-label="Resume adventure"><i class="fa-solid fa-xmark"></i></button>
                 </header>
                 <div class="grid gap-4 md:grid-cols-2">
-                    <section class="settings-card md:row-span-2" aria-labelledby="keyboardSettingsTitle">
+                    <section class="settings-card" aria-labelledby="keyboardSettingsTitle">
                         <div class="mb-3 flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-sky-100 text-sky-700"><i class="fa-regular fa-keyboard"></i></span><div><h4 id="keyboardSettingsTitle" class="settings-section-title font-bold">Keyboard Controls</h4><p class="settings-copy text-xs">Select an action, then press a key.</p></div></div>
+                        <div class="settings-bindings">
                         <div class="settings-row"><span>Move Left</span><button id="keyLeft" onclick="remap('left')" class="settings-key" aria-label="Remap move left"></button></div>
                         <div class="settings-row"><span>Move Right</span><button id="keyRight" onclick="remap('right')" class="settings-key" aria-label="Remap move right"></button></div>
                         <div class="settings-row"><span>Move Down</span><button id="keyDown" onclick="remap('down')" class="settings-key" aria-label="Remap move down"></button></div>
@@ -286,12 +290,15 @@
                         <div class="settings-row"><span>Attack</span><button id="keyAtk" onclick="remap('attack')" class="settings-key" aria-label="Remap attack"></button></div>
                         <div class="settings-row"><span>Special / Ultimate</span><button id="keySpecial" onclick="remap('special')" class="settings-key" aria-label="Remap special or ultimate"></button></div>
                         <div class="settings-row"><span>Action / Lever</span><button id="keyAction" onclick="remap('action')" class="settings-key" aria-label="Remap action or lever"></button></div>
+                        </div>
                         <p id="remapHint" class="settings-copy mt-3 min-h-5 text-xs" aria-live="polite">Click a control, then press any keyboard key.</p>
                     </section>
-                    <section class="settings-card" aria-labelledby="touchSettingsTitle">
-                        <div class="flex items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-amber-100 text-amber-700"><i class="fa-solid fa-gamepad"></i></span><div><h4 id="touchSettingsTitle" class="settings-section-title font-bold">Touch Controls</h4><p class="settings-copy text-xs">Show or hide the on-screen pad.</p></div></div><button type="button" onclick="toggleTouchUI()" class="settings-secondary rounded-xl px-3 py-2 text-sm font-semibold">Show / Hide</button></div>
-                    </section>
-                    <section class="settings-card" aria-label="Settings actions"><div class="flex flex-col gap-2 sm:flex-row"><button type="button" onclick="resetKeyBinds()" class="settings-secondary flex-1 rounded-xl px-4 py-3 font-semibold">Restore Default Keys</button><button type="button" onclick="toggleSettings()" class="settings-primary flex-1 rounded-xl px-4 py-3 font-bold tracking-wide"><i class="fa-solid fa-play mr-2 text-xs"></i>Resume Adventure</button></div></section>
+                    <div class="settings-aside">
+                        <section class="settings-card" aria-labelledby="touchSettingsTitle">
+                            <div class="flex items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-amber-100 text-amber-700"><i class="fa-solid fa-gamepad"></i></span><div><h4 id="touchSettingsTitle" class="settings-section-title font-bold">Touch Controls</h4><p class="settings-copy text-xs">Show or hide the on-screen pad.</p></div></div><button type="button" onclick="toggleTouchUI()" class="settings-secondary rounded-xl px-3 py-2 text-sm font-semibold">Show / Hide</button></div>
+                        </section>
+                        <section class="settings-card" aria-label="Settings actions"><div class="flex flex-col gap-2 sm:flex-row"><button type="button" onclick="resetKeyBinds()" class="settings-secondary flex-1 rounded-xl px-4 py-3 font-semibold">Restore Default Keys</button><button type="button" onclick="toggleSettings()" class="settings-primary flex-1 rounded-xl px-4 py-3 font-bold tracking-wide"><i class="fa-solid fa-play mr-2 text-xs"></i>Resume Adventure</button></div></section>
+                    </div>
                 </div>
             </div>
         </section>
