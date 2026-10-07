@@ -221,7 +221,13 @@
             gap:clamp(1rem,2.5vw,1.6rem);max-width:860px;margin:auto;align-items:stretch
         }
         #characterScreen .aeth-card{
-            position:relative;min-height:0;padding:0!important;overflow:hidden;border-radius:1.8rem;
+            position:relative;min-height:0;padding:0!important;
+            overflow:hidden!important;
+            border-radius:1.8rem;
+            clip-path:inset(0 round 1.8rem);
+            contain:paint;
+            isolation:isolate;
+            transform-style:flat!important;
             background:linear-gradient(165deg,rgba(248,252,255,.30),rgba(12,30,54,.91) 48%,rgba(6,18,35,.98));
             border:1px solid rgba(255,248,218,.5);
             box-shadow:0 24px 48px rgba(6,22,43,.33),inset 0 1px rgba(255,255,255,.4);
@@ -238,6 +244,10 @@
             content:"";position:absolute;left:8%;right:8%;bottom:0;height:1px;
             background:linear-gradient(90deg,transparent,rgba(255,226,167,.72),transparent);
             opacity:.7;z-index:5
+        }
+        #characterScreen .aeth-card .hero-card-info::before{
+            content:"";position:absolute;left:1rem;right:1rem;top:0;height:1px;
+            background:linear-gradient(90deg,transparent,rgba(255,232,184,.48),transparent)
         }
         #characterScreen .aeth-card:not(.selected){opacity:.88;filter:saturate(.88) brightness(.95)}
         #characterScreen .aeth-card:not(.selected):hover{opacity:1;filter:saturate(1) brightness(1)}
@@ -263,15 +273,19 @@
         #characterScreen .hero-portrait-stage{
             position:relative;
             height:clamp(285px,38vh,350px);
-            margin:0;
-            padding:14px 18px 0;
-            overflow:hidden;
+            margin:14px 14px 0;
+            padding:18px 20px 8px;
+            overflow:hidden!important;
             display:flex;align-items:flex-end;justify-content:center;
-            border-radius:1.8rem 1.8rem 0 0;
+            border-radius:1.35rem;
+            border:1px solid rgba(255,255,255,.16);
             background:
-                radial-gradient(ellipse at 50% 75%,rgba(255,255,255,.12),transparent 44%),
-                linear-gradient(180deg,rgba(255,255,255,.055),transparent 72%);
-            transform:translateZ(20px);
+                radial-gradient(ellipse at 50% 78%,rgba(255,255,255,.13),transparent 42%),
+                linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02) 56%,rgba(4,14,29,.24));
+            box-shadow:inset 0 1px rgba(255,255,255,.18),inset 0 -28px 52px rgba(3,14,29,.16);
+            clip-path:inset(0 round 1.35rem);
+            contain:paint;
+            transform:none!important;
             isolation:isolate
         }
         #characterScreen .hero-portrait-stage::before{
@@ -284,23 +298,28 @@
         }
         #characterScreen .hero-portrait{
             position:relative;z-index:2;
-            width:100%;height:100%;max-width:100%;
-            object-fit:contain;object-position:center bottom;
+            display:block;
+            width:auto;
+            height:auto;
+            max-width:88%;
+            max-height:calc(100% - 18px);
+            object-fit:contain;
+            object-position:center bottom;
             pointer-events:none;user-select:none;-webkit-user-drag:none;
-            filter:drop-shadow(0 17px 15px rgba(0,0,0,.32)) drop-shadow(0 0 14px rgba(255,255,255,.07));
-            transition:transform .3s cubic-bezier(.2,.8,.2,1),filter .3s ease;
-            transform:scale(.92);
+            filter:drop-shadow(0 14px 12px rgba(0,0,0,.30)) drop-shadow(0 0 10px rgba(255,255,255,.06));
+            transition:transform .28s cubic-bezier(.2,.8,.2,1),filter .28s ease;
+            transform:scale(.9);
             transform-origin:center bottom
         }
         #characterScreen .aeth-card:hover .hero-portrait,#characterScreen .aeth-card.selected .hero-portrait{
-            transform:scale(.965);
-            filter:drop-shadow(0 19px 17px rgba(0,0,0,.38)) drop-shadow(0 0 20px rgba(255,228,165,.12))
+            transform:scale(.94);
+            filter:drop-shadow(0 16px 14px rgba(0,0,0,.34)) drop-shadow(0 0 16px rgba(255,228,165,.10))
         }
         #characterScreen .hero-card-info{
             position:relative;z-index:4;margin:0;padding:.9rem 1.1rem 1rem;
             border-top:1px solid rgba(255,255,255,.12);border-radius:0 0 1.8rem 1.8rem;
             background:linear-gradient(180deg,rgba(8,21,40,.52),rgba(4,13,27,.86));
-            backdrop-filter:blur(11px);transform:translateZ(24px)
+            backdrop-filter:blur(11px);transform:none!important
         }
         #characterScreen .hero-card-row{display:flex;align-items:center;justify-content:space-between;gap:.8rem}
         #characterScreen .hero-card-kicker{font-size:.62rem;font-weight:900;letter-spacing:.23em;text-transform:uppercase;color:#f5d99b}
@@ -355,7 +374,9 @@
         @media(max-width:720px){
             #characterScreen{max-height:calc(100vh - .5rem);padding:.75rem!important}
             #characterScreen .hero-grid{grid-template-columns:1fr;max-width:420px}
-            #characterScreen .hero-portrait-stage{height:clamp(275px,46vh,335px)}
+            #characterScreen .hero-portrait-stage{height:clamp(265px,43vh,325px);margin:10px 10px 0;padding:14px 16px 6px}
+            #characterScreen .hero-portrait{max-width:84%;max-height:calc(100% - 14px);transform:scale(.88)}
+            #characterScreen .aeth-card:hover .hero-portrait,#characterScreen .aeth-card.selected .hero-portrait{transform:scale(.91)}
             #characterScreen .hero-select-copy{font-size:.88rem}
             #characterScreen .hero-actions{flex-direction:column;align-items:stretch}
             #characterScreen .hero-begin{width:100%;min-width:0}
