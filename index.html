@@ -102,6 +102,21 @@
         .aeth-gold{color:#f5d99b}.aeth-glass{background:rgba(5,18,36,.68);backdrop-filter:blur(12px)}
         @media(max-width:640px){.aeth-card-art{height:280px!important}.aeth-title-content{padding:1.25rem}.aeth-title-sub{letter-spacing:.08em}}
         @media(prefers-reduced-motion:reduce){.aeth-cloudfield::before,.aeth-cloudfield::after{animation:none}.aeth-card,.aeth-card-art img{transition:none}}
+
+        /* A quieter, warmer main menu with a little more room and hierarchy. */
+        #mainMenu.aeth-panel{max-width:48rem;background:linear-gradient(145deg,rgba(239,246,247,.94),rgba(222,235,240,.92) 56%,rgba(248,239,221,.94));border:1px solid rgba(255,255,255,.8);box-shadow:0 30px 100px rgba(9,25,48,.36),inset 0 1px rgba(255,255,255,.8);backdrop-filter:blur(24px)}
+        #mainMenu.aeth-panel::before{background:radial-gradient(ellipse at 50% 0,rgba(255,255,255,.82),transparent 48%),radial-gradient(ellipse at 0 100%,rgba(181,217,226,.25),transparent 55%);z-index:0}
+        #mainMenu>.aeth-cloudfield{opacity:.08!important;background:linear-gradient(135deg,#dcebf0,#f5eddf)}
+        #mainMenu .relative.z-10.text-center{margin-bottom:2rem}
+        #mainMenu .relative.z-10.text-center p:first-child{color:#a98551}
+        #mainMenu .relative.z-10.text-center h2{color:#263e57;text-shadow:0 2px 0 rgba(255,255,255,.65);letter-spacing:.08em}
+        #mainMenu .relative.z-10.text-center p:last-child{color:#6f8495}
+        #mainMenu .aeth-menu-button{min-height:3.5rem;padding:.85rem 1.15rem;border-radius:1rem;border-color:rgba(105,136,155,.22);background:linear-gradient(110deg,rgba(255,255,255,.78),rgba(234,242,244,.84));color:#314a60;box-shadow:0 7px 18px rgba(41,68,91,.08);font-weight:700;letter-spacing:.015em;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease}
+        #mainMenu .aeth-menu-button:hover{transform:translateY(-2px);border-color:rgba(193,155,96,.58);background:linear-gradient(110deg,#fffdf8,#f2eadb);box-shadow:0 12px 26px rgba(41,68,91,.14)}
+        #mainMenu .aeth-menu-button:focus-visible{outline:3px solid rgba(199,160,99,.68);outline-offset:3px}
+        #mainMenu .aeth-menu-button i{width:1.25rem;text-align:center;color:#b28e5b}
+        #mainMenu>p.relative.z-10{color:#788b9a}
+        @media(max-width:640px){#mainMenu.aeth-panel{padding:1.5rem!important;margin:1rem auto}#mainMenu .relative.z-10.text-center h2{font-size:2.6rem}}
 </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-6 overflow-x-hidden">
@@ -1706,9 +1721,7 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 
 </script>
 <div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">R run · Ctrl sprint · Space attack · Full-body combo</div>
-<script>window.AethelosModelParts={male:[],female:[]};</script>
-<script src="assets/models/male-01.js?v=14"></script>
-<script src="assets/models/female-01.js?v=14"></script>
+<script>window.AethelosModelParts={male:[],female:[]};window.LoveAdventureModelParts=window.AethelosModelParts;</script>
 <script>
 
 const THREE=(()=>{const exports={};const module={exports};
@@ -79153,8 +79166,7 @@ exports.createCanvasElement = createCanvasElement;
 
 return module.exports;})();
 
-const WARRIOR_MODEL=window.AethelosModelParts.male.join('');window.AethelosModelParts.male=null;
-const FEMALE_WARRIOR_MODEL=window.AethelosModelParts.female.join('');window.AethelosModelParts.female=null;
+let WARRIOR_MODEL='',FEMALE_WARRIOR_MODEL='';
 /* Original GLB loader and animation sampler, shared by game and inspection view. */
 function createMaleWarriorAsset(THREE,encoded,options={}){
  return createWarriorAsset(THREE,encoded,options);
@@ -79198,13 +79210,26 @@ function createWarriorEffects(THREE,scene,rig){
  const isWarrior=()=>selectedRole==='warrior'&&!!heroPlayer;
  const ATTACK_SPEED=2;
  function attackSet(r){return {cuts:r.attackHits.map((at,i)=>({at,start:at-.12,end:Math.min(r.attackEnds[i]-.06,at+.18),label:r.attackLabels[i]})),segments:r.attackStarts.map((from,i)=>({from,to:r.attackEnds[i]}))}}
- let CUTS=[],SEGMENTS=[],rigGender='male';const rigs={},views={};
+ let CUTS=[],SEGMENTS=[],rigGender=null;const rigs={},views={},modelLoadPromises={};
  let combatClock=0,lastPress=-Infinity,nextCut=0,pendingCuts=[];
  let movementSpeed=0,movementVelocity=0,jumpPrep=0,stopClock=1,turnClock=1,visualYaw=1.05,previousMoving=false,previousFacing=null;
  let rig=null,view=null,rigError=null,combo=null,latch=false,jumpLatch=false,airTime=0,landTime=0,wasAir=false,jumpZ=0,jumpVelocity=0,walkClock=0,rigMode='Idle',blendFrom=null,blendClock=1,lastRigFrame=-1,stageRef=null;
- try{rigs.male=createMaleWarriorAsset(THREE,WARRIOR_MODEL);rigs.female=createWarriorAsset(THREE,FEMALE_WARRIOR_MODEL);rig=rigs.male;({cuts:CUTS,segments:SEGMENTS}=attackSet(rig))}catch(e){rigError=e;console.error(e)}
- const ready=Promise.all(Object.values(rigs).map(r=>r.textureReady)).catch(e=>{rigError=e;console.error(e)});
- function chooseRig(gender=playerGender){const next=gender==='female'?'female':'male';if(rigGender!==next){rigGender=next;rig=rigs[next];view=views[next]||null;({cuts:CUTS,segments:SEGMENTS}=attackSet(rig));lastRigFrame=-1;reset()}return rig}
+ const ready=Promise.resolve();
+ function chooseRig(gender=playerGender){const next=gender==='female'?'female':'male';if(rigGender!==next){if(!rigs[next])throw new Error('The selected 3D warrior has not finished loading.');rigGender=next;rig=rigs[next];view=views[next]||null;({cuts:CUTS,segments:SEGMENTS}=attackSet(rig));lastRigFrame=-1;reset()}return rig}
+ async function loadWarriorRig(gender){
+  const next=gender==='female'?'female':'male';if(rigs[next])return rigs[next];if(modelLoadPromises[next])return modelLoadPromises[next];
+  modelLoadPromises[next]=(async()=>{
+   const parts=window.AethelosModelParts;parts[next]=[];window.LoveAdventureModelParts=parts;
+   for(let i=1;i<=8;i++){
+    const button=document.querySelector('[onclick="beginSelectedCharacter()"]');if(button)button.textContent='LOADING 3D WARRIOR · '+i+'/8';
+    await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='assets/models/'+next+'-'+String(i).padStart(2,'0')+'.js?v=15';script.onload=resolve;script.onerror=()=>reject(new Error('Could not load '+(next==='female'?'female':'male')+' warrior model part '+i+'.'));document.head.appendChild(script)});
+   }
+   const encoded=parts[next].join('');if(encoded.length<1000000)throw new Error('The selected warrior model is incomplete.');
+   if(next==='male')WARRIOR_MODEL=encoded;else FEMALE_WARRIOR_MODEL=encoded;
+   const loaded=next==='male'?createMaleWarriorAsset(THREE,encoded):createWarriorAsset(THREE,encoded);await loaded.textureReady;rigs[next]=loaded;chooseRig(next);return loaded;
+  })().catch(e=>{delete modelLoadPromises[next];rigError=null;console.error('3D warrior load failed:',e);throw e});
+  return modelLoadPromises[next];
+ }
  function rootAt(time){const c=rig.channels.Combo.channels.find(c=>c.node===0&&c.path==='translation');if(!c)return 0;let a=Math.min(c.t.length-2,Math.max(0,Math.floor(time/rig.channels.Combo.duration*(c.t.length-1))));const u=Math.min(1,Math.max(0,(time-c.t[a])/(c.t[a+1]-c.t[a])));return c.v[a*3+2]*(1-u)+c.v[(a+1)*3+2]*u}
  const oldAim=aimDir;aimDir=function(){if(stage2){let x=Number(!!keys.right)-Number(!!keys.left),y=Number(!!keys.down)-Number(!!keys.up);if(x||y){const length=Math.hypot(x,y);return {x:x/length,y:y/length}}if(heroPlayer?.moveAim3D)return {...heroPlayer.moveAim3D}}return oldAim()};
  function active(){return combo&&combo.time>=CUTS[combo.index].start&&combo.time<=CUTS[combo.index].end}
@@ -79264,19 +79289,18 @@ function createWarriorEffects(THREE,scene,rig){
   if(combo){const oldTime=combo.time;combo.time+=ATTACK_SPEED/60;if(rig.channels.Combo){const nextTime=Math.min(combo.time,SEGMENTS[combo.index].to),attackAge=(oldTime-SEGMENTS[combo.index].from)/ATTACK_SPEED,carry=combo.entryVelocity*Math.exp(-attackAge/.065),advance=(rootAt(nextTime)-rootAt(oldTime))*rig.rootMotionScale+carry;heroPlayer.x+=advance*combo.dir.x;if(stage2)heroPlayer.y+=advance*combo.dir.y;heroPlayer.x=Math.max(stage2?35:arena?camX+16:20,Math.min(stage2?stage2.worldW-35:arena?(arena.type==='boss'?camX+VW-20:Math.min(camX+VW-20,arena.x-45)):WORLD_W-20,heroPlayer.x));if(stage2)heroPlayer.y=Math.max(20,Math.min(stage2.worldH-20,heroPlayer.y))}if(!combo.hit&&combo.time+1e-8>=CUTS[combo.index].at){hit(combo.index);combo.hit=true}if(combo.time>=SEGMENTS[combo.index].to){combo=null;atkCd=0;if(pendingCuts.length)startCut(pendingCuts.shift(),true)}}
   heroPlayer.attackMotion=0;heroPlayer.comboPose=-1;
  };
- const previousStart=startGame;startGame=function(){reset();previousStart()};
- beginSelectedCharacter=function(){
+ const previousStart=startGame;startGame=function(){const gender=playerGender==='female'?'female':'male';if(selectedRole==='warrior'&&!rigs[gender]){return loadWarriorRig(gender).then(()=>{reset();return previousStart()}).catch(e=>{showOnly('characterScreen');flash('The 3D warrior could not load. Check your connection and try again.');return false})}reset();return previousStart()};
+ beginSelectedCharacter=async function(){
   playerGender=newGender==='female'?'female':'male';selectedRole='warrior';
   const heroName=playerGender==='female'?'Female Warrior':'Male Warrior';
   selectedHeroAvatar=roleAvatar('warrior',playerGender);selectedHeroAvatar.name=heroName;selectedHeroAvatar.country='Æthelos';
   selectedPartnerAvatar=roleAvatar('warrior',playerGender==='male'?'female':'male');selectedPartnerAvatar.name=playerGender==='male'?'Female Warrior':'Male Warrior';
   weapon='sword';characterLevel=1;ultimateCharge=0;soulCounters={bird:0,archer:0,gate:0,boss:0};cheatUltimate=false;
   try{localStorage.setItem('loveAdventureHeroGender',playerGender)}catch(e){}
-  try{chooseRig(playerGender)}catch(e){rigError=e;console.warn('3D warrior unavailable; starting with fallback art.',e)}
   const button=document.querySelector('[onclick="beginSelectedCharacter()"]');
-  if(button){button.disabled=true;button.textContent='STARTING ADVENTURE…'}
-  try{startGame()}catch(e){console.error('Could not start the adventure.',e);showOnly('characterScreen');flash('The adventure could not start. Please try again.');}
-  finally{if(button){button.disabled=false;button.textContent='START ADVENTURE'}}
+  if(button){button.disabled=true;button.textContent='LOADING 3D WARRIOR…'}
+  try{await startGame()}catch(e){console.error('Could not start the adventure.',e);showOnly('characterScreen');flash('The adventure could not start. Please try again.');}
+  finally{if(button){button.disabled=false;button.textContent='BEGIN ADVENTURE'}}
  };
  const previousKill=kill;kill=function(){const before=heroHealth;previousKill();if(heroHealth<before)reset()};
  function createView(){chooseRig();if(view||rigError||!rig)return view;try{const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setSize(512,512,false);renderer.setPixelRatio(1);renderer.setClearColor(0,0);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;const scene=new THREE.Scene();scene.add(rig.root);scene.add(new THREE.HemisphereLight('#eff7ff','#3e4851',2.3));for(const [c,power,pos] of [['#fff0dc',2.1,[2,3,3]],['#acddff',1.3,[-2,2,-3]]]){const l=new THREE.DirectionalLight(c,power);l.position.set(...pos);scene.add(l)}const camera=new THREE.OrthographicCamera(-1.05,1.05,1.05,-1.05,.01,30);camera.position.set(0,.80,3);camera.lookAt(0,.80,0);view={renderer,scene,camera,effects:createWarriorEffects(THREE,scene,rig),rendered:false};views[rigGender]=view;return view}catch(e){rigError=e;console.error(e);flash('WebGL is unavailable; the 3D character cannot render.');return null}}
