@@ -17,6 +17,8 @@ const { chromium } = require('playwright');
         const modelChecks = await page.evaluate(async () => {
             let checks=0;
             const check=(ok,message)=>{if(!ok)throw Error(message);checks++};
+            await WarriorCombat.load('female');
+            await WarriorCombat.load('male');
             const rig=createWarriorAsset(THREE,FEMALE_WARRIOR_MODEL,{loadTexture:false});
             check(!!rig.channels.Run, 'Female warrior includes a distinct Run clip');
             check(['Sprint','Fall','Land','Stop','Turn','Attack5','Attack6'].every(n=>rig.channels[n]),'Distinct locomotion, jump and six attack clips exist');
@@ -57,7 +59,7 @@ const { chromium } = require('playwright');
             // The old coat mask also includes thigh/knee surfaces. These now bend,
             // so protect against long spikes by absolute expansion as well as ratio.
             check(maxStretch<4&&maxExpansion<.05,'Repaired coat/leg surface has bounded local expansion; ratio='+maxStretch.toFixed(2)+', expansion='+maxExpansion.toFixed(3));
-            startNewGameFlow();setNewGender('female');await beginSelectedCharacter();paused=true;
+            startNewGameFlow();selectÆthelosHero('female');await beginSelectedCharacter();paused=true;
             check(binds.run==='KeyR'&&binds.sprint==='ControlLeft'&&binds.jump==='ShiftLeft','Old saved controls gain R without replacing Jump');
             return checks;
         });
@@ -73,69 +75,69 @@ const { chromium } = require('playwright');
         await page.keyboard.down('ArrowRight');await page.keyboard.down('ControlLeft');const sprinting=await page.evaluate(()=>{for(let i=0;i<20;i++)updatePhysics();return heroPlayer.isSprinting&&heroPlayer.vx>8.9});if(!sprinting)throw Error('Ctrl triggers faster sprint');await page.keyboard.up('ControlLeft');await page.keyboard.up('ArrowRight');
         await page.evaluate(()=>remap('run'));await page.keyboard.press('KeyT');
         if(!(await page.evaluate(()=>binds.run==='KeyT'&&binds.jump==='ShiftLeft')))throw Error('Run key must be remappable separately');
-        const combatChecks = await page.evaluate(() => {
+        const combatChecks = await page.evaluate(async () => {
             let checks=0;const check=(ok,message)=>{if(!ok)throw Error(message);checks++};
-            function setup(){
-                startGame();paused=true;Object.keys(keys).forEach(k=>keys[k]=false);
+            async function setup(){
+                await startGame();paused=true;Object.keys(keys).forEach(k=>keys[k]=false);
                 birds=[];archers=[];shots=[];gates.forEach(g=>g.dead=true);
                 boss.active=false;bossDefeated=true;boss.swords=[];birdTimer=9999;
                 heroPlayer.x=100;heroPlayer.y=412;heroPlayer.vy=0;heroPlayer.isGrounded=true;heroPlayer.facing='right';invuln=0;
             }
             function shot(k,dx,dy,vx=0,r=7){return {k,x:heroPlayer.x+dx,y:heroPlayer.y+dy,vx,vy:0,r,age:0}}
             for(const gender of ['female','male']){
-                playerGender=gender;setup();keys.attack=true;
+                playerGender=gender;await setup();keys.attack=true;
                 for(let i=0;i<45;i++)updatePhysics();
                 check(WarriorCombat.snapshot().combo===null&&WarriorCombat.snapshot().nextCut===1&&WarriorCombat.snapshot().pendingCuts.length===0,'Holding Space triggers only one cut for '+gender);
                 keys.attack=false;for(let i=0;i<65;i++)updatePhysics();keys.attack=true;updatePhysics();
                 check(WarriorCombat.snapshot().combo.index===0,'One-second gap resets to the first attack for '+gender);
             }
             playerGender='female';
-            setup();heroPlayer.data=roleAvatar('warrior','female');renderCanvas();
+            await setup();heroPlayer.data=HeroSystem.avatar('femaleWarrior');renderCanvas();
             const guardBlade=WarriorCombat.rig.guardGeometry,scale=WarriorCombat.rig.rootMotionScale;
             check(!!guardBlade,'Real rendered sword supplies guard geometry');
             const bx=heroPlayer.x+(guardBlade.hilt.x*.6+guardBlade.tip.x*.4)*scale,by=heroPlayer.y+18-(guardBlade.hilt.y*.6+guardBlade.tip.y*.4)*scale;
             check(Math.abs(by-(heroPlayer.y-12))>45,'Physical blade test lies beyond the old low-only sweep');
             const highBlade=shot('laser',bx-heroPlayer.x,by-heroPlayer.y,0,5);shots=[highBlade];keys.attack=true;updatePhysics();
-            check(highBlade.dead&&lives===4,'Space interrupts a projectile beside the visible blade');
-            setup();const low=shot('wave',4,16,0,12);shots=[low];keys.attack=true;updatePhysics();
-            check(low.dead&&lives===4&&invuln===0,'Space cancels a low wave immediately; cancelled wave cannot still damage');
-            setup();const ground=shot('wave',0,38,0,40);shots=[ground];keys.attack=true;updatePhysics();
-            check(ground.dead&&lives===4,'Large ground wave is cancelled when its edge reaches the padded sword sweep');
-            setup();const arrow=shot('arrow',125,8,-110);shots=[arrow];keys.attack=true;updatePhysics();
-            check(arrow.dead&&lives===4,'Arrow entering the sweep this tick is cancelled before damage');
-            setup();const laser=shot('laser',10,-8,0);shots=[laser];keys.attack=true;updatePhysics();
-            check(laser.dead&&lives===4,'Close homing laser is cancelled');
-            setup();const left=shot('wave',-4,16,0,12);heroPlayer.facing='left';shots=[left];keys.attack=true;updatePhysics();
-            check(left.dead&&lives===4,'Low defence mirrors when facing left');
-            setup();const rear=shot('arrow',-16,0);shots=[rear];keys.attack=true;updatePhysics();
-            check(!rear.dead&&lives===3,'Attack from behind still damages the warrior');
-            setup();const far=shot('arrow',240,0);shots=[far];keys.attack=true;updatePhysics();
+            check(highBlade.dead&&heroHealth===100,'Space interrupts a projectile beside the visible blade');
+            await setup();const low=shot('wave',4,16,0,12);shots=[low];keys.attack=true;updatePhysics();
+            check(low.dead&&heroHealth===100&&invuln===0,'Space cancels a low wave immediately; cancelled wave cannot still damage');
+            await setup();const ground=shot('wave',0,38,0,40);shots=[ground];keys.attack=true;updatePhysics();
+            check(ground.dead&&heroHealth===100,'Large ground wave is cancelled when its edge reaches the padded sword sweep');
+            await setup();const arrow=shot('arrow',125,8,-110);shots=[arrow];keys.attack=true;updatePhysics();
+            check(arrow.dead&&heroHealth===100,'Arrow entering the sweep this tick is cancelled before damage');
+            await setup();const laser=shot('laser',10,-8,0);shots=[laser];keys.attack=true;updatePhysics();
+            check(laser.dead&&heroHealth===100,'Close homing laser is cancelled');
+            await setup();const left=shot('wave',-4,16,0,12);heroPlayer.facing='left';shots=[left];keys.attack=true;updatePhysics();
+            check(left.dead&&heroHealth===100,'Low defence mirrors when facing left');
+            await setup();const rear=shot('arrow',-16,0);shots=[rear];keys.attack=true;updatePhysics();
+            check(!rear.dead&&heroHealth===75,'Attack from behind still damages the warrior');
+            await setup();const far=shot('arrow',240,0);shots=[far];keys.attack=true;updatePhysics();
             check(!far.dead,'Distant attacks are not erased');
-            setup();shots=[shot('wave',4,16,0,12)];updatePhysics();
-            check(lives===3,'Low wave damages normally without a sword swing');
-            setup();keys.attack=true;updatePhysics();keys.attack=false;for(let i=0;i<22;i++)updatePhysics();
+            await setup();shots=[shot('wave',4,16,0,12)];updatePhysics();
+            check(heroHealth===75,'Low wave damages normally without a sword swing');
+            await setup();keys.attack=true;updatePhysics();keys.attack=false;for(let i=0;i<22;i++)updatePhysics();
             const recovered=shot('wave',4,16,0,12);shots=[recovered];updatePhysics();
-            check(lives===3&&!recovered.dead,'Recovery does not provide permanent immunity');
-            setup();boss.active=true;bossDefeated=false;boss.bx=3000;boss.st='cool';boss.t=1000;
+            check(heroHealth===75&&!recovered.dead,'Recovery does not provide permanent immunity');
+            await setup();boss.active=true;bossDefeated=false;boss.bx=3000;boss.st='cool';boss.t=1000;
             const blade={x:heroPlayer.x+125,y:heroPlayer.y+8,s:'fly',vx:-110,vy:0};boss.swords=[blade];keys.attack=true;updatePhysics();
-            check(blade.dead&&lives===4,'Boss blade entering the sweep is cancelled before its contact hit');
-            setup();keys.right=keys.run=keys.attack=true;updatePhysics();
+            check(blade.dead&&heroHealth===100,'Boss blade entering the sweep is cancelled before its contact hit');
+            await setup();keys.right=keys.run=keys.attack=true;updatePhysics();
             check(!heroPlayer.isRunning&&heroPlayer.vx===0,'Attack takes priority over sprint movement');
-            setup();initStage2();paused=true;stage2.trees=[];stage2.cats=[];
+            await setup();initStage2();paused=true;stage2.trees=[];stage2.cats=[];
             const enemy={x:heroPlayer.x+22,y:heroPlayer.y+10,hp:10,dead:false};stage2.monsters=[enemy];keys.attack=true;updatePhysics();
-            check(stage2Health===100&&enemy.stunned>0,'Stage 2 close forward attack is interrupted');
-            setup();initStage2();paused=true;stage2.trees=[];stage2.cats=[];
+            check(heroHealth===100&&enemy.stunned>0,'Stage 2 close forward attack is interrupted');
+            await setup();initStage2();paused=true;stage2.trees=[];stage2.cats=[];
             const enemyBehind={x:heroPlayer.x-24,y:heroPlayer.y,hp:10,dead:false};stage2.monsters=[enemyBehind];keys.attack=true;updatePhysics();
-            check(stage2Health===92,'Stage 2 rear contact still damages');
-            setup();initStage2();paused=true;stage2.trees=[];stage2.monsters=[];stage2.cats=[];keys.right=true;keys.down=true;
+            check(heroHealth===92,'Stage 2 rear contact still damages');
+            await setup();initStage2();paused=true;stage2.trees=[];stage2.monsters=[];stage2.cats=[];keys.right=true;keys.down=true;
             for(let i=0;i<25;i++)updatePhysics();const x=heroPlayer.x,y=heroPlayer.y;updatePhysics();const step=Math.hypot(heroPlayer.x-x,heroPlayer.y-y);
             keys.run=true;for(let i=0;i<25;i++)updatePhysics();const sx=heroPlayer.x,sy=heroPlayer.y;updatePhysics();const running=Math.hypot(heroPlayer.x-sx,heroPlayer.y-sy);
             check(Math.abs(step-4.2)<.02&&Math.abs(running-7.2)<.02,'Stage 2 speeds converge smoothly and are normalized diagonally');
-            setup();const originalTargets=combatTargets;const target={x:heroPlayer.x+60,y:heroPlayer.y,hp:10,flash:0,dead:false};combatTargets=()=>[{o:target,k:'monster'}];
+            await setup();const originalTargets=combatTargets;const target={x:heroPlayer.x+60,y:heroPlayer.y,hp:10,flash:0,dead:false};combatTargets=()=>[{o:target,k:'monster'}];
             for(let i=0;i<6;i++){keys.attack=true;updatePhysics();keys.attack=false;updatePhysics()}
             for(let i=0;i<170;i++){target.flash=0;target.x=heroPlayer.x+60;updatePhysics()}
             check(target.hp===3,'Six presses produce six cuts, with a stronger finisher');combatTargets=originalTargets;
-            setup();initStage2();paused=true;stage2.trees=[];stage2.monsters=[];stage2.cats=[];
+            await setup();initStage2();paused=true;stage2.trees=[];stage2.monsters=[];stage2.cats=[];
             keys.right=true;updatePhysics();const firstSpeed=heroPlayer.moveSpeed;
             for(let i=0;i<25;i++)updatePhysics();check(firstSpeed<2&&heroPlayer.moveSpeed>4.1,'Locomotion accelerates smoothly');
             keys.right=false;const coastX=heroPlayer.x;updatePhysics();check(heroPlayer.x>coastX&&heroPlayer.moveSpeed<4.2,'Releasing direction decelerates instead of snapping to a stop');

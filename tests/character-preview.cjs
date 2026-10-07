@@ -22,7 +22,7 @@ const { chromium } = require('playwright');
         await page.click('#maleWarrior');
         await page.waitForFunction(() => window.previewReady && window.warriorPreview.rig.revision === 'MALE_BODY_AND_SWORD_V14', null, { timeout: 60000 });
         if(await page.locator('[data-clip="Attack6"]').isVisible())throw Error('Male must have five attacks');
-        if (!(await page.locator('#characterName').textContent()).includes('Hero Warrior')) throw Error('Male selection did not update preview');
+        if (!(await page.locator('#characterName').textContent()).includes('Male Warrior · V14')) throw Error('Male selection did not update preview');
         await page.evaluate(clips => {
             for (const clip of clips.filter(n=>n!=='Attack6')) {
                 document.querySelector(`[data-clip="${clip}"]`).click();

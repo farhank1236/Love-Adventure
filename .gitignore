@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+docs/qa/
+.release-payload.json

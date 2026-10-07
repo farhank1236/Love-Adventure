@@ -17,6 +17,8 @@ const approvedDirections = [{time:.23,direction:[-.15,.98,.12]},{time:.72,direct
             const check = (ok, label) => { if (!ok) throw Error(label); checks++; };
             const range = values => Math.max(...values) - Math.min(...values);
             const point = (rig, name) => rig.byName[name].getWorldPosition(new THREE.Vector3());
+            await WarriorCombat.load('female');
+            await WarriorCombat.load('male');
             const rigs = {
                 female: createWarriorAsset(THREE, FEMALE_WARRIOR_MODEL, { loadTexture: false }),
                 male: createMaleWarriorAsset(THREE, WARRIOR_MODEL, { loadTexture: false })
@@ -80,17 +82,17 @@ const approvedDirections = [{time:.23,direction:[-.15,.98,.12]},{time:.72,direct
                 }
                 for(const gait of ['Run','Sprint']){rig.sample(gait,rig.channels[gait].duration*.2);const up=new THREE.Vector3(0,1,0).applyQuaternion(rig.byName.Chest.getWorldQuaternion(new THREE.Quaternion()));check(up.z>.3,gender+' upper body leans forward in '+gait)}
             }
-            startNewGameFlow(); setNewGender('female'); await beginSelectedCharacter(); paused = true;
-            function setup(gender) {
-                playerGender = gender; selectedRole = 'warrior'; startGame(); paused = true;
+            startNewGameFlow(); selectÆthelosHero('female'); await beginSelectedCharacter(); paused = true;
+            async function setup(gender) {
+                playerGender = gender; selectedRole = 'warrior'; await startGame(); paused = true;
                 Object.keys(keys).forEach(k => keys[k] = false); birds = []; archers = []; shots = [];
                 gates.forEach(g => g.dead = true); arena = null; boss.active = false; bossDefeated = true; boss.swords = []; birdTimer = 9999;
                 heroPlayer.x = 100; heroPlayer.y = 412; heroPlayer.vy = 0; heroPlayer.isGrounded = true; heroPlayer.facing = 'right';
             }
             for (const gender of ['female', 'male']) {
-                setup(gender); const standX = heroPlayer.x; keys.attack = true; updatePhysics(); keys.attack = false;
+                await setup(gender); const standX = heroPlayer.x; keys.attack = true; updatePhysics(); keys.attack = false;
                 for (let i = 1; i < 12; i++) updatePhysics(); const standingTravel = heroPlayer.x - standX;
-                setup(gender); keys.right = keys.run = true; for (let i = 0; i < 25; i++){updatePhysics();WarriorCombat.pose()}
+                await setup(gender); keys.right = keys.run = true; for (let i = 0; i < 25; i++){updatePhysics();WarriorCombat.pose()}
                 const facing=new THREE.Vector3(0,0,1).applyQuaternion(WarriorCombat.rig.root.quaternion);check(facing.x>.99,gender+' running body faces the actual travel direction');
                 const runningX = heroPlayer.x; keys.attack = true; updatePhysics(); keys.attack = false;
                 for (let i = 1; i < 12; i++) updatePhysics();
