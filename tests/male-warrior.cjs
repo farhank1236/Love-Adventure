@@ -14,6 +14,8 @@ const { chromium } = require('playwright');
         const checks = await page.evaluate(async () => {
             let checks = 0;
             const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
+            await WarriorCombat.load('male');
+            await WarriorCombat.load('female');
             const male = createMaleWarriorAsset(THREE, WARRIOR_MODEL, { loadTexture: false });
             const female = createWarriorAsset(THREE, FEMALE_WARRIOR_MODEL, { loadTexture: false });
             check(male.attackStarts.length===5&&female.attackStarts.length===6, 'Five male and six female full-body attacks');
@@ -47,14 +49,14 @@ const { chromium } = require('playwright');
             check(planted.distanceTo(male.byName.RFoot.getWorldPosition(new THREE.Vector3())) < .002, 'Male supporting foot stays planted');
             male.sample('Combo', 2.70); check(male.mana.visible && male.aura.visible, 'Male finisher has blade and body energy');
             male.sample('Idle', 0); check(!male.mana.visible && !male.aura.visible, 'Male attack energy clears on idle');
-            startNewGameFlow(); setNewGender('male'); await beginSelectedCharacter(); paused = true;
-            function setup() {
-                startGame(); paused = true; Object.keys(keys).forEach(k => keys[k] = false);
+            startNewGameFlow(); selectÆthelosHero('male'); await beginSelectedCharacter(); paused = true;
+            async function setup() {
+                await startGame(); paused = true; Object.keys(keys).forEach(k => keys[k] = false);
                 birds = []; archers = []; shots = []; gates.forEach(g => g.dead = true);
                 boss.active = false; bossDefeated = true; boss.swords = []; birdTimer = 9999;
                 heroPlayer.x = 100; heroPlayer.y = 412; heroPlayer.vy = 0; heroPlayer.isGrounded = true; heroPlayer.facing = 'right'; invuln = 0;
             }
-            setup(); check(WarriorCombat.cuts.length === 5, 'Male gameplay uses five cuts');
+            await setup(); check(WarriorCombat.cuts.length === 5, 'Male gameplay uses five cuts');
             const originalTargets = combatTargets;
             const target = { x: heroPlayer.x + 60, y: heroPlayer.y, hp: 10, flash: 0, dead: false };
             combatTargets = () => [{ o: target, k: 'monster' }];
@@ -64,10 +66,10 @@ const { chromium } = require('playwright');
             check(target.hp === 4, 'Five male presses deliver five hits and a stronger finisher');
             check(Math.abs(heroPlayer.x - originX - 47.3) < .1, 'Male advancing combo travels the same gameplay distance');
             combatTargets = originalTargets;
-            setup(); const low = { k: 'wave', x: heroPlayer.x + 4, y: heroPlayer.y + 16, vx: 0, vy: 0, r: 12, age: 0 };
+            await setup(); const low = { k: 'wave', x: heroPlayer.x + 4, y: heroPlayer.y + 16, vx: 0, vy: 0, r: 12, age: 0 };
             shots = [low]; keys.attack = true; updatePhysics();
-            check(low.dead && lives === 4, 'Male sword interrupts low incoming attacks');
-            setup(); initStage2(); paused = true; stage2.trees = []; stage2.monsters = []; stage2.cats = [];
+            check(low.dead && heroHealth === 100, 'Male sword interrupts low incoming attacks');
+            await setup(); initStage2(); paused = true; stage2.trees = []; stage2.monsters = []; stage2.cats = [];
             keys.right = keys.run = true; for (let i = 0; i < 25; i++) updatePhysics(); check(WarriorCombat.pose() === 'Run', 'Male running animation is assigned in gameplay');
             keys.sprint = true; for (let i = 0; i < 25; i++) updatePhysics(); check(WarriorCombat.pose() === 'Sprint' && heroPlayer.moveSpeed > 9, 'Male sprint is faster and has its own animation');
             keys.right = keys.run = keys.sprint = false; for (let i = 0; i < 30; i++) updatePhysics();

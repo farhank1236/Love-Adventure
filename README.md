@@ -1,42 +1,39 @@
-# Love Adventure
+# Æthelos / Love Adventure
 
-Version 18 with V14 full-body warrior animation and a rigged winged aunt.
+The game has two playable heroes: **Male Warrior** and **Female Warrior**, both using the verified V14 3D bodies, rigs, and full-body sword animations. Selection previews, gameplay, both stages, restart, and Continue share `assets/viewer/hero-config.js`. Old saves migrate to `maleWarrior` or `femaleWarrior` while preserving stage, health, and ultimate charge.
 
-Open index.html, then select New Game → Female or Male → Warrior. Default controls: arrow keys move, Space attacks, Shift jumps, and holding R while moving runs; holding Ctrl sprints. Run and Sprint have their own animations and can be remapped in Settings. Each press triggers one cut; five male presses or six female presses queue the full combo. A one-second input gap resets it. Attacking while jumping works in both stages.
+Open `index.html`, choose New Game, select a 3D warrior, then Begin Adventure. Both approved models finish loading before spawning. A loading failure keeps selection usable and shows an error; retry uses the same approved asset. There is no playable sprite or alternate-model fallback. Keep the entire `assets` directory beside the pages.
 
-Keep the entire assets folder beside index.html. Model data is divided into script files so no repository file exceeds the single-file limit. All chunks are loaded before the 3D combat code runs.
+Arrow keys move, Space attacks, Shift jumps, R runs, Ctrl sprints, and Q uses the charged ultimate. Controls can be remapped in Settings. Each press triggers one cut; five male presses or six female presses queue the full combo. A one-second input gap resets it. Attacking while jumping works in both stages. Movement preserves V14 hip/torso rotation, shoulder-led cuts, planted feet, knee flexion, grip synchronization, and red sword/body effects.
 
-Both warriors use five male / six female connected full-body swings: overhead, reverse sweep, diagonal, cross-body, rising strike, and a female sweeping finisher. Hips and torso lead the shoulder; the elbow remains a bounded hinge, while the forearm and wrist change the angle of the rigidly held blade. Two-bone leg solving plants the supporting foot during the stepping combo. Movement accelerates and decelerates, facing turns smoothly, and jumping has anticipation, takeoff, falling and landing poses. Hair and garments have keyed secondary motion; this is skeletal animation rather than a cloth simulation.
+Normal enemy hits reduce the existing health bar, cause brief full-body recoil and temporary immunity, and keep the hero at the fight. Falling out of Stage 1 alone recovers at the checkpoint while applying damage. Zero health opens Game Over. Restart restores health, animation state, and the timer.
 
-Cape and coat panels are rebound to cloth/torso bones so nearby hands cannot pull them into sword poses. Body/handle positions, topology, UVs, textures and rest proportions are preserved, with the reviewed male left-boot direction correction and the existing blade extension. Red body/blade energy appears during attacks, with a fading curved sword trail and stronger finisher. Sword sweeps cancel nearby incoming arrows, waves, lasers and boss blades, including low attacks; Stage 2 close attacks are interrupted too. Rear attacks and the recovery tail remain vulnerable. Software WebGL rendering and Blender import were checked; hardware GPU rendering was not verified.
+For local development, serve the checkout with `python -m http.server 8000 --bind 127.0.0.1` and open `http://127.0.0.1:8000`. Browser saves stay in that browser and origin. The character preview and game share the bundled Three.js runtime, rig sampler, hero definitions, and model loader.
 
-Use 3D Warrior · Animation view inside the game to inspect the character.
+## Verification
 
-Development: serve the checkout with `python3 -m http.server 8000` and open the game in a modern browser. Store purchases use earned game currency and are saved in the browser. Starter roles are free; unlocked roles appear in New Game. Character switching is available from the menu, and the Game Over screen offers Restart Game or Main Menu.
-
-Browser regression checks cover store transactions, affordability, upgrade limits, saved purchases, character selection, pause restoration, mobile sizing, and returning to the menu after defeat. With the local server running, install Playwright outside the checkout and run:
+Browser checks require Playwright with Chromium (or an installed Chrome/Edge through `BROWSER_EXECUTABLE`). With the local server running:
 
 ```sh
-npm install --prefix /tmp/love-adventure-tests playwright
-/tmp/love-adventure-tests/node_modules/.bin/playwright install chromium
-export NODE_PATH=/tmp/love-adventure-tests/node_modules
-node tests/store-game-over.cjs
-```
-
-To use an existing Chromium installation, set `BROWSER_EXECUTABLE` (for example `/usr/bin/chromium`) instead of downloading a browser. `GAME_URL` can override the default local server address.
-
-Run the warrior animation and combat regression checks with Playwright setup:
-
-```sh
+node tests/hero-selection.cjs
+node tests/hero-damage.cjs
 node tests/warrior-combat.cjs
-node tests/character-preview.cjs
 node tests/male-warrior.cjs
 node tests/warrior-body.cjs
-node tests/warrior-rig.cjs
+node tests/character-preview.cjs
 node tests/enemy-animation.cjs
-python3 tests/female-model-integrity.py
-python3 tests/male-model-integrity.py
+node tests/warrior-rig.cjs
+python tests/warrior-model-integrity.py
+python tests/female-model-integrity.py
+python tests/male-model-integrity.py
+python tests/male-foot-alignment.py
 ```
+
+`GAME_URL` overrides the local address. Selection checks cover both visible 3D previews and gameplay, save migration, both stages, restart, and failed loading followed by retry. Damage checks exercise actual enemy collisions, immunity, in-place recoil, sword attachment, fall recovery, and defeat. Rig/body checks protect limb lengths, sword direction, foot planting, body proportions, geometry, textures, and animation continuity.
+
+See `docs/hero-asset-provenance.md` for the asset history and SHA-256 comparisons. The V14 downloadable GLBs exactly match the runtime model chunks. Enemy assets and attack patterns are preserved. The obsolete V13 warrior packages, incorrect compact male replacement, playable sprite portraits, and illustration combat fallback have been removed.
+
+## Model authoring
 
 `tools/rebuild-female-warrior.py` reproducibly bakes the full-body combo, locomotion and jump tracks, and retains repaired garment and leg bindings in the eight model parts while preserving body geometry and textures. Run `python3 tools/rebuild-female-warrior.py --export /tmp/female-warrior-v14.glb` to regenerate the bundled animation and produce an editable GLB for Blender.
 
