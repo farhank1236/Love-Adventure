@@ -1645,8 +1645,28 @@
         function openMainMenu(){initAudio();showOnly('mainMenu');}
         function showMainMenu(){heroLaunchToken++;gameRunning=false;paused=false;clearInterval(timerInterval);showOnly('mainMenu');}
         function quitGame(){gameRunning=false;paused=true;if(timerInterval){clearInterval(timerInterval);timerInterval=null;}window.close();if(!window.closed)setTimeout(()=>alert('Your browser did not allow Æthelos to close this tab. Close the tab or window to exit.'),50);}
-        function startNewGameFlow(){heroLaunchToken++;gameRunning=false;paused=true;clearInterval(timerInterval);newGender=playerGender==='female'?'female':'male';cheatUltimate=false;populateCharacterScreen();showOnly('characterScreen');}
-        function selectÆthelosHero(gender){if(newGender!==HeroSystem.resolve(gender).gender)heroLaunchToken++;newGender=gender==='female'?'female':'male';const male=$('heroCardMale'),female=$('heroCardFemale');[[male,'male'],[female,'female']].forEach(([card,g])=>{const active=g===newGender;if(!card)return;card.classList.toggle('selected',active);card.setAttribute('aria-pressed',String(active));const check=card.querySelector('.hero-check');if(check){check.innerHTML=active?'<i class="fa-solid fa-circle-check"></i>':'<i class="fa-regular fa-circle"></i>';check.className='hero-check '+(active?'text-amber-200':'text-slate-500')+' text-2xl';}});}
+        let heroPreloadTimer=null;
+        const heroPreloadPromises={male:null,female:null};
+        function queueSelectedHeroPreload(gender){
+            const target=gender==='female'?'female':'male';
+            if(heroPreloadTimer)clearTimeout(heroPreloadTimer);
+            heroPreloadTimer=setTimeout(()=>{
+                heroPreloadTimer=null;
+                if(heroPreloadPromises[target]||!window.WarriorCombat?.load)return;
+                if(newGender===target)setHeroLoadStatus('Preparing '+(target==='female'?'Female':'Male')+' Warrior…');
+                heroPreloadPromises[target]=WarriorCombat.load(target)
+                    .then(()=>{
+                        if(newGender===target&&!$('characterScreen')?.classList.contains('hidden'))setHeroLoadStatus('Warrior ready');
+                    })
+                    .catch(error=>{
+                        heroPreloadPromises[target]=null;
+                        console.warn('Background warrior preload failed:',error);
+                        if(newGender===target&&!$('characterScreen')?.classList.contains('hidden'))setHeroLoadStatus('');
+                    });
+            },180);
+        }
+        function startNewGameFlow(){heroLaunchToken++;gameRunning=false;paused=true;clearInterval(timerInterval);newGender=playerGender==='female'?'female':'male';cheatUltimate=false;populateCharacterScreen();showOnly('characterScreen');queueSelectedHeroPreload(newGender);}
+        function selectÆthelosHero(gender){if(newGender!==HeroSystem.resolve(gender).gender)heroLaunchToken++;newGender=gender==='female'?'female':'male';const male=$('heroCardMale'),female=$('heroCardFemale');[[male,'male'],[female,'female']].forEach(([card,g])=>{const active=g===newGender;if(!card)return;card.classList.toggle('selected',active);card.setAttribute('aria-pressed',String(active));const check=card.querySelector('.hero-check');if(check){check.innerHTML=active?'<i class="fa-solid fa-circle-check"></i>':'<i class="fa-regular fa-circle"></i>';check.className='hero-check '+(active?'text-amber-200':'text-slate-500')+' text-2xl';}});queueSelectedHeroPreload(newGender);}
         function tiltÆthelosCard(event,card){const r=card.getBoundingClientRect(),x=(event.clientX-r.left)/r.width-.5,y=(event.clientY-r.top)/r.height-.5;card.style.setProperty('--tilt-x',(x*9)+'deg');card.style.setProperty('--tilt-y',(-y*8)+'deg');}
         function resetÆthelosCard(card){card.style.setProperty('--tilt-x','0deg');card.style.setProperty('--tilt-y','0deg');}
         function populateCharacterScreen(){selectÆthelosHero(newGender);}
@@ -1999,7 +2019,9 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
  };
  const previousStart=startGame;startGame=async function(){
   const hero=HeroSystem.resolve(playerGender),launchToken=++heroLaunchToken;
-  try{await Promise.all([artReady,...Object.values(HeroSystem.heroes).map(loadWarriorRig)]);}
+  // Only the selected warrior is required to start gameplay. The old path loaded
+  // both large 3D warriors before entering Stage 1, which doubled startup work.
+  try{await Promise.all([artReady,loadWarriorRig(hero)]);}
   catch(error){if(launchToken!==heroLaunchToken)return false;throw error;}
   if(launchToken!==heroLaunchToken)return false;
   configureHero(hero);chooseRig(hero.gender);rigError=null;
