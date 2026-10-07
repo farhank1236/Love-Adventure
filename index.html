@@ -117,6 +117,31 @@
         #mainMenu .aeth-menu-button i{width:1.25rem;text-align:center;color:#b28e5b}
         #mainMenu>p.relative.z-10{color:#788b9a}
         @media(max-width:640px){#mainMenu.aeth-panel{padding:1.5rem!important;margin:1rem auto}#mainMenu .relative.z-10.text-center h2{font-size:2.6rem}}
+
+        /* Settings is a dedicated, opaque screen so the game HUD never bleeds through. */
+        #settingsModal.aeth-settings-screen{position:fixed;inset:0;z-index:70;overflow-y:auto;overscroll-behavior:contain;padding:clamp(1rem,3vw,2.5rem);background:radial-gradient(ellipse at 50% -15%,rgba(255,255,255,.98),transparent 54%),linear-gradient(145deg,#dceaf0 0%,#edf1ed 48%,#f1e7d5 100%);color:#30465b;opacity:0;transition:opacity .24s ease}
+        #settingsModal.aeth-settings-screen.flex{opacity:1}
+        #settingsModal .settings-shell{position:relative;width:min(100%,900px);margin:auto;overflow:hidden;border:1px solid rgba(255,255,255,.9);border-radius:2rem;background:linear-gradient(145deg,rgba(250,252,250,.98),rgba(237,243,242,.98) 58%,rgba(250,245,234,.98));box-shadow:0 28px 90px rgba(38,61,79,.22),inset 0 1px rgba(255,255,255,.95);padding:clamp(1.25rem,4vw,2.5rem)}
+        #settingsModal .settings-shell::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 95% 0,rgba(205,225,232,.36),transparent 34%),radial-gradient(ellipse at 0 100%,rgba(240,220,180,.22),transparent 38%)}
+        #settingsModal .settings-content{position:relative;z-index:1}
+        #settingsModal .settings-eyebrow{color:#a98551;letter-spacing:.24em}
+        #settingsModal .settings-title{color:#263e57;text-shadow:0 2px rgba(255,255,255,.8)}
+        #settingsModal .settings-copy{color:#718496}
+        #settingsModal .settings-card{border:1px solid rgba(116,145,162,.17);border-radius:1.25rem;background:rgba(255,255,255,.68);box-shadow:0 8px 24px rgba(45,72,94,.055);padding:1.15rem}
+        #settingsModal .settings-section-title{color:#425d73}
+        #settingsModal .settings-row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-height:2.9rem;border-bottom:1px solid rgba(116,145,162,.13);color:#526a7d}
+        #settingsModal .settings-row:last-child{border-bottom:0}
+        #settingsModal .settings-key{min-width:6.25rem;border:1px solid rgba(178,142,91,.28);border-radius:.75rem;background:linear-gradient(120deg,#fffefa,#f3eee3);padding:.48rem .7rem;color:#87683c;box-shadow:0 3px 8px rgba(66,76,82,.06);font-weight:700;transition:all .18s ease}
+        #settingsModal .settings-key:hover,#settingsModal .settings-key:focus-visible{outline:none;border-color:rgba(178,142,91,.75);background:#fff;box-shadow:0 0 0 3px rgba(197,163,109,.16)}
+        #settingsModal .settings-key-listening{border-color:#bd8d4d;background:#fff5dc;box-shadow:0 0 0 3px rgba(197,163,109,.2);animation:settings-pulse 1s ease-in-out infinite alternate}
+        @keyframes settings-pulse{to{box-shadow:0 0 0 6px rgba(197,163,109,.08)}}
+        #settingsModal .settings-secondary{border:1px solid rgba(105,136,155,.2);background:rgba(255,255,255,.72);color:#526a7d;transition:all .18s ease}
+        #settingsModal .settings-secondary:hover{transform:translateY(-1px);background:#fff;box-shadow:0 7px 16px rgba(41,68,91,.09)}
+        #settingsModal .settings-primary{border:1px solid rgba(193,155,96,.42);background:linear-gradient(110deg,#506e89,#344e6b);color:#fff9e9;box-shadow:0 10px 22px rgba(44,68,91,.2);transition:all .18s ease}
+        #settingsModal .settings-primary:hover{transform:translateY(-1px);background:linear-gradient(110deg,#607f98,#3d5875);box-shadow:0 13px 26px rgba(44,68,91,.25)}
+        #settingsModal button:focus-visible{outline:3px solid rgba(199,160,99,.55);outline-offset:2px}
+        @media(max-width:640px){#settingsModal.aeth-settings-screen{padding:.75rem}#settingsModal .settings-shell{border-radius:1.4rem;padding:1.1rem}#settingsModal .settings-card{padding:.9rem}}
+        @media(prefers-reduced-motion:reduce){#settingsModal.aeth-settings-screen,#settingsModal .settings-key,#settingsModal .settings-secondary,#settingsModal .settings-primary{transition:none}#settingsModal .settings-key-listening{animation:none}}
 </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-6 overflow-x-hidden">
@@ -242,27 +267,34 @@
       </div>
     </div>
 
-    <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 hidden items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 rounded-2xl max-w-sm w-full p-5 border-2 border-rose-500/40 space-y-4 text-sm">
-            <h3 class="font-fredoka text-xl font-bold text-white"><i class="fa-solid fa-gear text-rose-400"></i> Settings (game paused)</h3>
-            <div class="space-y-2">
-                <p class="text-slate-300 font-semibold">Keyboard Controls</p>
-                <div class="flex justify-between items-center gap-3"><span>Move Left</span><button id="keyLeft" onclick="remap('left')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
-                <div class="flex justify-between items-center gap-3"><span>Move Right</span><button id="keyRight" onclick="remap('right')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
-                <div class="flex justify-between items-center gap-3"><span>Move Down</span><button id="keyDown" onclick="remap('down')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div><div class="flex justify-between items-center gap-3"><span>Jump</span><button id="keyJmp" onclick="remap('jump')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
-                <div class="flex justify-between items-center gap-3"><span>Run (hold)</span><button id="keyRun" onclick="remap('run')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
-                <div class="flex justify-between items-center gap-3"><span>Sprint (hold)</span><button id="keySprint" onclick="remap('sprint')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
-                <div class="flex justify-between items-center gap-3"><span>Attack</span><button id="keyAtk" onclick="remap('attack')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
-                <div class="flex justify-between items-center gap-3"><span>Special / Ultimate</span><button id="keySpecial" onclick="remap('special')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div><div class="flex justify-between items-center gap-3"><span>Action / Lever</span><button id="keyAction" onclick="remap('action')" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-amber-300 min-w-24"></button></div>
-                <p id="remapHint" class="text-xs text-slate-400">Click a control, then press any keyboard key.</p>
+    <div id="settingsModal" class="aeth-settings-screen hidden items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" aria-hidden="true">
+        <section class="settings-shell">
+            <div class="settings-content">
+                <header class="mb-6 flex items-start justify-between gap-4">
+                    <div><p class="settings-eyebrow text-[.68rem] font-bold uppercase">ÆTHELOS · PAUSED</p><h3 id="settingsTitle" class="settings-title mt-2 font-fredoka text-3xl sm:text-4xl font-extrabold">Adventure Settings</h3><p class="settings-copy mt-2 text-sm">Make the controls feel right for your journey.</p></div>
+                    <button type="button" onclick="toggleSettings()" class="settings-secondary grid h-10 w-10 shrink-0 place-items-center rounded-full" aria-label="Resume adventure"><i class="fa-solid fa-xmark"></i></button>
+                </header>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <section class="settings-card md:row-span-2" aria-labelledby="keyboardSettingsTitle">
+                        <div class="mb-3 flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-sky-100 text-sky-700"><i class="fa-regular fa-keyboard"></i></span><div><h4 id="keyboardSettingsTitle" class="settings-section-title font-bold">Keyboard Controls</h4><p class="settings-copy text-xs">Select an action, then press a key.</p></div></div>
+                        <div class="settings-row"><span>Move Left</span><button id="keyLeft" onclick="remap('left')" class="settings-key" aria-label="Remap move left"></button></div>
+                        <div class="settings-row"><span>Move Right</span><button id="keyRight" onclick="remap('right')" class="settings-key" aria-label="Remap move right"></button></div>
+                        <div class="settings-row"><span>Move Down</span><button id="keyDown" onclick="remap('down')" class="settings-key" aria-label="Remap move down"></button></div>
+                        <div class="settings-row"><span>Jump</span><button id="keyJmp" onclick="remap('jump')" class="settings-key" aria-label="Remap jump"></button></div>
+                        <div class="settings-row"><span>Run · hold</span><button id="keyRun" onclick="remap('run')" class="settings-key" aria-label="Remap run"></button></div>
+                        <div class="settings-row"><span>Sprint · hold</span><button id="keySprint" onclick="remap('sprint')" class="settings-key" aria-label="Remap sprint"></button></div>
+                        <div class="settings-row"><span>Attack</span><button id="keyAtk" onclick="remap('attack')" class="settings-key" aria-label="Remap attack"></button></div>
+                        <div class="settings-row"><span>Special / Ultimate</span><button id="keySpecial" onclick="remap('special')" class="settings-key" aria-label="Remap special or ultimate"></button></div>
+                        <div class="settings-row"><span>Action / Lever</span><button id="keyAction" onclick="remap('action')" class="settings-key" aria-label="Remap action or lever"></button></div>
+                        <p id="remapHint" class="settings-copy mt-3 min-h-5 text-xs" aria-live="polite">Click a control, then press any keyboard key.</p>
+                    </section>
+                    <section class="settings-card" aria-labelledby="touchSettingsTitle">
+                        <div class="flex items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-amber-100 text-amber-700"><i class="fa-solid fa-gamepad"></i></span><div><h4 id="touchSettingsTitle" class="settings-section-title font-bold">Touch Controls</h4><p class="settings-copy text-xs">Show or hide the on-screen pad.</p></div></div><button type="button" onclick="toggleTouchUI()" class="settings-secondary rounded-xl px-3 py-2 text-sm font-semibold">Show / Hide</button></div>
+                    </section>
+                    <section class="settings-card" aria-label="Settings actions"><div class="flex flex-col gap-2 sm:flex-row"><button type="button" onclick="resetKeyBinds()" class="settings-secondary flex-1 rounded-xl px-4 py-3 font-semibold">Restore Default Keys</button><button type="button" onclick="toggleSettings()" class="settings-primary flex-1 rounded-xl px-4 py-3 font-bold tracking-wide"><i class="fa-solid fa-play mr-2 text-xs"></i>Resume Adventure</button></div></section>
+                </div>
             </div>
-            <div class="flex justify-between items-center"><span>On-screen touch controls</span><button onclick="toggleTouchUI()" class="px-3 py-1 bg-slate-800 rounded-lg font-bold text-rose-300">Show / Hide</button></div>
-            
-            <div class="flex gap-2">
-                <button onclick="resetKeyBinds()" class="flex-1 py-2 bg-slate-800 text-slate-200 rounded-xl font-semibold">RESET KEYS</button>
-                <button onclick="toggleSettings()" class="flex-1 py-2.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-fredoka font-bold rounded-xl">RESUME</button>
-            </div>
-        </div>
+        </section>
     </div>
 
     <div id="gameOverModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
@@ -1140,6 +1172,8 @@
             $('keyAtk').innerText = keyLabel(binds.attack);
             $('keyAction').innerText = keyLabel(binds.action); if($('keyDown'))$('keyDown').innerText=keyLabel(binds.down); if($('keySpecial'))$('keySpecial').innerText=keyLabel(binds.special);
             $('remapHint').innerText = remapping ? `Press a key to assign ${remapping.toUpperCase()}…` : 'Click a control, then press any keyboard key.';
+            const keyIds={left:'keyLeft',right:'keyRight',down:'keyDown',jump:'keyJmp',run:'keyRun',sprint:'keySprint',attack:'keyAtk',special:'keySpecial',action:'keyAction'};
+            Object.entries(keyIds).forEach(([action,id])=>{const button=$(id);if(button){button.classList.toggle('settings-key-listening',remapping===action);button.setAttribute('aria-pressed',String(remapping===action));}});
         }
 
         function remap(w) {
@@ -1302,7 +1336,7 @@
         async function loadSaveSlot(i){const x=loadSaveSlots()[i];if(!x)return;playerGender=x.gender==='female'?'female':'male';selectedRole='warrior';selectedHeroAvatar=roleAvatar('warrior',playerGender);selectedHeroAvatar.name=x.heroName||(playerGender==='female'?'Female Warrior':'Male Warrior');selectedHeroAvatar.country='Æthelos';selectedPartnerAvatar=roleAvatar('warrior',playerGender==='male'?'female':'male');selectedPartnerAvatar.name=playerGender==='male'?'Female Warrior':'Male Warrior';weapon='sword';characterLevel=1;ultimateCharge=x.ultimateCharge||0;localStorage.setItem('loveAdventureHeroGender',playerGender);closeSaveModal();await startGame();if(x.stageNumber===2){stageNumber=2;initStage2();if(x.stage2)stage2=x.stage2;} }
         function openSaveGame(){const wrap=$('saveSlots'),slots=loadSaveSlots();const arr=[...slots,null,null,null].slice(0,3);wrap.innerHTML=arr.map((x,i)=>x?`<button onclick="saveCurrentSlot(${i})" class="text-left p-4 bg-slate-800 rounded-xl"><b>SLOT ${i+1}</b><div class="text-xs text-slate-400">Overwrite ${x.roleName||'Hero'} • Stage ${x.stageNumber}</div></button>`:`<button onclick="saveCurrentSlot(${i})" class="text-left p-4 bg-emerald-950/40 border border-emerald-700 rounded-xl"><b>SLOT ${i+1}</b><div class="text-xs text-emerald-300">EMPTY — SAVE HERE</div></button>`).join('');$('saveModal').classList.remove('hidden');$('saveModal').classList.add('flex');}
         function openSettingsFromMenu(){paused=true;toggleSettings();}
-        function toggleSettings(){const m=$('settingsModal');m.classList.toggle('hidden');m.classList.toggle('flex');paused=!m.classList.contains('hidden');refreshSettings();}
+        function toggleSettings(){const m=$('settingsModal'),opening=m.classList.contains('hidden');if(opening){m.classList.remove('hidden');m.setAttribute('aria-hidden','false');requestAnimationFrame(()=>m.classList.add('flex'));paused=true;refreshSettings();setTimeout(()=>{const close=m.querySelector('[aria-label="Resume adventure"]');if(close)close.focus();},80);}else{m.classList.remove('flex');m.setAttribute('aria-hidden','true');paused=false;remapping=null;setTimeout(()=>{if(m.getAttribute('aria-hidden')==='true')m.classList.add('hidden');},240);}}
         function setSpecialKey(){keys.special=true;}
         function ultimateReady(){return cheatUltimate||ultimateCharge>=100;}
         function addSoul(type){if(cheatUltimate){ultimateCharge=100;return;}const gain={bird:5,archer:10,gate:20,boss:25}[type]||0;soulCounters[type]=(soulCounters[type]||0)+1;ultimateCharge=Math.min(100,ultimateCharge+gain);}
