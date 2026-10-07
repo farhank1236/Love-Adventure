@@ -133,7 +133,10 @@
         #settingsModal .settings-section-title{color:#425d73}
         #settingsModal .settings-row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-height:2.9rem;border-bottom:1px solid rgba(116,145,162,.13);color:#526a7d}
         #settingsModal .settings-row:last-child{border-bottom:0}
+        #settingsModal .settings-bindings .settings-row{min-height:4.1rem;flex-direction:column;justify-content:center;align-items:stretch;gap:.3rem;padding:.35rem 0;text-align:center}
+        #settingsModal .settings-bindings .settings-row>span{font-size:.75rem;white-space:nowrap}
         #settingsModal .settings-key{min-width:6.25rem;border:1px solid rgba(178,142,91,.28);border-radius:.75rem;background:linear-gradient(120deg,#fffefa,#f3eee3);padding:.48rem .7rem;color:#87683c;box-shadow:0 3px 8px rgba(66,76,82,.06);font-weight:700;transition:all .18s ease}
+        #settingsModal .settings-bindings .settings-key{width:min(100%,8rem);align-self:center}
         #settingsModal .settings-key:hover,#settingsModal .settings-key:focus-visible{outline:none;border-color:rgba(178,142,91,.75);background:#fff;box-shadow:0 0 0 3px rgba(197,163,109,.16)}
         #settingsModal .settings-key-listening{border-color:#bd8d4d;background:#fff5dc;box-shadow:0 0 0 3px rgba(197,163,109,.2);animation:settings-pulse 1s ease-in-out infinite alternate}
         @keyframes settings-pulse{to{box-shadow:0 0 0 6px rgba(197,163,109,.08)}}
