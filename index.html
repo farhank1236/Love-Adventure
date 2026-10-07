@@ -174,6 +174,46 @@
         @media(max-width:760px){#settingsModal .settings-bindings{grid-template-columns:1fr}}
         @media(max-width:640px){#settingsModal.aeth-settings-screen{padding:.75rem}#settingsModal .settings-shell{border-radius:1.4rem;padding:1.1rem}#settingsModal .settings-card{padding:.9rem}}
         @media(prefers-reduced-motion:reduce){#settingsModal.aeth-settings-screen,#settingsModal .settings-key,#settingsModal .settings-secondary,#settingsModal .settings-primary{transition:none}#settingsModal .settings-key-listening{animation:none}}
+
+        /* Character selection is intentionally 2D. The approved 3D rigs load only after Begin Adventure. */
+        #characterScreen{overflow:hidden;padding:clamp(1rem,3vw,2.25rem)!important;background:linear-gradient(180deg,#7ec1ed 0%,#c9e6f5 46%,#f2e7cf 77%,#6885a2 100%)}
+        #characterScreen::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;background:radial-gradient(circle at 50% 12%,rgba(255,249,214,.8),transparent 24%),linear-gradient(180deg,transparent 56%,rgba(12,29,54,.33) 100%)}
+        #characterScreen .hero-select-shell{position:relative;z-index:2;width:min(100%,1040px);margin:auto}
+        #characterScreen .hero-select-header{text-align:center;margin:0 auto clamp(1rem,2vw,1.5rem);max-width:720px}
+        #characterScreen .hero-select-kicker{display:inline-flex;align-items:center;gap:.55rem;padding:.4rem .8rem;border:1px solid rgba(255,244,207,.55);border-radius:999px;background:rgba(14,36,65,.32);backdrop-filter:blur(9px);color:#fff4cf;font-size:.72rem;font-weight:800;letter-spacing:.28em;text-transform:uppercase;box-shadow:0 8px 28px rgba(25,48,77,.16)}
+        #characterScreen .hero-select-title{margin:.45rem 0 .3rem;font-size:clamp(2.15rem,5vw,4rem);line-height:1;font-weight:900;letter-spacing:.075em;color:#fff9e8;text-shadow:0 4px 20px rgba(17,44,75,.55),0 1px 0 rgba(255,255,255,.35)}
+        #characterScreen .hero-select-copy{color:rgba(250,253,255,.9);font-weight:600;text-shadow:0 2px 10px rgba(21,45,72,.55)}
+        #characterScreen .hero-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(1rem,3vw,2rem);max-width:920px;margin:auto;align-items:stretch}
+        #characterScreen .aeth-card{position:relative;min-height:510px;padding:0!important;overflow:visible;border-radius:2rem;background:linear-gradient(165deg,rgba(248,252,255,.28),rgba(11,28,51,.88) 48%,rgba(7,18,36,.96));border:1px solid rgba(255,248,218,.48);box-shadow:0 28px 55px rgba(6,22,43,.36),inset 0 1px rgba(255,255,255,.38);transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease,opacity .25s ease,filter .25s ease}
+        #characterScreen .aeth-card::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.28),transparent 25%,transparent 72%,rgba(244,210,140,.12));opacity:.78}
+        #characterScreen .aeth-card::after{content:"";position:absolute;inset:auto 9% -14px;height:34px;border-radius:50%;background:rgba(2,11,24,.42);filter:blur(15px);z-index:-1;transition:transform .28s ease,opacity .28s ease}
+        #characterScreen .aeth-card:not(.selected){opacity:.84;filter:saturate(.82) brightness(.92)}
+        #characterScreen .aeth-card:not(.selected):hover{opacity:1;filter:saturate(1) brightness(1)}
+        #characterScreen .aeth-card:hover{transform:perspective(1100px) translateY(-8px) rotateX(var(--tilt-y)) rotateY(var(--tilt-x)) scale(1.012);box-shadow:0 38px 70px rgba(4,18,39,.48),0 0 36px rgba(215,235,255,.22)}
+        #characterScreen .aeth-card.selected{opacity:1;filter:none;transform:perspective(1100px) translateY(-5px) rotateX(var(--tilt-y)) rotateY(var(--tilt-x));border-color:rgba(255,224,151,.96);box-shadow:0 38px 72px rgba(4,17,38,.55),0 0 0 2px rgba(255,226,163,.36),0 0 48px rgba(255,214,127,.3)}
+        #characterScreen .aeth-card.selected::after{transform:scaleX(1.12);opacity:.85}
+        #characterScreen .hero-card-glow{position:absolute;inset:7% 9% 20%;border-radius:50%;pointer-events:none;filter:blur(20px);opacity:.58;transition:opacity .3s ease,transform .3s ease}
+        #characterScreen #heroCardMale .hero-card-glow{background:radial-gradient(circle,rgba(81,158,225,.78),rgba(42,83,147,.22) 50%,transparent 70%)}
+        #characterScreen #heroCardFemale .hero-card-glow{background:radial-gradient(circle,rgba(88,190,150,.68),rgba(48,112,91,.2) 50%,transparent 70%)}
+        #characterScreen .aeth-card.selected .hero-card-glow,#characterScreen .aeth-card:hover .hero-card-glow{opacity:.9;transform:scale(1.08)}
+        #characterScreen .hero-portrait-stage{position:relative;height:410px;margin:0 12px;overflow:visible;display:flex;align-items:flex-end;justify-content:center;transform:translateZ(28px)}
+        #characterScreen .hero-portrait-stage::before{content:"";position:absolute;left:7%;right:7%;bottom:13px;height:52px;border-radius:50%;background:radial-gradient(ellipse,rgba(7,14,26,.66),transparent 68%);filter:blur(7px)}
+        #characterScreen .hero-portrait{position:relative;z-index:2;width:100%;height:455px;object-fit:contain;object-position:center bottom;pointer-events:none;user-select:none;-webkit-user-drag:none;filter:drop-shadow(0 20px 18px rgba(0,0,0,.34)) drop-shadow(0 0 18px rgba(255,255,255,.08));transition:transform .32s cubic-bezier(.2,.8,.2,1),filter .32s ease;transform:translateY(15px) scale(.98)}
+        #characterScreen .aeth-card:hover .hero-portrait,#characterScreen .aeth-card.selected .hero-portrait{transform:translateY(5px) scale(1.025);filter:drop-shadow(0 24px 20px rgba(0,0,0,.42)) drop-shadow(0 0 24px rgba(255,228,165,.15))}
+        #characterScreen .hero-card-info{position:relative;z-index:4;margin:0;padding:1rem 1.25rem 1.2rem;border-top:1px solid rgba(255,255,255,.13);border-radius:0 0 2rem 2rem;background:linear-gradient(180deg,rgba(8,21,40,.32),rgba(4,13,27,.74));backdrop-filter:blur(10px);transform:translateZ(34px)}
+        #characterScreen .hero-card-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+        #characterScreen .hero-card-kicker{font-size:.67rem;font-weight:900;letter-spacing:.24em;text-transform:uppercase;color:#f5d99b}
+        #characterScreen .hero-card-name{margin-top:.12rem;font-size:clamp(1.35rem,2.7vw,1.8rem);font-weight:900;color:white}
+        #characterScreen .hero-card-meta{margin-top:.35rem;color:#c6d7e7;font-size:.82rem;font-weight:650;letter-spacing:.035em}
+        #characterScreen .hero-check{display:grid;place-items:center;min-width:42px;height:42px;border-radius:50%;background:rgba(7,21,41,.64);border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 1px rgba(255,255,255,.13)}
+        #characterScreen .selected .hero-check{background:linear-gradient(145deg,#ffe6a7,#d5a24b);color:#18263a!important;border-color:#fff0bd;box-shadow:0 0 20px rgba(255,214,126,.4)}
+        #characterScreen .hero-card-ribbon{position:absolute;right:18px;top:17px;z-index:5;display:flex;align-items:center;gap:.4rem;padding:.38rem .62rem;border-radius:999px;background:rgba(5,19,38,.62);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);color:#eaf5ff;font-size:.66rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase;opacity:.72;transition:opacity .25s ease,transform .25s ease}
+        #characterScreen .selected .hero-card-ribbon{opacity:1;transform:translateY(-2px);color:#fff2c7;border-color:rgba(255,229,166,.46)}
+        #characterScreen .hero-actions{display:flex;justify-content:center;gap:.75rem;margin-top:1.35rem;position:relative;z-index:4}
+        #characterScreen .hero-begin{min-width:230px;padding:.88rem 1.6rem;border-radius:1rem;border:1px solid rgba(255,239,195,.8);background:linear-gradient(110deg,#ffe8a6,#d5a248 58%,#b57b2e);color:#172438;font-weight:900;letter-spacing:.075em;box-shadow:0 16px 32px rgba(75,53,20,.25),0 0 28px rgba(255,223,151,.22);transition:transform .2s ease,filter .2s ease,box-shadow .2s ease}
+        #characterScreen .hero-begin:hover{transform:translateY(-2px);filter:brightness(1.06);box-shadow:0 20px 38px rgba(75,53,20,.3),0 0 36px rgba(255,223,151,.32)}
+        #characterScreen .hero-back{padding:.88rem 1.35rem;border-radius:1rem;border:1px solid rgba(255,255,255,.24);background:rgba(5,18,36,.54);backdrop-filter:blur(10px);color:white;font-weight:800}
+        @media(max-width:720px){#characterScreen .hero-grid{grid-template-columns:1fr;max-width:430px}#characterScreen .aeth-card{min-height:460px}#characterScreen .hero-portrait-stage{height:355px}#characterScreen .hero-portrait{height:400px}#characterScreen .hero-actions{flex-direction:column;align-items:stretch}#characterScreen .hero-begin{width:100%}}
 </style>
 <script src="assets/viewer/hero-config.js?v=heroes-v14-1"></script>
 </head>
@@ -207,26 +247,47 @@
         <p class="relative z-10 text-center text-xs text-slate-300/70 mt-7">Choose New Game or continue your saved adventure.</p>
     </main>
 
-        <main id="characterScreen" class="hidden aeth-screen relative w-full max-w-6xl rounded-3xl p-5 md:p-8 mx-auto my-auto overflow-hidden">
-        <div class="aeth-cloudfield" aria-hidden="true"></div><div class="aeth-sun" aria-hidden="true"></div>
-        <div class="relative z-10 flex items-center justify-between mb-6">
-            <div><p class="aeth-gold text-xs tracking-[.35em] font-bold">ÆTHELOS</p><h2 class="font-fredoka text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg">Select Your Hero</h2><p class="text-white/80 mt-1">Choose the warrior who will begin your adventure.</p></div>
-            <button onclick="showMainMenu()" class="px-4 py-2 aeth-glass rounded-xl border border-white/20 text-white">MENU</button>
-        </div>
-        <div class="relative z-10 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <button id="heroCardMale" type="button" aria-pressed="true" onclick="selectÆthelosHero('male')" onpointermove="tiltÆthelosCard(event,this)" onpointerleave="resetÆthelosCard(this)" class="aeth-card selected rounded-3xl p-4 text-left focus:outline-none focus:ring-2 focus:ring-amber-200">
-                <div class="aeth-card-art h-[340px] rounded-2xl flex items-end justify-center overflow-hidden"><canvas id="maleWarriorPreview" width="512" height="340" aria-label="Latest 3D Male Warrior" style="width:100%;height:340px;object-fit:contain"></canvas><span id="maleWarriorStatus" role="status" style="position:absolute;color:#dceaf0;padding:16px">Loading 3D warrior…</span></div>
-                <div class="relative z-10 flex items-center justify-between px-2 pt-4"><div><span class="aeth-gold text-xs uppercase tracking-[.28em]">The swordsman</span><h3 class="font-fredoka text-2xl font-bold text-white">Male Warrior</h3></div><span class="hero-check text-amber-200 text-2xl"><i class="fa-solid fa-circle-check"></i></span></div>
-            </button>
-            <button id="heroCardFemale" type="button" aria-pressed="false" onclick="selectÆthelosHero('female')" onpointermove="tiltÆthelosCard(event,this)" onpointerleave="resetÆthelosCard(this)" class="aeth-card rounded-3xl p-4 text-left focus:outline-none focus:ring-2 focus:ring-amber-200">
-                <div class="aeth-card-art h-[340px] rounded-2xl flex items-end justify-center overflow-hidden"><canvas id="femaleWarriorPreview" width="512" height="340" aria-label="Latest 3D Female Warrior" style="width:100%;height:340px;object-fit:contain"></canvas><span id="femaleWarriorStatus" role="status" style="position:absolute;color:#dceaf0;padding:16px">Loading 3D warrior…</span></div>
-                <div class="relative z-10 flex items-center justify-between px-2 pt-4"><div><span class="aeth-gold text-xs uppercase tracking-[.28em]">The blade dancer</span><h3 class="font-fredoka text-2xl font-bold text-white">Female Warrior</h3></div><span class="hero-check text-slate-500 text-2xl"><i class="fa-regular fa-circle"></i></span></div>
-            </button>
-        </div>
-        <p id="heroLoadStatus" role="status" aria-live="polite" style="position:relative;text-align:center;min-height:24px;margin:12px 0;color:#dceaf0"></p>
-        <div class="relative z-10 flex flex-col sm:flex-row justify-center gap-3 mt-7">
-            <button onclick="beginSelectedCharacter()" class="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-300 to-yellow-600 text-slate-950 font-fredoka font-bold shadow-xl hover:brightness-110 transition"><i class="fa-solid fa-swords mr-2"></i>BEGIN ADVENTURE</button>
-            <button onclick="showMainMenu()" class="px-8 py-3 rounded-xl aeth-glass border border-white/20 text-white font-bold">BACK TO MENU</button>
+        <main id="characterScreen" class="hidden aeth-screen relative w-full max-w-5xl rounded-[2rem] shadow-2xl">
+        <div class="aeth-cloudfield" style="opacity:.72" aria-hidden="true"></div><div class="aeth-sun" style="width:420px;height:420px;top:-130px" aria-hidden="true"></div>
+        <div class="hero-select-shell">
+            <header class="hero-select-header">
+                <span class="hero-select-kicker"><i class="fa-solid fa-shield-halved"></i> Æthelos roster</span>
+                <h2 class="hero-select-title font-fredoka">SELECT YOUR HERO</h2>
+                <p class="hero-select-copy">Choose the warrior who will carry your story into Æthelos.</p>
+            </header>
+            <div class="hero-grid">
+                <button id="heroCardMale" type="button" aria-pressed="true" aria-label="Select Male Warrior" onclick="selectÆthelosHero('male')" onpointermove="tiltÆthelosCard(event,this)" onpointerleave="resetÆthelosCard(this)" class="aeth-card selected text-left focus:outline-none focus:ring-2 focus:ring-amber-200">
+                    <span class="hero-card-ribbon"><i class="fa-solid fa-star"></i> Warrior</span>
+                    <span class="hero-card-glow" aria-hidden="true"></span>
+                    <div class="hero-portrait-stage">
+                        <img id="maleWarriorPortrait" class="hero-portrait" src="assets/images/art-01.webp" alt="Male Warrior" draggable="false" decoding="async">
+                    </div>
+                    <div class="hero-card-info">
+                        <div class="hero-card-row">
+                            <div><div class="hero-card-kicker">The Swordsman</div><h3 class="hero-card-name font-fredoka">MALE WARRIOR</h3><p class="hero-card-meta">Sword Fighter · Balanced Combat</p></div>
+                            <span class="hero-check text-amber-200 text-xl" aria-hidden="true"><i class="fa-solid fa-circle-check"></i></span>
+                        </div>
+                    </div>
+                </button>
+                <button id="heroCardFemale" type="button" aria-pressed="false" aria-label="Select Female Warrior" onclick="selectÆthelosHero('female')" onpointermove="tiltÆthelosCard(event,this)" onpointerleave="resetÆthelosCard(this)" class="aeth-card text-left focus:outline-none focus:ring-2 focus:ring-amber-200">
+                    <span class="hero-card-ribbon"><i class="fa-solid fa-star"></i> Warrior</span>
+                    <span class="hero-card-glow" aria-hidden="true"></span>
+                    <div class="hero-portrait-stage">
+                        <img id="femaleWarriorPortrait" class="hero-portrait" src="assets/images/art-02.webp" alt="Female Warrior" draggable="false" decoding="async">
+                    </div>
+                    <div class="hero-card-info">
+                        <div class="hero-card-row">
+                            <div><div class="hero-card-kicker">The Blade Dancer</div><h3 class="hero-card-name font-fredoka">FEMALE WARRIOR</h3><p class="hero-card-meta">Sword Fighter · Balanced Combat</p></div>
+                            <span class="hero-check text-slate-500 text-xl" aria-hidden="true"><i class="fa-regular fa-circle"></i></span>
+                        </div>
+                    </div>
+                </button>
+            </div>
+            <p id="heroLoadStatus" role="status" aria-live="polite" style="position:relative;text-align:center;min-height:22px;margin:10px 0 0;color:#eef7ff;text-shadow:0 2px 8px rgba(10,25,45,.55)"></p>
+            <div class="hero-actions">
+                <button onclick="beginSelectedCharacter()" class="hero-begin font-fredoka"><i class="fa-solid fa-swords mr-2"></i>BEGIN ADVENTURE</button>
+                <button onclick="showMainMenu()" class="hero-back">BACK TO MENU</button>
+            </div>
         </div>
     </main>
 
@@ -1836,39 +1897,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
  const openButton=document.createElement('button');openButton.textContent='3D Warrior · Animation view';openButton.style.cssText='margin:8px;padding:8px 13px;border-radius:8px;background:#264958;color:#fff';document.getElementById('gameScreen').appendChild(openButton);openButton.onclick=()=>{if(!isWarrior()){flash('Select a warrior to inspect its 3D animations.');return}chooseRig();priorPaused=paused;paused=true;inspecting=true;inspectClock=0;inspectLast=performance.now();inspector.style.display='flex';inspectFrame()};document.getElementById('closeWarriorView').onclick=()=>{inspecting=false;inspector.style.display='none';paused=priorPaused;lastRigFrame=-1};document.getElementById('warriorViewSpeed').oninput=e=>inspectSpeed=+e.target.value;inspector.querySelectorAll('[data-clip]').forEach(b=>b.onclick=()=>{inspectClip=!rig.channels[b.dataset.clip]?'Walk':b.dataset.clip;inspectClock=0});const inspectionCanvas=document.getElementById('warriorViewCanvas');let drag=null;inspectionCanvas.onpointerdown=e=>{inspectionCanvas.setPointerCapture(e.pointerId);drag=e.clientX};inspectionCanvas.onpointerup=inspectionCanvas.onpointercancel=()=>drag=null;inspectionCanvas.onpointermove=e=>{if(drag!==null){inspectYaw+=(e.clientX-drag)*.008;drag=e.clientX}};
  function inspectFrame(){if(!inspecting)return;requestAnimationFrame(inspectFrame);const now=performance.now(),dt=Math.min(.05,(now-inspectLast)/1000);inspectLast=now;inspectClock=(inspectClock+dt*inspectSpeed)%rig.channels[inspectClip].duration;const v=createView();if(!v)return;rig.sample(inspectClip,inspectClock);rig.root.position.y=inspectClip==='Jump'?.16*Math.sin(Math.PI*Math.max(0,Math.min(1,(inspectClock-.12)/.76))):0;rig.root.rotation.y=inspectYaw;rig.root.updateMatrixWorld(true);rig.skeleton.update();updateTrail(v,inspectClip);v.renderer.render(v.scene,v.camera);inspectionCanvas.getContext('2d').clearRect(0,0,512,512);inspectionCanvas.getContext('2d').drawImage(v.renderer.domElement,0,0);document.getElementById('warriorViewLabel').textContent=inspectClip==='Combo'?(CUTS[comboStep(inspectClock)].label+(rig.mana.visible?' · RED MANA':'')):inspectClip;lastRigFrame=-1}
  function comboStep(t){return Math.min(SEGMENTS.length-1,SEGMENTS.findIndex(s=>t<s.to)<0?SEGMENTS.length-1:SEGMENTS.findIndex(s=>t<s.to))}
- let previewPending=false,previewLast=0;
- async function prepareHeroCards(){
-  await Promise.all(Object.values(HeroSystem.heroes).map(async hero=>{
-   const label=document.getElementById(hero.id+'Status');
-   try{await loadWarriorRig(hero);label.textContent='';}
-   catch(error){label.textContent=error.message;}
-  }));
- }
- function previewCards(now){
-  previewPending=false;
-  if(document.getElementById('characterScreen').classList.contains('hidden'))return;
-  if(now-previewLast>1000/24){
-   previewLast=now;
-   for(const hero of Object.values(HeroSystem.heroes)){
-    const asset=rigs[hero.gender];if(!asset)continue;const v=createView(hero.gender);if(!v)continue;
-    asset.sample('Idle',now/1000%asset.channels.Idle.duration);asset.root.position.set(0,0,0);asset.root.rotation.y=-.35;
-    asset.root.updateMatrixWorld(true);asset.skeleton.update();v.effects.reset();
-    if(!v.previewCamera){
-     const bounds=new THREE.Box3().setFromObject(asset.root),center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());
-     const half=Math.max(size.x,size.y)*.60;
-     v.previewCamera=new THREE.OrthographicCamera(-half,half,half,-half,.01,30);
-     v.previewCamera.position.set(center.x,center.y,center.z+3);v.previewCamera.lookAt(center);
-    }
-    v.renderer.render(v.scene,v.previewCamera);
-    const card=document.getElementById(hero.id+'Preview'),c=card.getContext('2d');c.clearRect(0,0,card.width,card.height);
-    c.drawImage(v.renderer.domElement,(card.width-card.height)/2,0,card.height,card.height);
-    card.dataset.heroId=hero.id;card.dataset.revision=asset.revision;
-   }
-  }
-  previewPending=true;requestAnimationFrame(previewCards);
- }
- const originalPopulate=populateCharacterScreen;
- populateCharacterScreen=function(){originalPopulate();prepareHeroCards();if(!previewPending){previewPending=true;requestAnimationFrame(previewCards);}};
+
+ // Selection cards are 2D only; do not load or render the 3D rigs until gameplay starts.
  window.WarriorCombat={get ready(){return Promise.all(Object.values(HeroSystem.heroes).map(loadWarriorRig)).then(()=>chooseRig());},get rig(){chooseRig();return rig},get cuts(){chooseRig();return CUTS},chooseRig,load:loadWarriorRig,reset,snapshot:()=>({combo:combo?{time:combo.time,index:combo.index,hit:combo.hit,entryVelocity:combo.entryVelocity,dir:{...combo.dir}}:null,nextCut,pendingCuts:[...pendingCuts],sincePress:combatClock-lastPress,jumpZ,airTime,walkClock,gender:rigGender,revision:rig?.revision,active:!!active()}),pose:animateAsset,inspect:openButton.onclick};
 })();
 
