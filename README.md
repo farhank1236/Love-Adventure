@@ -95,7 +95,7 @@ On a touch phone or tablet (iPhone, Android, iPad), the 3D world switches to tou
 
 - **Landscape:** the first tap asks for fullscreen and locks the screen to landscape where the browser allows it (Android Chrome). Where it can't (iPhone Safari, or the game inside an embedded page) and the phone is held upright, the game screen turns 90° so it still plays in landscape.
 - **Left thumb:** a floating joystick. Push it to the edge to run.
-- **Right thumb:** Attack (hold the stick down for the low slash), Jump (also makes the horse jump), Roll, Run (latches on and off), Horse (tap three times to summon or send it back, once to mount or dismount), and the V ring for Azure Tempest.
+- **Right thumb:** Attack (hold the stick down for the low slash), Jump (also makes the horse jump), Roll, Run (latches on and off), Summon (tap three times to call the horse or send it back, at any pace; once to mount or dismount), and the Azure Tempest emblem for the special power.
 - **Top bar:** fast time (hold), graphics quality, sound and fullscreen.
 - **Camera:** drag anywhere else to turn it; pinch to zoom.
 

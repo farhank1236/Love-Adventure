@@ -386,14 +386,19 @@
 
     // ============================================================ HUD: skill icon with countdown ring
     const root = ctx.root, icon = document.createElement('div');
-    icon.id = 'skillV'; icon.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" class="bg"/><circle cx="32" cy="32" r="28" class="ring" pathLength="100"/></svg><b>V</b><span></span>`;
+    icon.id = 'skillV'; icon.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" class="bg"/><circle cx="32" cy="32" r="28" class="ring" pathLength="100"/></svg><b class="sym"><svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="skFl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#2f7bff"/><stop offset=".6" stop-color="#7cc8ff"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs><path d="M16 2.5c1.6 4.6 6.9 7.6 7.6 13.4.7 5.9-3.2 10.6-7.6 10.6S7.7 21.8 8.4 16.5c.4-3 2-5 3.4-6.6-.1 2.3.6 3.9 1.9 4.9-.4-4.6.6-8.6 2.3-12.3z" fill="url(#skFl)"/><path d="M10.2 19.6c2.7-4.4 7.6-6.4 12.6-5.2-4.1.6-7.8 3.1-9.6 7.3-.6 1.4-1.1 2.9-1.3 4.4-1.6-1.6-2.3-4.3-1.7-6.5z" fill="#0b1e46" opacity=".85"/><path d="M5 28.5l22-8M9 30.5l18-6.5" stroke="#bfe3ff" stroke-width="1.4" stroke-linecap="round" opacity=".75"/></svg></b><em>V</em><span></span>`;
     icon.title = 'Azure Tempest (V): 6 s of blue fire, attacks throw sonic booms (arrow keys aim)';
     if (!document.getElementById('skillVCss')) { const st = document.createElement('style'); st.id = 'skillVCss'; st.textContent = `
       #skillV { position: fixed; right: 22px; bottom: 86px; width: 74px; height: 74px; z-index: 30; pointer-events: none; display: grid; place-items: center; font-family: 'Fredoka', 'Nunito', sans-serif; }
       #skillV svg { position: absolute; inset: 0; transform: rotate(-90deg); }
       #skillV .bg { fill: rgba(8, 18, 40, .78); stroke: rgba(120, 170, 255, .25); stroke-width: 4; }
       #skillV .ring { fill: none; stroke: #4aa8ff; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 100 100; transition: stroke .2s; filter: drop-shadow(0 0 4px #4aa8ff); }
-      #skillV b { position: relative; font-size: 22px; color: #e6f2ff; text-shadow: 0 0 10px #3d8cff; line-height: 1; margin-top: -10px; }
+      #skillV b.sym { position: relative; width: 56%; height: 56%; margin-top: -12px; filter: drop-shadow(0 0 5px #3d8cff); display: block; }
+      #skillV b.sym svg { position: static; width: 100%; height: 100%; transform: none; }
+      #skillV em { position: absolute; top: 2px; right: 2px; min-width: 18px; height: 18px; border-radius: 6px; background: rgba(8, 18, 40, .9); border: 1px solid rgba(160, 200, 255, .55);
+        font: 700 11px/16px 'Nunito', sans-serif; font-style: normal; color: #dcebff; text-align: center; }
+      body.touch-ui #skillV em { display: none; }
+      #skillV.active b.sym { animation: skFlick .35s ease-in-out infinite alternate; } @keyframes skFlick { to { transform: scale(1.08); filter: drop-shadow(0 0 9px #7cc8ff); } }
       #skillV span { position: absolute; bottom: 12px; font: 700 11px 'Nunito', sans-serif; letter-spacing: .06em; color: #bcd8ff; }
       #skillV.ready .ring { stroke: #7cc4ff; } #skillV.active .ring { stroke: #ffffff; filter: drop-shadow(0 0 8px #4aa8ff); } #skillV.cooldown { opacity: .78; } #skillV.cooldown .ring { stroke: #3a5f8f; filter: none; }`;
       document.head.appendChild(st); }

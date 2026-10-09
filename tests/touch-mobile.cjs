@@ -46,8 +46,15 @@ const URL = process.env.GAME_URL || 'http://127.0.0.1:8000/index.html', OUT = pr
   await press('tAttack'); r = await run(0.2); expect(r.mode === 'attack' || r.mode === 'summon', 'attack button attacks', r); await run(3);
   const y0 = await page.evaluate(() => KingdomDebug.player.position.y); await ptr('#tJump', 'pointerdown', 20, 20, 9); r = await run(0.25);
   const y1 = await page.evaluate(() => KingdomDebug.player.position.y); await ptr('#tJump', 'pointerup', 20, 20, 9); expect(y1 > y0 + 0.3, 'jump button jumps', { y0, y1 }); await run(1.5);
-  await press('tHorse'); await press('tHorse'); await press('tHorse'); await page.waitForTimeout(300); await run(0.2);
-  const hs = await page.evaluate(() => KingdomDebug.horse.state.state); expect(hs === 'summoning' || hs === 'loading' || hs !== 'absent', 'horse button x3 summons', { hs });
+  // Summon: three real finger taps on the button (CDP touch events, as on a phone)
+  const lbl = await page.evaluate(() => document.querySelector('#tHorse small').textContent); expect(lbl === 'SUMMON', 'button is called Summon', { lbl });
+  for (let i = 0; i < 3; i++) { const b = await page.evaluate(() => { const r = document.getElementById('tHorse').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; });
+    await page.touchscreen.tap(b[0], b[1]); await page.waitForTimeout(900); }   // slow, like a thumb
+  await page.waitForFunction(() => KingdomDebug.horse.state.state === 'summoning', null, { timeout: 300000 }).catch(() => {});
+  r = await run(4.5); const hz = await page.evaluate(() => ({ st: KingdomDebug.horse.state.state, vis: KingdomDebug.horse.root.visible }));
+  expect(hz.vis && (hz.st === 'idle' || hz.st === 'rear'), 'three taps on Summon bring the horse out', hz);
+  const sym = await page.evaluate(() => { const v = document.getElementById('skillV'); return { svg: !!v.querySelector('b.sym svg'), text: v.querySelector('b').textContent.trim(), key: getComputedStyle(v.querySelector('em')).display }; });
+  expect(sym.svg && !sym.text && sym.key === 'none', 'special power shows a symbol, not V', sym);
   // camera drag on the canvas turns the camera; pinch zooms
   const yawA = await page.evaluate(() => KingdomDebug.state.camYaw);
   await ptr('#phase1Canvas', 'pointerdown', 400, 150, 11); await ptr('#phase1Canvas', 'pointermove', 480, 150, 11); await ptr('#phase1Canvas', 'pointerup', 480, 150, 11);

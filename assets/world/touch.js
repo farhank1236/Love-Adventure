@@ -117,7 +117,7 @@
     button('tRoll', 'roll', 'ROLL', { right: `calc(40px + ${R})`, bottom: `calc(140px + ${Bm})` }, { size: 58, onDown: () => tap('KeyC') });
     const runB = button('tRun', 'run', 'RUN', { right: `calc(118px + ${R})`, bottom: `calc(112px + ${Bm})` }, { size: 54, onDown: () => {
       state.touchRunToggle = !state.touchRunToggle; runB.classList.toggle('latched', state.touchRunToggle); } });
-    button('tHorse', 'horse', 'HORSE', { right: `calc(28px + ${R})`, bottom: `calc(226px + ${Bm})` }, { size: 54, onDown: () => tap('KeyH') });
+    button('tHorse', 'horse', 'SUMMON', { right: `calc(28px + ${R})`, bottom: `calc(226px + ${Bm})` }, { size: 54, onDown: () => tap('KeyH') });
     // the V ring is the skill button
     const hookSkill = () => { const v = document.getElementById('skillV'); if (!v || v.dataset.touch) return !!v; v.dataset.touch = '1';
       v.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); tap('KeyV'); }); return true; };
