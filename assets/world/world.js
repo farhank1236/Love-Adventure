@@ -17,11 +17,8 @@
   class ObjectLayer {
     constructor(THREE, scene, objects, { tile = 160 } = {}) {
       this.T = THREE; this.scene = scene; this.tile = tile; this.objects = objects; this.group = new THREE.Group(); this.group.name = 'WorldObjects'; scene.add(this.group);
-      this.mat = {
-        std: new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.86, metalness: 0.0, side: THREE.DoubleSide }),
-        glow: new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false })
-      };
-      this.meshes = []; this.extras = []; this.build();
+      this.mat = { std: A.Mat.objectMaterial(THREE), glow: A.Mat.glowMaterial(THREE) }; this.depthMat = A.Mat.objectDepthMaterial(THREE);
+      this.meshes = []; this.extras = []; this.lodScale = 1; this.build();
     }
     matrixOf(o, m = new this.T.Matrix4()) {
       const T = this.T, q = new T.Quaternion().setFromEuler(new T.Euler(o.rotation.x || 0, o.rotation.y || 0, o.rotation.z || 0));
@@ -34,26 +31,30 @@
         const k = o.type + '|' + Math.floor(o.position.x / this.tile) + ',' + Math.floor(o.position.z / this.tile);
         (groups.get(k) || groups.set(k, []).get(k)).push(o);
       }
-      const m = new T.Matrix4(); this.where = new Map();
+      const m = new T.Matrix4(); this.where = new Map(); this.lights = [];
       for (const [k, list] of groups) {
         const type = k.split('|')[0], def = A.Models.TYPES[type], parts = A.Models.get(T, type);
         for (const [part, geo] of Object.entries(parts)) {
           const mesh = new T.InstancedMesh(geo, this.mat[part], list.length);
           list.forEach((o, i) => { mesh.setMatrixAt(i, this.matrixOf(o, m)); (this.where.get(o.id) || this.where.set(o.id, []).get(o.id)).push([mesh, i]); });
           mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere();
-          mesh.receiveShadow = part === 'std'; mesh.castShadow = false; mesh.name = `${type}@${k.split('|')[1]}:${part}`;
-          mesh.userData = { type, ids: list.map(o => o.id), part, flat: !!def.flat, center: mesh.boundingSphere.center.clone(), lamp: !!def.lamp };
+          mesh.receiveShadow = part === 'std'; mesh.castShadow = false; if (part === 'std') mesh.customDepthMaterial = this.depthMat; mesh.name = `${type}@${k.split('|')[1]}:${part}`;
+          geo.boundingSphere || geo.computeBoundingSphere();
+          const r = geo.boundingSphere.radius, cull = r < 1.6 ? 150 : r < 4 ? 280 : r < 10 ? 520 : 1e9;      // distance detail: small props fade out first
+          mesh.userData = { type, ids: list.map(o => o.id), part, flat: !!def.flat, center: mesh.boundingSphere.center.clone(), extent: mesh.boundingSphere.radius, cull, lamp: !!def.lamp };
           this.group.add(mesh); this.meshes.push(mesh);
         }
         if (type === 'windmill') for (const o of list) this.addSails(o);
+        const pts = A.Models.lightsOf(T, type);
+        if (pts.length) for (const o of list) { const om = this.matrixOf(o, m); for (const l of pts) { const v = new T.Vector3(l.x, l.y, l.z).applyMatrix4(om); this.lights.push({ x: v.x, y: v.y, z: v.z, kind: l.kind, id: o.id }); } }
         for (const mesh of this.meshes.slice(-Object.keys(parts).length)) mesh.userData.tileKey = k;
       }
     }
     addSails(o) {
       const T = this.T, pivot = new T.Group(), mat = this.mat.std;
       const blade = new T.BoxGeometry(0.3, 8.4, 0.18), cloth = new T.BoxGeometry(1.7, 6.6, 0.06);
-      const paint = (g, hex) => { const c = new T.Color(hex), n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set([c.r, c.g, c.b], i * 3); g.setAttribute('color', new T.BufferAttribute(a, 3)); return g; };
-      paint(blade, 0x8a6239); paint(cloth, 0xf0e6d0);
+      const paint = (g, hex, id) => { const c = new T.Color(hex), n = g.attributes.position.count, a = new Float32Array(n * 3), ma = new Float32Array(n * 2); for (let i = 0; i < n; i++) { a.set([c.r, c.g, c.b], i * 3); ma.set([id, 1], i * 2); } g.setAttribute('color', new T.BufferAttribute(a, 3)); g.setAttribute('mat', new T.BufferAttribute(ma, 2)); return g; };
+      paint(blade, 0x8a6239, A.Models.MATS.WOOD); paint(cloth, 0xf0e6d0, A.Models.MATS.CLOTH);
       for (let i = 0; i < 4; i++) { const arm = new T.Group(); arm.rotation.z = i * Math.PI / 2; const b = new T.Mesh(blade, mat); b.position.y = 4.2; const c = new T.Mesh(cloth, mat); c.position.set(0.95, 4.6, 0.08); arm.add(b, c); pivot.add(arm); }
       const root = new T.Group(); this.matrixOf(o, root.matrix); root.matrixAutoUpdate = false; pivot.position.set(0, 11.0, 3.5); root.add(pivot);
       pivot.traverse(n => { if (n.isMesh) n.castShadow = true; });
@@ -61,7 +62,11 @@
     }
     update(dt, px, pz) {
       for (const e of this.extras) e.pivot.rotation.z += e.spin * dt;
-      for (const m of this.meshes) { const c = m.userData.center; m.castShadow = m.userData.part === 'std' && !m.userData.flat && Math.hypot(c.x - px, c.z - pz) < 230; }
+      for (const m of this.meshes) {
+        const u = m.userData, c = u.center, d = Math.hypot(c.x - px, c.z - pz);
+        m.visible = d - u.extent < u.cull * this.lodScale;
+        m.castShadow = u.part === 'std' && !u.flat && d - u.extent < 110;
+      }
     }
     /* live move while dragging in the editor (no regrouping); call rebuild() when the edit is finished */
     updateObject(o) {
@@ -139,30 +144,16 @@
     }
   }
 
-  // ---------------------------------------------------------------- sky dome (two suns / three moons arrive in part C)
-  function skyDome(THREE) {
-    const mat = new THREE.ShaderMaterial({
-      side: THREE.BackSide, depthWrite: false, fog: false, toneMapped: false,
-      uniforms: { top: { value: new THREE.Color(0x3f86d4) }, horizon: { value: new THREE.Color(0xcfe5f3) }, ground: { value: new THREE.Color(0x9fb7a8) } },
-      vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: `uniform vec3 top; uniform vec3 horizon; uniform vec3 ground; varying vec3 vP;
-        void main(){ float h = vP.y; vec3 c = h > 0.0 ? mix(horizon, top, pow(smoothstep(0.0, 0.62, h), 0.8)) : mix(horizon, ground, smoothstep(0.0, -0.2, h)); gl_FragColor = vec4(c, 1.0); }`
-    });
-    const m = new THREE.Mesh(new THREE.SphereGeometry(2400, 32, 16), mat); m.name = 'SkyDome'; m.renderOrder = -10; m.frustumCulled = false; return m;
-  }
-  function waterMaterial(THREE, timeU) {
-    const m = new THREE.MeshStandardMaterial({ color: 0x2f7fb3, roughness: 0.1, metalness: 0.08, transparent: true, opacity: 0.86, depthWrite: false, side: THREE.DoubleSide });
-    m.onBeforeCompile = sh => {
-      sh.uniforms.uTime = timeU;
-      sh.vertexShader = 'attribute vec2 flowUv;\nvarying vec2 vFlow;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvFlow = flowUv;');
-      sh.fragmentShader = 'uniform float uTime;\nvarying vec2 vFlow;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
-        float w1 = sin(vFlow.y * 5.0 - uTime * 2.1 + sin(vFlow.x * 8.0 + vFlow.y) * 1.6);
-        float w2 = sin(vFlow.y * 11.0 - uTime * 3.3 + vFlow.x * 15.0);
-        float bank = 1.0 - smoothstep(0.0, 0.14, vFlow.x) * smoothstep(1.0, 0.86, vFlow.x);
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.55, 0.78, 0.86), bank * 0.55) + vec3(0.09) * pow(max(0.0, w1 * w2), 2.0);
-        diffuseColor.a = mix(diffuseColor.a, 0.55, bank);`);
-    };
-    return m;
+  // ---------------------------------------------------------------- graphics quality: low (software / weak GPUs), medium, high
+  const GFX_KEY = 'aethelos.gfx.v1';
+  function pickQuality(renderer) {
+    try { const q = new URLSearchParams(location.search).get('gfx'); if (q && /^(low|medium|high)$/.test(q)) return q; } catch (_) {}
+    try { const q = localStorage.getItem(GFX_KEY); if (q && /^(low|medium|high)$/.test(q)) return q; } catch (_) {}
+    try { const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info'), name = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+      if (/swiftshader|llvmpipe|software|basic render/i.test(String(name))) return 'low';
+      if (/intel|mali|adreno|powervr|apple gpu/i.test(String(name)) && !/apple m\d (pro|max|ultra)/i.test(String(name))) return 'medium';
+    } catch (_) {}
+    return (window.innerWidth < 700 || /Android|iPhone|iPad/i.test(navigator.userAgent)) ? 'medium' : 'high';
   }
 
   // ---------------------------------------------------------------- the kingdom
@@ -173,13 +164,15 @@
     const say = t => { if (loadingText) loadingText.textContent = t; };
     const showToast = text => { if (!toast) return; toast.textContent = text; toast.classList.add('show'); clearTimeout(showToast.t); showToast.t = setTimeout(() => toast.classList.remove('show'), 1700); };
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
-    const scene = new THREE.Scene(); scene.fog = new THREE.Fog(0xc6dcea, 260, 950);
+    renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.NoToneMapping;
+    let quality = pickQuality(renderer);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality === 'high' ? 1.25 : 1));
+    const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(55, 1, 0.15, 3000);
-    const clock = new THREE.Clock(), timeU = { value: 0 };
+    const clock = new THREE.Clock(), MU = A.Mat.U, timeU = MU.uTime; A.Mat.init(THREE);
+    const texturesReady = A.Mat.load(THREE, renderer, { size: quality === 'low' ? 512 : 1024 }).catch(e => { console.warn('Aethelos textures:', e); return false; });
     const player = new THREE.Group(); player.name = 'Player Root'; scene.add(player);
     const heroMount = new THREE.Group(); player.add(heroMount);
     const world = {};
@@ -189,27 +182,43 @@
 
     // ------------------------------------------------ world build
     function setupLighting() {
-      scene.add(skyDome(THREE));
-      scene.add(new THREE.HemisphereLight(0xe8f4ff, 0x4e5f46, 1.25));
-      const sun = new THREE.DirectionalLight(0xfff0d4, 2.5); sun.name = 'Sun';
-      sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const S = 75;
-      Object.assign(sun.shadow.camera, { near: 10, far: 520, left: -S, right: S, top: S, bottom: -S }); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.5;
-      scene.add(sun, sun.target); world.sun = sun; world.sunDir = new THREE.Vector3(-0.45, 0.82, 0.36).normalize();
+      world.sky = A.createSky({ THREE, renderer, scene, quality }); world.sun = world.sky.sun;
+      world.post = A.createPost({ THREE, renderer, sky: world.sky, quality });
+      // lamp, lantern and campfire lights: a small pool moved to the nearest lights after dusk
+      world.lampPool = Array.from({ length: quality === 'low' ? 4 : 8 }, () => { const l = new THREE.PointLight(0xffa860, 0, 22, 2); l.castShadow = false; scene.add(l); return l; });
+      // HUD clock
+      const host = canvas.parentElement; if (host && !host.querySelector('#kClock')) {
+        const el = document.createElement('div'); el.id = 'kClock';
+        el.style.cssText = 'position:absolute;top:58px;right:16px;z-index:6;padding:5px 12px;border-radius:999px;background:rgba(14,22,34,.62);color:#f2ead8;font:600 13px/1.3 system-ui,sans-serif;letter-spacing:.04em;pointer-events:none;backdrop-filter:blur(4px)';
+        host.appendChild(el); world.clockEl = el;
+      } else world.clockEl = host && host.querySelector('#kClock');
+    }
+    function updateLamps(dt) {
+      const k = MU.uNight.value, pool = world.lampPool, lights = world.layer.lights;
+      world.lampTimer = (world.lampTimer || 0) - dt;
+      if (world.lampTimer <= 0) {
+        world.lampTimer = 0.3; const p = camera.position;
+        const near = k > 0.02 ? lights.map(l => [l, (l.x - p.x) ** 2 + (l.z - p.z) ** 2]).filter(a => a[1] < 90 * 90).sort((a, b) => a[1] - b[1]).slice(0, pool.length) : [];
+        pool.forEach((pl, i) => { const a = near[i]; pl.userData.src = a ? a[0] : null; if (a) pl.position.set(a[0].x, a[0].y, a[0].z); });
+      }
+      const t = timeU.value;
+      pool.forEach((pl, i) => { const src = pl.userData.src; pl.intensity = src ? k * (src.kind === 'fire' ? 26 : 16) * (0.92 + 0.08 * Math.sin(t * (src.kind === 'fire' ? 13 : 3) + i * 1.7)) : 0; if (src && src.kind === 'fire') pl.color.setRGB(1, 0.55, 0.22); else pl.color.setRGB(1, 0.66, 0.38); });
     }
     function buildWorld() {
       say('Shaping the kingdom: hills, rivers and Ironpeak…');
       const terrain = world.terrain = new A.Terrain(L);
-      const groundMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0 });
-      world.terrainGroup = terrain.buildMeshes(THREE, groundMat); scene.add(world.terrainGroup);
-      const roadMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide });
-      scene.add(terrain.buildRoads(THREE, roadMat));
-      scene.add(terrain.buildWater(THREE, waterMaterial(THREE, timeU)));
+      world.terrainGroup = terrain.buildMeshes(THREE, A.Mat.terrainMaterial(THREE)); scene.add(world.terrainGroup);
+      scene.add(terrain.buildRoads(THREE, A.Mat.roadMaterial(THREE)));
+      world.water = A.createWater({ THREE, renderer, scene, terrain, sky: world.sky, quality });
+      world.waterGroup = terrain.buildWater(THREE, world.water.material); scene.add(world.waterGroup);
       say('Raising the city, the palace and the noble houses…');
       const saved = MapStore.load();
       world.objects = saved ? saved.objects : A.KingdomObjects.generate(terrain);
       world.fromSave = !!saved;
       world.layer = new ObjectLayer(THREE, scene, world.objects);
       world.collide = new CollisionWorld(world.objects);
+      say('Planting the meadows…');
+      world.grass = A.createGrass({ THREE, scene, terrain, world, quality });
     }
     async function loadHero() {
       heroLabel && (heroLabel.textContent = hero.name);
@@ -338,8 +347,6 @@
       if (shake > 0.002) camera.position.add(new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).multiplyScalar(shake * 0.35));
       state.cameraTarget.lerp(player.position.clone().add(new THREE.Vector3(0, state.heroRig ? 1.45 : 1.3, 0)), 0.2);
       camera.lookAt(state.cameraTarget);
-      const s = world.sun, d = world.sunDir;
-      s.position.copy(player.position).addScaledVector(d, 260); s.target.position.copy(player.position); s.target.updateMatrixWorld();
     }
     // ------------------------------------------------ location banner
     function regionAt(x, z) {
@@ -363,12 +370,25 @@
     }
 
     // ------------------------------------------------ input
-    function resize() { const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+    const dbSize = new THREE.Vector2();
+    function resize() { const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.getDrawingBufferSize(dbSize); world.post && world.post.setSize(dbSize.x, dbSize.y); }
+    function setQuality(q) {
+      quality = q; try { localStorage.setItem(GFX_KEY, q); } catch (_) {}
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q === 'high' ? 1.25 : 1)); resize();
+      world.post.setQuality(q); world.grass.setQuality(q); world.water.setQuality(q); world.layer.lodScale = q === 'low' ? 0.6 : q === 'medium' ? 0.8 : 1;
+      showToast('Graphics: ' + q[0].toUpperCase() + q.slice(1));
+    }
+    function renderFrame() {
+      world.water.beforeRender(camera, [world.grass.group, world.waterGroup], dbSize.clone().multiplyScalar(world.post.scale));
+      world.post.render(scene, camera);
+    }
     const GAME_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
     const onKeyDown = e => {
       if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return;           // typing in the editor panel
       if (e.code === 'KeyE' && !e.repeat && world.editor) { world.editor.toggle(); return; }
       if (e.code === 'KeyV' && !e.repeat && !state.editing) { if (world.skill) world.skill.activate(); else showToast('Azure Tempest is the Male Warrior\'s skill'); return; }
+      if (e.code === 'KeyT') { world.sky && world.sky.fastForward(true); if (!e.repeat) showToast('Time passes quickly…'); return; }
+      if (e.code === 'KeyG' && !e.repeat) { const order = ['low', 'medium', 'high']; setQuality(order[(order.indexOf(quality) + 1) % 3]); return; }
       if (state.editing) return;
       if (GAME_KEYS.has(e.code) && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) e.preventDefault();
       state.keys[e.code] = true; if (e.repeat) return;
@@ -382,7 +402,7 @@
       }
       if (e.code === 'Space' || e.code === 'KeyF') state.attackTimer = 0.95;
     };
-    const onKeyUp = e => { state.keys[e.code] = false; };
+    const onKeyUp = e => { state.keys[e.code] = false; if (e.code === 'KeyT') world.sky && world.sky.fastForward(false); };
     const onBlur = () => { for (const k in state.keys) state.keys[k] = false; };
     const onPointerDown = e => {
       if (state.editing) return;
@@ -418,16 +438,20 @@
         state.heroRig?.controller.update(dt, { moving: false, running: false, airborne: false, speed: 0 }); world.skill && world.skill.update(dt);
         world.editor.update(dt);
       } else { updateMovement(dt); updateCamera(dt); updateRegion(dt); }
-      world.layer.update(dt, player.position.x, player.position.z);
+      world.layer.update(dt, camera.position.x, camera.position.z);
+      world.sky.update(dt, camera, state.editing && world.editor ? world.editor.cam.focus : player.position);   // shadows follow whatever we look at
+      world.grass.update(camera, player.position);
+      updateLamps(dt);
+      if (world.clockEl) { const t = world.sky.clockText(); if (world.clockEl.textContent !== t) world.clockEl.textContent = t; }
     }
     const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get rig() { return state.heroRig || state.rig; },
-      tick: dt => step(dt), render: () => renderer.render(scene, camera),
+      tick: dt => step(dt), render: () => renderFrame(), setHour: h => world.sky.setHour(h), setQuality: q => setQuality(q), get quality() { return quality; }, texturesReady,
       teleport(x, z, yaw = player.rotation.y) { player.position.set(x, groundAt(x, z, 999).h, z); player.rotation.y = yaw; state.camYaw = yaw; state.cameraVelocity.copy(player.position).add(new THREE.Vector3(-Math.sin(yaw) * 5, 3, -Math.cos(yaw) * 5)); state.cameraTarget.copy(player.position); state.region = null; state.regionTimer = 0; } };
     window.Phase1Debug = debug; window.KingdomDebug = debug;
     function tick() {
       if (!running) return; requestAnimationFrame(tick);
       const dt = Math.min(0.033, clock.getDelta()); if (debug.paused) return;
-      step(dt); renderer.render(scene, camera);
+      step(dt); renderFrame(); world.post.adapt(dt);
     }
     const nextFrame = () => new Promise(r => setTimeout(r, 0));
     return {
@@ -435,12 +459,15 @@
         loading && loading.classList.remove('hidden'); setupLighting(); resize(); bindInput();
         await nextFrame(); buildWorld(); await nextFrame();
         await loadHero(); spawn(); updateCamera(); updateRegion(0);
+        say('Painting stone, soil and bark…'); await texturesReady;
+        step(0); renderFrame();                          // compile every shader before the loading screen lifts
         if (A.createEditor) world.editor = A.createEditor({ THREE, scene, camera, renderer, canvas, world, player, state, showToast, root: canvas.parentElement,
-          rebuildCollision: () => { world.collide = new CollisionWorld(world.objects); },
+          rebuildCollision: () => { world.collide = new CollisionWorld(world.objects); world.grass && world.grass.rebuildMask(); },
           resumeCamera: () => { state.cameraVelocity.copy(camera.position); updateCamera(); } });
         loading && loading.classList.add('hidden'); showToast(world.fromSave ? 'Saved kingdom loaded' : 'Welcome to Aethelos'); tick();
       },
-      stop() { running = false; unbindInput(); world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.layer && world.layer.dispose(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
+      stop() { running = false; unbindInput(); world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.layer && world.layer.dispose();
+        world.grass && world.grass.dispose(); world.water && world.water.dispose(); world.post && world.post.dispose(); world.sky && world.sky.dispose(); world.clockEl && world.clockEl.remove(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
       toggleEditor() { world.editor && world.editor.toggle(); },
       resetCamera() { state.camYaw = player.rotation.y; state.camPitch = 0.30; state.camZoom = 1; showToast('Camera reset'); }
     };

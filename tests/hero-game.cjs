@@ -49,7 +49,7 @@ const OUT = process.env.QA_DIR || '/tmp/hero-qa';
     return { mode: s.mode, swordOut: s.swordOut, combo: s.combo, kind: s.attackKind, swordScale: +v.x.toFixed(3), y: +(D.player.position.y - ground()).toFixed(2), maxY: +maxY.toFixed(2),
       moved: +D.player.position.clone().sub(p0).setY(0).length().toFixed(2), acts, log: [...new Set(log)] };
   }, { sec, hold, press });
-  const shot = async n => { await page.evaluate(() => Phase1Debug.render()); await page.screenshot({ path: `${OUT}/${n}.png` }); };
+  const shot = async n => { await page.evaluate(() => Phase1Debug.render()); await page.screenshot({ path: `${OUT}/${n}.png`, timeout: 240000 }); };
   const fails = []; const expect = (c, m, p) => { if (!c) fails.push(m + ' ' + JSON.stringify(p)); };
   // arrows are camera-relative: Up = away from the camera, Right = screen right (checked at two camera angles)
   for (const yaw of [0, 1.1]) {

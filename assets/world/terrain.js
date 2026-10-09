@@ -136,72 +136,109 @@
     riverDist(x, z) { const w = this.riverIndex.nearest(x, z); return w ? w.d - this.rivers[w.li].width / 2 : 99; }
     roadDist(x, z) { const r = this.roadIndex.nearest(x, z); return r ? r.d - this.roads[r.li].width / 2 : 99; }
 
-    // ---------------------------------------------------------------- meshes
-    colorAt(x, z, h, slope, out) {
-      const N = A.Noise, g = 0.5 + 0.5 * N.fbm(x / 34, z / 34, 3), q = 0.5 + 0.5 * N.vnoise(x / 6, z / 6);
-      const dry = 0.5 + 0.5 * N.fbm(x / 140 + 40, z / 140, 3);
-      let r = 0.40 + 0.08 * g + 0.10 * dry, gg = 0.55 + 0.08 * g + 0.02 * dry, b = 0.30 + 0.04 * g;      // meadow grass, drier patches
+    // ---------------------------------------------------------------- surface (what the ground is made of)
+    /* weights for the splat shader at (x,z):
+       ground = [meadow grass, soil, river pebbles, rocky ground]; rock = [mossy rock, slate, marble, snow]; tint = linear multiplier ~1; wet 0..1 */
+    surfaceAt(x, z, h, slope, o) {
+      const N = A.Noise, L = this.L;
+      const g1 = 0.5 + 0.5 * N.fbm(x / 34, z / 34, 3), dry = 0.5 + 0.5 * N.fbm(x / 140 + 40, z / 140, 3), q = 0.5 + 0.5 * N.vnoise(x / 6, z / 6);
+      let grass = 1, soil = 0, peb = 0, rocky = 0;
       const forest = 1 - smooth(150, 240, Math.hypot(x - 330, z - 190));
-      r -= 0.10 * forest; gg -= 0.12 * forest; b -= 0.03 * forest;                               // darker forest floor
       const farm = (1 - smooth(110, 150, Math.hypot(x + 265, z - 235))) * (z > 120 ? 1 : 0);
-      if (farm > 0) { r += 0.10 * farm * q; gg += 0.04 * farm * q; }
-      const rock = smooth(0.55, 0.95, slope) + smooth(55, 95, h) * 0.8;
-      if (rock > 0) { const k = Math.min(1, rock); const c = 0.45 + 0.12 * q; r += (c - r) * k; gg += (c * 0.97 - gg) * k; b += (c * 0.93 - b) * k; }
-      const snow = smooth(118, 140, h + 8 * N.vnoise(x / 20, z / 20)) * (1 - smooth(0.9, 1.3, slope));
-      if (snow > 0) { r += (0.93 - r) * snow; gg += (0.95 - gg) * snow; b += (0.98 - b) * snow; }
-      const w = this.riverIndex.nearest(x, z);
-      if (w) {                                                                                    // sandy banks, dark wet bed
-        const R = this.rivers[w.li], d = w.d - R.width / 2;
-        const sand = 1 - smooth(1, 6, d);
-        if (sand > 0) { r += (0.70 - r) * sand; gg += (0.64 - gg) * sand; b += (0.48 - b) * sand; }
-        if (d < 0) { r *= 0.55; gg *= 0.6; b *= 0.65; }
-      }
+      const city = 1 - smooth(110, 140, Math.hypot(x, z));
+      soil += farm * (0.35 + 0.5 * smooth(0.45, 0.7, N.fbm(x / 22 + 3, z / 22, 3) * 0.5 + 0.5));      // ploughed patches between the fields
+      soil += forest * (0.45 + 0.4 * q);                                                                // forest floor: soil and needles
+      soil += 0.55 * smooth(0.62, 0.78, 0.5 + 0.5 * N.fbm(x / 18 - 9, z / 18 + 4, 3));                  // worn dirt patches in the meadows
+      soil += city * 0.25 * smooth(0.4, 0.7, q);
       const rd = this.roadIndex.nearest(x, z);
-      if (rd) { const R = this.roads[rd.li], k = 1 - smooth(R.width / 2 - 0.5, R.width / 2 + 3, rd.d);
-        if (k > 0) { r += (0.52 - r) * k * 0.8; gg += (0.44 - gg) * k * 0.8; b += (0.33 - b) * k * 0.8; } }
-      out[0] = Math.pow(Math.max(0, r), 2.2); out[1] = Math.pow(Math.max(0, gg), 2.2); out[2] = Math.pow(Math.max(0, b), 2.2);   // sRGB-authored -> linear vertex colours
+      if (rd) { const R = this.roads[rd.li], e = rd.d - R.width / 2; soil += (1 - smooth(-0.5, R.surface === 'dirt' ? 3.5 : 1.8, e)) * 0.9; }    // trodden shoulders
+      const w = this.riverIndex.nearest(x, z); let wet = 0;
+      if (w) { const R = this.rivers[w.li], e = w.d - R.width / 2; peb = 1 - smooth(0.5, 4 + 2 * q, e); wet = 1 - smooth(-1.5, 1.2, e); }
+      // mountains: rocky ground climbs with altitude; rock type by height and region
+      const varkhold = 1 - smooth(140, 230, Math.hypot(x - 318, z + 318));
+      rocky = smooth(48, 90, h + 14 * N.vnoise(x / 30, z / 30)) * 0.9;
+      const marble = smooth(85, 120, h + 10 * N.vnoise(x / 25, z / 25));
+      const slate = Math.max(varkhold, smooth(55, 80, h) * (1 - marble)) * (0.6 + 0.4 * q);
+      const moss = Math.max(0.05, 1 - slate - marble);
+      const snow = smooth(112, 138, h + 8 * N.vnoise(x / 20, z / 20));
+      grass = Math.max(0, 1 - soil * 0.85 - peb);
+      o.ground[0] = grass; o.ground[1] = Math.min(1, soil); o.ground[2] = peb; o.ground[3] = rocky;
+      o.rock[0] = moss; o.rock[1] = slate; o.rock[2] = marble; o.rock[3] = snow;
+      // tint: lush vs dry meadow, darker forest, greener near water
+      let tr = 1.0 + 0.16 * (dry - 0.5) + 0.06 * (g1 - 0.5), tg = 1.04 + 0.05 * (g1 - 0.5) - 0.04 * (dry - 0.5), tb = 1.0 + 0.25 * (0.5 - dry);
+      tr -= 0.28 * forest; tg -= 0.2 * forest; tb -= 0.12 * forest;
+      const near = w ? 1 - smooth(4, 26, w.d - this.rivers[w.li].width / 2) : 0; tr -= 0.08 * near; tb += 0.05 * near;
+      o.tint[0] = tr; o.tint[1] = tg; o.tint[2] = tb; o.wet = wet;
+      o.grassDensity = grass * (1 - rocky) * (1 - 0.65 * forest) * (1 - peb) * (1 - snow) * (1 - smooth(0.55, 0.9, slope));
+      o.flowers = o.grassDensity * smooth(0.55, 0.8, 0.5 + 0.5 * N.fbm(x / 40 + 77, z / 40 - 31, 2)) * (1 - city);
+      return o;
+    }
+    computeSurface() {
+      if (this.surf) return this.surf;
+      const n = this.n, S = this.surf = { ground: new Float32Array(n * n * 4), rock: new Float32Array(n * n * 4), tint: new Float32Array(n * n * 3), wet: new Float32Array(n * n), grass: new Float32Array(n * n), flowers: new Float32Array(n * n) };
+      const o = { ground: [0, 0, 0, 0], rock: [0, 0, 0, 0], tint: [1, 1, 1], wet: 0 };
+      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+        const k = j * n + i, x = i * this.cell - this.half, z = j * this.cell - this.half;
+        this.surfaceAt(x, z, this.h[k], this.slopeAt(x, z), o);
+        S.ground.set(o.ground, k * 4); S.rock.set(o.rock, k * 4); S.tint.set(o.tint, k * 3); S.wet[k] = o.wet; S.grass[k] = o.grassDensity; S.flowers[k] = o.flowers;
+      }
+      return S;
+    }
+    /* RGBA float grid texture: height, grass density, flower density, water level (or -999) — read by grass and water shaders */
+    dataTexture(THREE) {
+      if (this.dataTex) return this.dataTex;
+      const S = this.computeSurface(), n = this.n, d = new Float32Array(n * n * 4);
+      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+        const k = j * n + i, x = i * this.cell - this.half, z = j * this.cell - this.half, wa = this.waterAt(x, z);
+        d[k * 4] = this.h[k]; d[k * 4 + 1] = S.grass[k]; d[k * 4 + 2] = S.flowers[k]; d[k * 4 + 3] = wa ? wa.level : -999;
+      }
+      const t = new THREE.DataTexture(d, n, n, THREE.RGBAFormat, THREE.FloatType); t.magFilter = t.minFilter = THREE.NearestFilter; t.needsUpdate = true;
+      t.userData = { n, cell: this.cell, half: this.half };
+      return this.dataTex = t;
     }
     buildMeshes(THREE, material, chunks = 8) {
       const n = this.n, per = (n - 1) / chunks, group = new THREE.Group(); group.name = 'Terrain';
-      const col = [0, 0, 0];
+      const S = this.computeSurface();
       for (let cj = 0; cj < chunks; cj++) for (let ci = 0; ci < chunks; ci++) {
         const i0 = Math.round(ci * per), i1 = Math.round((ci + 1) * per), j0 = Math.round(cj * per), j1 = Math.round((cj + 1) * per);
-        const w = i1 - i0 + 1, d = j1 - j0 + 1, pos = new Float32Array(w * d * 3), clr = new Float32Array(w * d * 3), idx = [];
+        const w = i1 - i0 + 1, d = j1 - j0 + 1, cnt = w * d, pos = new Float32Array(cnt * 3), clr = new Float32Array(cnt * 3), gr = new Float32Array(cnt * 4), rk = new Float32Array(cnt * 4), wt = new Float32Array(cnt), idx = [];
         for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-          const k = (j - j0) * w + (i - i0), x = i * this.cell - this.half, z = j * this.cell - this.half, h = this.h[j * n + i];
-          pos[k * 3] = x; pos[k * 3 + 1] = h; pos[k * 3 + 2] = z;
-          this.colorAt(x, z, h, this.slopeAt(x, z), col); clr.set(col, k * 3);
+          const k = (j - j0) * w + (i - i0), x = i * this.cell - this.half, z = j * this.cell - this.half, g = j * n + i;
+          pos[k * 3] = x; pos[k * 3 + 1] = this.h[g]; pos[k * 3 + 2] = z;
+          clr.set(S.tint.subarray(g * 3, g * 3 + 3), k * 3); gr.set(S.ground.subarray(g * 4, g * 4 + 4), k * 4); rk.set(S.rock.subarray(g * 4, g * 4 + 4), k * 4); wt[k] = S.wet[g];
         }
         for (let j = 0; j < d - 1; j++) for (let i = 0; i < w - 1; i++) { const a = j * w + i, b = a + 1, c = a + w, e = c + 1; idx.push(a, c, b, b, c, e); }
         const g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(clr, 3));
+        g.setAttribute('aGround', new THREE.BufferAttribute(gr, 4)); g.setAttribute('aRock', new THREE.BufferAttribute(rk, 4)); g.setAttribute('aWet', new THREE.BufferAttribute(wt, 1));
         g.setIndex(idx); g.computeVertexNormals(); g.computeBoundingSphere();
         const m = new THREE.Mesh(g, material); m.receiveShadow = true; m.name = `TerrainChunk_${ci}_${cj}`; group.add(m);
       }
       return group;
     }
-    /* road surfaces: ribbons that follow the ground, a few cm above it */
+    /* road surfaces: ribbons that follow the ground, a few cm above it; aRoad = (across 0..1, along metres) */
     buildRoads(THREE, material) {
       const group = new THREE.Group(); group.name = 'Roads';
-      const tint = { cobble: [0.56, 0.53, 0.49], royal: [0.74, 0.70, 0.62], dirt: [0.55, 0.43, 0.29] };
+      const SURF = { cobble: 0, royal: 1, dirt: 2 };
       for (const R of this.roads) {
-        const P = R.pts, n = P.length, pos = [], clr = [], idx = [], across = 4, base = tint[R.surface] || tint.dirt;
+        const P = R.pts, n = P.length, pos = [], clr = [], rd = [], sf = [], wd = [], idx = [], across = 6, W = R.width + 1.6; let dist = 0;
         for (let i = 0; i < n; i++) {
+          if (i) dist += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
           const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l;
           for (let k = 0; k <= across; k++) {
-            const s = (k / across - 0.5) * R.width, x = P[i][0] + nx * s, z = P[i][1] + nz * s;
-            const lv = R.level[i];
-            pos.push(x, Math.max(lv, this.heightAt(x, z) - 0.04) + 0.07, z);
-            const q = 0.88 + 0.12 * A.Noise.vnoise(x * 0.9, z * 0.9) + (R.surface === 'dirt' ? 0.06 * A.Noise.vnoise(x / 5, z / 5) : 0), edge = (k === 0 || k === across) ? 0.9 : 1;
-            clr.push(Math.pow(base[0] * q * edge, 2.2), Math.pow(base[1] * q * edge, 2.2), Math.pow(base[2] * q * edge, 2.2));
+            const s = (k / across - 0.5) * W, x = P[i][0] + nx * s, z = P[i][1] + nz * s;
+            pos.push(x, Math.max(R.level[i], this.heightAt(x, z) - 0.04) + 0.07, z);
+            const q = 0.94 + 0.06 * A.Noise.vnoise(x / 4, z / 4); clr.push(q, q, q);
+            rd.push(k / across, dist); sf.push(SURF[R.surface] ?? 2); wd.push(W);
           }
           if (i < n - 1 && !this.waterAt(P[i][0], P[i][1]) && !this.waterAt(P[i + 1][0], P[i + 1][1]))     // bridges carry the road over rivers
             for (let k = 0; k < across; k++) { const a0 = i * (across + 1) + k, b0 = a0 + 1, c0 = a0 + across + 1, d0 = c0 + 1; idx.push(a0, c0, b0, b0, c0, d0); }
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(clr, 3));
+        g.setAttribute('aRoad', new THREE.Float32BufferAttribute(rd, 2)); g.setAttribute('aSurf', new THREE.Float32BufferAttribute(sf, 1)); g.setAttribute('aWidth', new THREE.Float32BufferAttribute(wd, 1));
         g.setIndex(idx); g.computeVertexNormals();
-        const m = new THREE.Mesh(g, material); m.receiveShadow = true; m.name = 'Road_' + R.id; group.add(m);
+        const m = new THREE.Mesh(g, material); m.receiveShadow = true; m.name = 'Road_' + R.id; m.renderOrder = 1; group.add(m);
       }
       return group;
     }
@@ -209,17 +246,17 @@
     buildWater(THREE, material) {
       const group = new THREE.Group(); group.name = 'Rivers';
       for (const R of this.rivers) {
-        const P = R.pts, n = P.length, pos = [], uv = [], idx = [], across = 4, W = R.width + 3; let dist = 0;
+        const P = R.pts, n = P.length, pos = [], uv = [], fd = [], idx = [], across = 6, W = R.width + 4; let dist = 0;
         for (let i = 0; i < n; i++) {
           if (i) dist += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
           const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l;
-          for (let k = 0; k <= across; k++) { const s = (k / across - 0.5) * W; pos.push(P[i][0] + nx * s, R.level[i], P[i][1] + nz * s); uv.push(k / across, dist / 9); }
+          for (let k = 0; k <= across; k++) { const s = (k / across - 0.5) * W; pos.push(P[i][0] + nx * s, R.level[i], P[i][1] + nz * s); uv.push(k / across, dist); fd.push(dx / l, dz / l, W); }
           if (i < n - 1) for (let k = 0; k < across; k++) { const a0 = i * (across + 1) + k, b0 = a0 + 1, c0 = a0 + across + 1, d0 = c0 + 1; idx.push(a0, c0, b0, b0, c0, d0); }
         }
         const g = new THREE.BufferGeometry();
-        g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('flowUv', new THREE.Float32BufferAttribute(uv, 2));
+        g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('flowUv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('flowDir', new THREE.Float32BufferAttribute(fd, 3));
         g.setIndex(idx); g.computeVertexNormals();
-        const m = new THREE.Mesh(g, material); m.name = 'River_' + R.id; m.renderOrder = 1; group.add(m);
+        const m = new THREE.Mesh(g, material); m.name = 'River_' + R.id; m.renderOrder = 2; group.add(m);
       }
       return group;
     }

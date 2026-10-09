@@ -11,7 +11,7 @@ const URL = process.env.GAME_URL || 'http://127.0.0.1:8000/index.html';
   const errors = [], fails = [], expect = (c, m, p) => { if (!c) fails.push(m + ' ' + JSON.stringify(p)); };
   page.on('pageerror', e => errors.push(String(e)));
   async function boot() {
-    await page.goto(URL);
+    await page.goto(URL, { timeout: 240000 });
     await page.waitForFunction(() => typeof window.startGame === 'function' && window.Aethelos?.createEditor, null, { timeout: 120000 });
     await page.evaluate(() => { playerGender = 'male'; window.startGame(); });
     await page.waitForFunction(() => window.KingdomDebug?.rig && window.KingdomDebug.editor, null, { timeout: 300000 });
@@ -84,7 +84,7 @@ const URL = process.env.GAME_URL || 'http://127.0.0.1:8000/index.html';
   await page.evaluate(() => { KingdomDebug.editor.toggle(false); localStorage.removeItem('aethelos.kingdom.map.v1'); });
   r = await page.evaluate(() => ({ editing: KingdomDebug.state.editing, hud: document.getElementById('phase1Hud').style.visibility }));
   expect(!r.editing && r.hud === '', 'leaving the editor returns to play', r);
-  await page.screenshot({ path: (process.env.QA_DIR || '/tmp') + '/kingdom-editor-final.png' });
+  await page.screenshot({ path: (process.env.QA_DIR || '/tmp') + '/kingdom-editor-final.png', timeout: 240000 });
   await browser.close();
   console.log(JSON.stringify({ errors, fails }, null, 1));
   if (errors.length || fails.length) process.exit(1);

@@ -8,31 +8,57 @@
     plaster: 0xe6d9bf, plaster2: 0xd8c39d, plaster3: 0xefe6d4, timber: 0x6b4a2e, wood: 0x8a6239, darkwood: 0x4e3622,
     stone: 0x9a948c, stone2: 0x847e76, lightstone: 0xc4bdb1, white: 0xebe6dc, gold: 0xd8b04a, royal: 0x2f4f8f,
     red: 0xa63a2c, roofRed: 0xa8432f, roofSlate: 0x4b5d73, roofBrown: 0x7a4a2c, roofGreen: 0x4f6b45, roofDark: 0x4a403a,
-    glass: 0x2c3a4a, door: 0x5a3b22, leaf: 0x3f7f3a, leaf2: 0x5c9a42, pine: 0x2f6a45, moonpine: 0x2a5560, trunk: 0x6a4a30,
+    glass: 0x2c3a4a, door: 0x5a3b22, leaf: 0x3f7f3a, leaf2: 0x5c9a42, pine: 0x2f6a45, moonpine: 0x2b5a4c, trunk: 0x6a4a30,
     birch: 0xe4e0d6, hay: 0xd9b45a, soil: 0x6e5034, wheat: 0xd8b85a, veg: 0x5f9c3c, cloth1: 0xc0392b, cloth2: 0xf3e9d2,
     cloth3: 0x2e6da4, skin: 0xe2b48c, rock: 0x8d8984, rock2: 0x76726c, water: 0x4a9ccc, black: 0x1d1a18, iron: 0x55595e,
     lantern: 0xffd27a, crystal: 0x86e0ff, portal: 0x9b7bff, ember: 0xff8a3a, flowerR: 0xd84a5a, flowerY: 0xf0c94a, flowerB: 0x6a7fd8
   };
   // ---------------------------------------------------------------- mesh builder
+  // which surface material each palette colour gets (Aethelos.Mat.M ids); per-primitive override with { mat: 'name' }
+  const MATS = { PLAIN: 0, STONE: 1, MARBLE: 2, PLASTER: 3, WOOD: 4, DOOR: 5, BARK: 6, METAL: 7, ROCK: 8, SLATE: 9, SOIL: 10, ROOF: 11, LEAF: 12, GLASS: 13, STRAW: 14, COBBLE: 15, WATER: 16, GOLD: 17, CLOTH: 18, BIRCH: 19, LEAFCARD: 20 };
+  const MAT_OF = new Map(Object.entries({
+    stone: 'STONE', stone2: 'STONE', lightstone: 'MARBLE', white: 'MARBLE', plaster: 'PLASTER', plaster2: 'PLASTER', plaster3: 'PLASTER',
+    timber: 'WOOD', wood: 'WOOD', darkwood: 'WOOD', red: 'WOOD', door: 'DOOR', trunk: 'BARK', birch: 'BIRCH', iron: 'METAL', gold: 'GOLD',
+    rock: 'ROCK', rock2: 'SLATE', soil: 'SOIL', roofRed: 'ROOF', roofSlate: 'ROOF', roofBrown: 'ROOF', roofGreen: 'ROOF', roofDark: 'ROOF', royal: 'CLOTH',
+    leaf: 'LEAF', leaf2: 'LEAF', pine: 'LEAF', moonpine: 'LEAF', veg: 'LEAF', glass: 'GLASS', hay: 'STRAW', wheat: 'STRAW', water: 'WATER',
+    cloth1: 'CLOTH', cloth2: 'CLOTH', cloth3: 'CLOTH'
+  }).map(([k, m]) => [C[k], MATS[m]]));
+  // ---------------------------------------------------------------- mesh builder
   class MB {
-    constructor(THREE) { this.T = THREE; this.parts = { std: [], glow: [] }; this.m = new THREE.Matrix4(); this.q = new THREE.Quaternion(); this.e = new THREE.Euler(); }
-    add(geo, color, [x = 0, y = 0, z = 0] = [], { rx = 0, ry = 0, rz = 0, s = null, part = 'std', jitter = 0.05 } = {}) {
+    constructor(THREE) { this.T = THREE; this.parts = { std: [], glow: [] }; this.lights = []; this.m = new THREE.Matrix4(); this.q = new THREE.Quaternion(); this.e = new THREE.Euler(); }
+    add(geo, color, [x = 0, y = 0, z = 0] = [], { rx = 0, ry = 0, rz = 0, s = null, part = 'std', jitter = 0.05, mat = null, smooth = false, center = null, card = -1, needles = false } = {}) {
       const T = this.T, g = geo.index ? geo.toNonIndexed() : geo;
+      if (smooth) {                                   // spherical normals (foliage balls): soft, rounded shading
+        const p = g.attributes.position, nn = new Float32Array(p.count * 3);
+        for (let i = 0; i < p.count; i++) { const vx = p.getX(i), vy = p.getY(i), vz = p.getZ(i), l = Math.hypot(vx, vy, vz) || 1; nn.set([vx / l, vy / l, vz / l], i * 3); }
+        g.setAttribute('normal', new T.BufferAttribute(nn, 3));
+      }
+      if (!g.attributes.normal) g.computeVertexNormals();
       this.e.set(rx, ry, rz); this.q.setFromEuler(this.e);
       this.m.compose(new T.Vector3(x, y, z), this.q, s ? new T.Vector3(...(Array.isArray(s) ? s : [s, s, s])) : new T.Vector3(1, 1, 1));
       g.applyMatrix4(this.m);
+      if (center) {                                    // foliage cards: normals point out of the crown, so it shades like a soft mass
+        const p = g.attributes.position, nn = g.attributes.normal;
+        for (let i = 0; i < p.count; i++) { const vx = p.getX(i) - center[0], vy = (p.getY(i) - center[1]) * 1.3, vz = p.getZ(i) - center[2], l = Math.hypot(vx, vy, vz) || 1; nn.setXYZ(i, vx / l, vy / l, vz / l); }
+      }
       const c = new T.Color(color), p = g.attributes.position, n = p.count, col = new Float32Array(n * 3);
       for (let f = 0; f < n; f += 3) {
         const k = 1 + jitter * (((Math.sin((p.getX(f) * 12.9898 + p.getY(f) * 78.233 + p.getZ(f) * 37.719)) * 43758.5453) % 1 + 1) % 1 - 0.5) * 2;
         for (let v = 0; v < 3 && f + v < n; v++) { col[(f + v) * 3] = c.r * k; col[(f + v) * 3 + 1] = c.g * k; col[(f + v) * 3 + 2] = c.b * k; }
       }
-      this.parts[part].push({ pos: p.array.slice(), col });
+      // material id + long axis of this primitive (wood grain direction)
+      g.computeBoundingBox(); const sz = g.boundingBox.getSize(new T.Vector3()), axis = sz.x >= sz.y && sz.x >= sz.z ? 0 : sz.y >= sz.z ? 1 : 2;
+      const id = mat != null ? MATS[mat.toUpperCase()] : (MAT_OF.has(color) ? MAT_OF.get(color) : 0), ma = new Float32Array(n * 2);
+      for (let i = 0; i < n; i++) { ma[i * 2] = id; ma[i * 2 + 1] = axis; }
+      const luv = new Float32Array(n * 2);
+      if (card >= 0 && g.attributes.uv) { const uv = g.attributes.uv; for (let i = 0; i < n; i++) { luv[i * 2] = uv.getX(i) + 2 * card; luv[i * 2 + 1] = uv.getY(i) + (needles ? 2 : 0); } }
+      this.parts[part].push({ pos: p.array.slice(), nrm: g.attributes.normal.array.slice(), col, mat: ma, luv });
       return this;
     }
     box(w, h, d, at, color, o) { return this.add(new this.T.BoxGeometry(w, h, d), color, [at[0], at[1] + h / 2, at[2]], o); }      // at = base centre
     cyl(rt, rb, h, seg, at, color, o) { return this.add(new this.T.CylinderGeometry(rt, rb, h, seg), color, [at[0], at[1] + h / 2, at[2]], o); }
     cone(r, h, seg, at, color, o) { return this.add(new this.T.ConeGeometry(r, h, seg), color, [at[0], at[1] + h / 2, at[2]], o); }
-    ball(r, detail, at, color, o) { return this.add(new this.T.IcosahedronGeometry(r, detail), color, at, o); }
+    ball(r, detail, at, color, o = {}) { return this.add(new this.T.IcosahedronGeometry(r, detail), color, at, { smooth: MAT_OF.get(color) === MATS.LEAF, ...o }); }
     rock(r, at, color, o) { return this.add(new this.T.DodecahedronGeometry(r, 0), color, at, o); }
     /* gable roof: ridge along x, width w (x) depth d (z), height h, base at y */
     gable(w, d, h, at, color, o = {}) {
@@ -42,15 +68,17 @@
       g.setAttribute('position', new T.Float32BufferAttribute(v, 3)); g.computeVertexNormals();
       return this.add(g, color, at, o);
     }
-    hip(w, d, h, at, color, o = {}) { const g = new this.T.ConeGeometry(Math.SQRT1_2, 1, 4); g.rotateY(Math.PI / 4); g.scale(w, h, d); return this.add(g, color, [at[0], at[1] + h / 2, at[2]], o); }
+    hip(w, d, h, at, color, o = {}) { const g = new this.T.ConeGeometry(Math.SQRT1_2, 1, 4).toNonIndexed(); g.rotateY(Math.PI / 4); g.scale(w, h, d); g.deleteAttribute('normal'); g.computeVertexNormals(); return this.add(g, color, [at[0], at[1] + h / 2, at[2]], o); }
+    light(x, y, z, kind = 'lamp') { this.lights.push({ x, y, z, kind }); return this; }
     finish() {
       const T = this.T, out = {};
       for (const [k, list] of Object.entries(this.parts)) {
         if (!list.length) continue;
-        const n = list.reduce((s, p) => s + p.pos.length, 0), pos = new Float32Array(n), col = new Float32Array(n); let o = 0;
-        for (const p of list) { pos.set(p.pos, o); col.set(p.col, o); o += p.pos.length; }
-        const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.setAttribute('color', new T.BufferAttribute(col, 3));
-        g.computeVertexNormals(); g.computeBoundingSphere(); out[k] = g;
+        const n = list.reduce((s, p) => s + p.pos.length, 0), pos = new Float32Array(n), nrm = new Float32Array(n), col = new Float32Array(n), mat = new Float32Array(n / 3 * 2), luv = new Float32Array(n / 3 * 2); let o = 0, om = 0;
+        for (const p of list) { pos.set(p.pos, o); nrm.set(p.nrm, o); col.set(p.col, o); mat.set(p.mat, om); luv.set(p.luv, om); o += p.pos.length; om += p.mat.length; }
+        const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.setAttribute('normal', new T.BufferAttribute(nrm, 3));
+        g.setAttribute('color', new T.BufferAttribute(col, 3)); g.setAttribute('mat', new T.BufferAttribute(mat, 2)); g.setAttribute('luv', new T.BufferAttribute(luv, 2));
+        g.computeBoundingSphere(); out[k] = g;
       }
       return out;
     }
@@ -59,7 +87,7 @@
   const win = (b, x, y, z, ry = 0, w = 0.9, h = 1.1) => { b.box(w + 0.2, h + 0.2, 0.12, [x, y - 0.1, z], C.timber, { ry }); b.box(w, h, 0.16, [x, y, z], C.glass, { ry }); };
   const door = (b, x, z, ry = 0, w = 1.2, h = 2.2) => { b.box(w + 0.3, h + 0.15, 0.14, [x, 0, z], C.timber, { ry }); b.box(w, h, 0.2, [x, 0, z], C.door, { ry }); };
   const chimney = (b, x, y, z, h = 2.2) => b.box(0.8, h, 0.8, [x, y, z], C.stone2);
-  const lanternGlow = (b, x, y, z, r = 0.18) => b.box(r * 2, r * 2.4, r * 2, [x, y, z], C.lantern, { part: 'glow', jitter: 0 });
+  const lanternGlow = (b, x, y, z, r = 0.18) => { b.light(x, y + r * 1.2, z); return b.box(r * 2, r * 2.4, r * 2, [x, y, z], C.lantern, { part: 'glow', jitter: 0 }); };
   function house(b, { w, d, h, roof, wall, roofH = 2.6, story2 = false, hipped = false }) {
     b.box(w + 0.3, 0.5, d + 0.3, [0, 0, 0], C.stone2);
     b.box(w, h, d, [0, 0.4, 0], wall);
@@ -81,6 +109,26 @@
     b.ball(0.2, 1, [x, 1.78, z], C.skin);
     if (hat) b.cone(0.3, 0.32, 8, [x, 1.9, z], hat);
     if (spear) { b.cyl(0.03, 0.03, 2.6, 5, [x + 0.45, 0, z + 0.1], C.wood); b.cone(0.07, 0.3, 5, [x + 0.45, 2.6, z + 0.1], C.iron); }
+  }
+  /* a crown of leaf cards around (cx,cy,cz): n cards within radius r (each card shows a few procedural leaves) */
+  function foliage(b, cx, cy, cz, r, color, n, { size = 1.4, seed = 1, flat = 0.8, droop = 0 } = {}) {
+    let sd = Math.floor(seed * 7919) % 2147483646 + 1; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < n; i++) {
+      const u = rnd() * 2 - 1, th = rnd() * Math.PI * 2, rr = r * Math.cbrt(0.3 + 0.7 * rnd()), q = Math.sqrt(1 - u * u);
+      const sz = size * (0.7 + 0.6 * rnd());
+      b.add(new b.T.PlaneGeometry(sz, sz), color, [cx + q * Math.cos(th) * rr, cy + u * rr * flat - droop * (1 - u) * 0.5, cz + q * Math.sin(th) * rr],
+        { rx: rnd() * Math.PI, ry: rnd() * Math.PI * 2, rz: rnd() * Math.PI, mat: 'leafcard', center: [cx, cy, cz], card: Math.floor(rnd() * 60), jitter: 0.14 });
+    }
+  }
+  /* a pine tier: a dark core cone plus drooping needle cards around its rim */
+  function pineTier(b, y, r, h, color, n, seed) {
+    b.cone(r * 0.8, h, 8, [0, y, 0], color, { jitter: 0.08 });
+    let sd = seed * 48271 % 2147483646 + 1; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < n * 2; i++) {
+      const a = i / (n * 2) * Math.PI * 2 + rnd() * 0.4, rr = r * (0.5 + 0.4 * rnd()), sz = r * (0.6 + 0.35 * rnd());
+      b.add(new b.T.PlaneGeometry(sz, sz * 1.2), color, [Math.cos(a) * rr, y + h * (0.25 + 0.2 * rnd()), Math.sin(a) * rr],
+        { rx: -0.9 - 0.3 * rnd(), ry: -a + Math.PI / 2, rz: (rnd() - 0.5) * 0.6, mat: 'leafcard', center: [0, y + h * 0.4, 0], card: Math.floor(rnd() * 60), jitter: 0.1, needles: true });
+    }
   }
   function tent(b, x, z, ry, color) { b.add(new b.T.ConeGeometry(1.8, 2.2, 4), color, [x, 1.1, z], { ry: ry + Math.PI / 4 }); }
   function crenels(b, len, y, t, color, ax = 'x') {
@@ -180,7 +228,7 @@
   def('cart', 'Cart', 'Decorations', b => { b.box(2.6, 0.7, 1.5, [0, 0.7, 0], C.wood); for (const z of [-0.85, 0.85]) b.cyl(0.6, 0.6, 0.12, 10, [0, 0.6, z], C.darkwood, { rx: Math.PI / 2 }); b.box(1.8, 0.08, 0.08, [-2.1, 0.9, 0.4], C.wood).box(1.8, 0.08, 0.08, [-2.1, 0.9, -0.4], C.wood); b.box(2.2, 0.5, 1.2, [0, 1.4, 0], C.hay); }, { col: [box(2.8, 1.8, 0, 0, 1.8)] });
   def('signpost', 'Signpost', 'Decorations', b => { b.cyl(0.08, 0.1, 2.6, 5, [0, 0, 0], C.wood); b.box(1.3, 0.3, 0.06, [0.55, 2.1, 0], C.wood, { ry: 0.3 }).box(1.2, 0.3, 0.06, [-0.5, 1.7, 0], C.wood, { ry: -0.5 }); }, { col: [circ(0.2, 0, 0, 2.5)] });
 
-  def('plaza', 'Plaza paving', 'City', b => { b.cyl(30, 30, 0.12, 32, [0, 0.02, 0], C.lightstone, { jitter: 0.08 }); b.cyl(29, 29, 0.14, 32, [0, 0.02, 0], 0xb3aca0, { jitter: 0.1 }); for (let i = 0; i < 4; i++) b.cyl(22 - i * 5, 22 - i * 5, 0.16, 32, [0, 0.02, 0], i % 2 ? 0xa59e92 : 0xbdb6aa, { jitter: 0.06 }); }, { flat: true });
+  def('plaza', 'Plaza paving', 'City', b => { b.cyl(30, 30, 0.12, 32, [0, 0.02, 0], C.lightstone, { jitter: 0.03 }); b.cyl(29, 29, 0.14, 32, [0, 0.02, 0], 0xb3aca0, { jitter: 0.03, mat: 'cobble' }); for (let i = 0; i < 4; i++) b.cyl(22 - i * 5, 22 - i * 5, 0.16, 32, [0, 0.02, 0], i % 2 ? 0xa59e92 : 0xbdb6aa, { jitter: 0.02, mat: 'cobble' }); }, { flat: true });
   // --- palace
   def('palace_keep', 'Palace keep', 'Palace', b => {
     b.box(36, 1.2, 26, [0, 0, 0], C.lightstone); b.box(34, 14, 24, [0, 1.2, 0], C.white);
@@ -202,7 +250,7 @@
   def('banner', 'Royal banner', 'Decorations', b => { b.cyl(0.08, 0.1, 7, 6, [0, 0, 0], C.iron); b.ball(0.18, 0, [0, 7.1, 0], C.gold); b.box(1.8, 0.1, 0.1, [0.85, 6.6, 0], C.iron); b.box(1.6, 3.4, 0.05, [0.85, 3.2, 0], C.royal); b.box(0.9, 0.9, 0.06, [0.85, 5.0, 0], C.gold); b.cone(0.8, 0.6, 3, [0.85, 2.6, 0], C.royal, { rz: Math.PI, s: [1, 1, 0.08] }); }, { col: [circ(0.25)] });
   def('hedge', 'Hedge', 'Nature', b => { b.box(4, 1.3, 1.1, [0, 0, 0], C.leaf, { jitter: 0.12 }); b.box(3.9, 0.15, 1.0, [0, 1.3, 0], C.leaf2, { jitter: 0.12 }); }, { col: [box(4, 1.2, 0, 0, 1.4)] });
   def('flower_bed', 'Flower bed', 'Decorations', b => { b.box(3.2, 0.3, 2, [0, 0, 0], C.soil); for (let i = 0; i < 18; i++) b.ball(0.18, 0, [-1.4 + (i % 6) * 0.56, 0.45, -0.7 + Math.floor(i / 6) * 0.7], [C.flowerR, C.flowerY, C.flowerB][i % 3], { jitter: 0.1 }); }, {});
-  def('topiary', 'Topiary tree', 'Trees', b => { b.cyl(0.15, 0.2, 1.4, 6, [0, 0, 0], C.trunk); b.ball(1.1, 1, [0, 2.2, 0], C.leaf2, { jitter: 0.1 }); b.ball(0.6, 1, [0, 3.4, 0], C.leaf2, { jitter: 0.1 }); }, { col: [circ(0.4)] });
+  def('topiary', 'Topiary tree', 'Trees', b => { b.cyl(0.15, 0.2, 1.4, 6, [0, 0, 0], C.trunk); b.ball(1.1, 2, [0, 2.2, 0], C.leaf2, { jitter: 0.06 }); b.ball(0.6, 2, [0, 3.4, 0], C.leaf2, { jitter: 0.06 }); }, { col: [circ(0.4)] });
   def('guard_post', 'Guard post', 'Palace', b => { b.box(2, 2.6, 2, [0, 0, 0], C.white); b.hip(2.6, 2.6, 1.4, [0, 2.6, 0], C.royal); b.box(1, 1.8, 0.1, [0, 0, 1.02], C.door); figure(b, C.royal, { spear: true, x: 1.8, z: 0.8 }); }, { col: [box(2.2, 2.2, 0, 0, 3), circ(0.4, 1.8, 0.8)] });
 
   // --- noble houses
@@ -237,7 +285,7 @@
   def('camp', 'Camp', 'Forest', b => {
     tent(b, -3, -1, 0.4, C.cloth1); tent(b, 3, -1.5, -0.3, C.cloth2);
     for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; b.rock(0.3, [Math.cos(a) * 0.9, 0.15, Math.sin(a) * 0.9 + 2], C.rock2); }
-    for (let i = 0; i < 3; i++) b.box(0.15, 0.15, 1.2, [0, 0.2, 2], C.darkwood, { ry: i * 1.05 }); b.cone(0.45, 0.9, 5, [0, 0.2, 2], C.ember, { part: 'glow', jitter: 0 });
+    for (let i = 0; i < 3; i++) b.box(0.15, 0.15, 1.2, [0, 0.2, 2], C.darkwood, { ry: i * 1.05 }); b.cone(0.45, 0.9, 5, [0, 0.2, 2], C.ember, { part: 'glow', jitter: 0 }); b.light(0, 0.9, 2, 'fire');
     for (const [x, z, r] of [[-2, 3.4, 0.3], [2, 3.2, -0.4]]) b.cyl(0.3, 0.3, 1.6, 6, [x, 0.3, z], C.trunk, { rz: Math.PI / 2, ry: r });
   }, { col: [circ(1.6, -3, -1, 2.2), circ(1.6, 3, -1.5, 2.2), circ(0.8, 0, 2, 0.8)], light: true });
   def('cave_entrance', 'Cave entrance', 'Forest', b => {
@@ -275,11 +323,30 @@
   def('water_trough', 'Water trough', 'Farms', b => { b.box(2.4, 0.7, 0.9, [0, 0, 0], C.wood); b.box(2.2, 0.05, 0.7, [0, 0.62, 0], C.water); }, { col: [box(2.5, 1, 0, 0, 0.8)] });
 
   // --- nature
-  def('tree_pine', 'Pine tree', 'Trees', b => { b.cyl(0.22, 0.32, 3, 6, [0, 0, 0], C.trunk); for (const [y, r, h] of [[2, 2.4, 3.4], [3.8, 1.9, 3], [5.4, 1.35, 2.6]]) b.cone(r, h, 7, [0, y, 0], C.pine, { jitter: 0.1 }); }, { col: [circ(0.45, 0, 0, 6)], tree: true });
-  def('tree_moonpine', 'Moonpine', 'Trees', b => { b.cyl(0.3, 0.45, 5, 6, [0, 0, 0], C.trunk); for (const [y, r, h] of [[3, 3, 4.4], [5.6, 2.4, 4], [8, 1.7, 3.4], [10.2, 1, 2.4]]) b.cone(r, h, 7, [0, y, 0], C.moonpine, { jitter: 0.1 }); }, { col: [circ(0.6, 0, 0, 8)], tree: true });
-  def('tree_oak', 'Oak tree', 'Trees', b => { b.cyl(0.35, 0.5, 3.2, 7, [0, 0, 0], C.trunk); b.cyl(0.14, 0.2, 2, 5, [0.7, 2.4, 0], C.trunk, { rz: -0.7 }); for (const [x, y, z, r] of [[0, 4.6, 0, 2.4], [1.6, 4.2, 0.6, 1.7], [-1.4, 4.3, -0.4, 1.8], [0.3, 5.8, -0.6, 1.6], [-0.4, 4.0, 1.4, 1.5]]) b.ball(r, 0, [x, y, z], C.leaf, { jitter: 0.12 }); }, { col: [circ(0.6, 0, 0, 6)], tree: true, monkeyPerch: [[0, 4.4, 0]] });
-  def('tree_birch', 'Birch tree', 'Trees', b => { b.cyl(0.14, 0.2, 5, 6, [0, 0, 0], C.birch); for (const y of [1.2, 2.4, 3.6]) b.box(0.3, 0.08, 0.05, [0, y, 0.18], C.black); for (const [x, y, z, r] of [[0, 5.4, 0, 1.4], [0.6, 4.5, 0.3, 1.1], [-0.5, 4.6, -0.3, 1.1]]) b.ball(r, 0, [x, y, z], C.leaf2, { jitter: 0.12 }); }, { col: [circ(0.3, 0, 0, 6)], tree: true });
-  def('bush', 'Bush', 'Nature', b => { b.ball(0.9, 0, [0, 0.6, 0], C.leaf, { jitter: 0.15 }); b.ball(0.65, 0, [0.7, 0.5, 0.2], C.leaf2, { jitter: 0.15 }); }, {});
+  def('tree_pine', 'Pine tree', 'Trees', b => {
+    b.cyl(0.14, 0.3, 6.6, 7, [0, 0, 0], C.trunk);
+    [[1.6, 2.6, 2.4, 14], [3.0, 2.1, 2.2, 12], [4.3, 1.6, 2.0, 10], [5.5, 1.1, 1.8, 8], [6.5, 0.6, 1.4, 6]].forEach(([y, r, h, n], i) => pineTier(b, y, r, h, C.pine, n, 11 + i));
+  }, { col: [circ(0.45, 0, 0, 6)], tree: true });
+  def('tree_moonpine', 'Moonpine', 'Trees', b => {
+    b.cyl(0.2, 0.46, 10.5, 8, [0, 0, 0], C.trunk);
+    [[2.6, 3.3, 3.2, 18], [4.4, 2.8, 3.0, 16], [6.1, 2.3, 2.8, 14], [7.7, 1.8, 2.6, 12], [9.1, 1.25, 2.2, 9], [10.3, 0.7, 1.8, 6]].forEach(([y, r, h, n], i) => pineTier(b, y, r, h, C.moonpine, n, 31 + i));
+  }, { col: [circ(0.6, 0, 0, 8)], tree: true });
+  def('tree_oak', 'Oak tree', 'Trees', b => {
+    b.cyl(0.32, 0.55, 3.4, 9, [0, 0, 0], C.trunk); b.cyl(0.42, 0.62, 0.5, 9, [0, 0, 0], C.trunk);
+    for (const [x, z, a, l] of [[0.2, 0, -0.75, 2.6], [-0.15, 0.1, 0.7, 2.4], [0, -0.2, 0.55, 2.2], [0.05, 0.2, -0.5, 2.0]]) b.cyl(0.1, 0.2, l, 6, [x, 2.6, z], C.trunk, { rz: a, ry: x * 4 + z * 3 });
+    b.cyl(0.14, 0.26, 2.2, 6, [0, 3.2, 0], C.trunk);
+    const crowns = [[0, 5.0, 0, 2.3], [1.7, 4.5, 0.6, 1.7], [-1.6, 4.6, -0.4, 1.8], [0.3, 6.2, -0.6, 1.6], [-0.4, 4.3, 1.5, 1.6], [0.6, 4.4, -1.5, 1.5]];
+    crowns.forEach(([x, y, z, r], i) => { b.ball(r * 0.72, 0, [x, y, z], C.leaf, { jitter: 0.1 }); foliage(b, x, y, z, r, C.leaf, Math.round(10 + r * 7), { size: 1.5, seed: 3 + i }); });
+  }, { col: [circ(0.6, 0, 0, 6)], tree: true, monkeyPerch: [[0, 4.4, 0]] });
+  def('tree_birch', 'Birch tree', 'Trees', b => {
+    b.cyl(0.11, 0.2, 6.2, 7, [0, 0, 0], C.birch);
+    for (const [y, a] of [[3.2, 0.8], [3.8, -0.9], [4.5, 0.6]]) b.cyl(0.04, 0.07, 1.4, 5, [0, y, 0], C.birch, { rz: a, ry: y * 2 });
+    [[0, 5.6, 0, 1.4], [0.6, 4.6, 0.3, 1.1], [-0.5, 4.7, -0.3, 1.1], [0.1, 6.5, 0.2, 0.9]].forEach(([x, y, z, r], i) => { b.ball(r * 0.6, 0, [x, y, z], C.leaf2, { jitter: 0.1 }); foliage(b, x, y, z, r, C.leaf2, Math.round(9 + r * 7), { size: 1.0, seed: 17 + i, flat: 1.2 }); });
+  }, { col: [circ(0.3, 0, 0, 6)], tree: true });
+  def('bush', 'Bush', 'Nature', b => {
+    b.ball(0.75, 1, [0, 0.55, 0], C.leaf, { jitter: 0.12 }); b.ball(0.55, 1, [0.7, 0.45, 0.2], C.leaf2, { jitter: 0.12 });
+    foliage(b, 0, 0.65, 0, 0.9, C.leaf, 12, { size: 0.9, seed: 41 }); foliage(b, 0.7, 0.5, 0.2, 0.65, C.leaf2, 8, { size: 0.8, seed: 43 });
+  }, {});
   def('rock', 'Rock', 'Rocks', b => { b.rock(1, [0, 0.45, 0], C.rock, { s: [1.3, 0.8, 1], jitter: 0.12 }); }, { col: [circ(1.1, 0, 0, 0.9)] });
   def('boulder', 'Boulder', 'Rocks', b => { b.rock(2.4, [0, 1.3, 0], C.rock2, { s: [1.2, 0.85, 1], jitter: 0.12 }); b.rock(1.2, [1.9, 0.6, 0.8], C.rock, { jitter: 0.12 }); }, { col: [circ(2.6, 0, 0, 2.6)] });
   def('cliff_rock', 'Cliff rock', 'Mountains', b => { b.rock(5, [0, 3.5, 0], C.rock2, { s: [1.3, 1, 1], jitter: 0.12 }); b.rock(3.2, [4, 2, 2], C.rock, { jitter: 0.12 }); b.rock(2.6, [-4, 1.6, -1], C.rock, { jitter: 0.12 }); }, { col: [circ(6, 0, 0, 8)] });
@@ -314,8 +381,11 @@
   const cache = new Map();
   function get(THREE, id) {
     if (!T[id]) throw new Error('Unknown world object type: ' + id);
-    if (!cache.has(id)) { const b = new MB(THREE); T[id].build(b); cache.set(id, b.finish()); }
+    if (!cache.has(id)) { const b = new MB(THREE); T[id].build(b); const parts = b.finish(); lightCache.set(id, b.lights); cache.set(id, parts); }
     return cache.get(id);
   }
-  A.Models = { TYPES: T, get, C, CATEGORIES: ['City', 'Houses', 'Roads', 'Palace', 'Noble Houses', 'Farms', 'Forest', 'Mountains', 'Rivers', 'Bridges', 'Nature', 'Trees', 'Rocks', 'Shops', 'Restaurants', 'Adventure Guild', 'Enemies', 'NPCs', 'Stores', 'Portals', 'Decorations', 'Quest Areas', 'Boss Areas', 'Save Points', 'Treasure', 'Wildlife', 'River Life', 'Farm Animals', 'City Animals', 'Forest Wildlife', 'Dangerous Wildlife', 'Monster Wildlife'] };
+  const lightCache = new Map();
+  /* lantern / fire points of a type in local space ([{x,y,z,kind}]) */
+  function lightsOf(THREE, id) { get(THREE, id); return lightCache.get(id) || []; }
+  A.Models = { TYPES: T, get, lightsOf, MATS, C, CATEGORIES: ['City', 'Houses', 'Roads', 'Palace', 'Noble Houses', 'Farms', 'Forest', 'Mountains', 'Rivers', 'Bridges', 'Nature', 'Trees', 'Rocks', 'Shops', 'Restaurants', 'Adventure Guild', 'Enemies', 'NPCs', 'Stores', 'Portals', 'Decorations', 'Quest Areas', 'Boss Areas', 'Save Points', 'Treasure', 'Wildlife', 'River Life', 'Farm Animals', 'City Animals', 'Forest Wildlife', 'Dangerous Wildlife', 'Monster Wildlife'] };
 })();

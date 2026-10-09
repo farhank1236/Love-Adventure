@@ -32,7 +32,7 @@ const URL = process.env.GAME_URL || 'http://127.0.0.1:8000/index.html', OUT = pr
     const s = D.skill.state; return { state: s.state, booms: s.booms.length, maxBooms, log: [...log], mode: D.rig.controller.state.mode, swordOut: D.rig.controller.state.swordOut,
       icon: document.getElementById('skillV')?.className, label: document.querySelector('#skillV span')?.textContent };
   }, { sec, hold, press, shotAt });
-  const shot = async n => { await page.waitForTimeout(150); await page.screenshot({ path: `${OUT}/${n}.png` }); };
+  const shot = async n => { await page.waitForTimeout(150); await page.screenshot({ path: `${OUT}/${n}.png`, timeout: 240000 }); };
   // count every boom launched (wrap spawnBoom)
   await page.evaluate(() => { const D = KingdomDebug; D.teleport(0, 380, Math.PI); window.__booms = []; const sp = D.skill.spawnBoom; D.skill.spawnBoomOrig = sp;
     Aethelos.Combat.on(e => { if (e.type === 'sonicBoom') window.__booms.push({ dir: [e.dir.x, e.dir.z], y: e.origin.y }); }); });

@@ -176,7 +176,6 @@
       camera.position.set(cam.focus.x - Math.sin(cam.yaw) * h, cam.focus.y + Math.sin(cam.pitch) * cam.dist, cam.focus.z - Math.cos(cam.yaw) * h);
       const floor = world.terrain.heightAt(camera.position.x, camera.position.z) + 1; if (camera.position.y < floor) camera.position.y = floor;
       camera.lookAt(cam.focus);
-      const s = world.sun; s.position.copy(cam.focus).addScaledVector(world.sunDir, 260); s.target.position.copy(cam.focus); s.target.updateMatrixWorld();
       world.layer.update(dt, cam.focus.x, cam.focus.z);
     }
 
