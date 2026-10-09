@@ -33,3 +33,11 @@ Commit `2629f1f0f1b0f6d80b29b6178d8bf4f16349c5d6` added `assets/models/male-rigg
 That later-added asset does not preserve the V14 male design or movement set and has been deleted from the playable asset tree. Obsolete V13 warrior downloads and movement footage have also been removed. Historical warrior versions remain recoverable in Git history; enemy assets, current V14 warrior geometry and all V14 animation data remain intact.
 
 For movement verification and deformation limits, see `warrior-v14-validation.md`.
+
+## Hero Sword V3 source candidate
+
+`tools/blender/hero_sword_v3.py` has been added as the uploaded source script for the next hero character and sword combat animation set. The script is designed to be run inside Blender 4.2 or newer while `hero-rigged-2.blend` is open and `GeminiGeneratedImagez0vn5oz0vn5o.glb` is available beside it. It creates `hero-sword-v3.blend`, adds sword helper bones and effects, and builds the `Hero_Idle`, `Hero_Walk`, `Hero_Run`, jump, combat movement, attack combo, sword summon, and sword dismiss actions.
+
+The web game cannot load that Python file directly. The current runtime requires exported GLB data converted into the same chunked JavaScript asset format used by `assets/models/male-01.js` through `male-08.js` and `assets/models/female-01.js` through `female-08.js`. Because the required Blender source file, sword GLB, and Blender runtime were not present in this workspace, Hero Sword V3 is recorded as an authoring source candidate rather than the active playable runtime model.
+
+When `hero-sword-v3.blend` or an exported `hero-sword-v3.glb` is available, convert it into runtime chunks and update `assets/viewer/hero-config.js` with a new model revision so the selected warrior loads the V3 character in game.
