@@ -3,134 +3,723 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aethelos - 3D Open World</title>
+  <title>Aethelos - Phase 1 3D Foundation</title>
   <style>
-    :root{--panel:rgba(8,18,30,.78);--panel2:rgba(18,31,48,.92);--gold:#f1c76e;--text:#eef7ff;--muted:#a9bed2;--green:#77d38a;--red:#ff6969}
-    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07101c;color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;user-select:none}
-    #game{position:fixed;inset:0;display:block;width:100%;height:100%;outline:none;background:#8fc9ef}
-    #hud{position:fixed;inset:0;pointer-events:none}
-    .topbar{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .panel{pointer-events:auto;border:1px solid rgba(255,255,255,.14);background:linear-gradient(150deg,var(--panel),rgba(15,30,48,.68));backdrop-filter:blur(14px);box-shadow:0 16px 40px rgba(0,0,0,.28);border-radius:12px;padding:12px}
-    .brand{min-width:260px}.brand h1{margin:0;color:#fff5d2;font-size:24px;letter-spacing:.08em;text-transform:uppercase}.brand p{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.35}.stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.pill{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(2,8,16,.45);font-size:13px;color:#d9ecff}
-    .centerHint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);padding:10px 13px;border-radius:999px;background:rgba(7,14,23,.58);border:1px solid rgba(255,255,255,.16);color:#dcecff;font-size:13px;white-space:nowrap}
-    .controls{position:absolute;left:14px;bottom:14px;width:min(430px,calc(100vw - 28px));font-size:12px;color:#bfd0df;line-height:1.5}.controls b{color:#fff0bc}
-    #editor{position:absolute;right:14px;top:84px;width:min(380px,calc(100vw - 28px));max-height:calc(100vh - 108px);overflow:auto;display:none}.editorOpen #editor{display:block}.editorOpen #editorToggle{background:#f1c76e;color:#182235}.editorTitle{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.editorTitle h2{margin:0;font-size:17px;color:#fff5d2}.editorTitle span{font-size:12px;color:var(--muted)}
-    button,select,input{font:inherit}button{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:var(--text);border-radius:9px;padding:8px 10px;cursor:pointer}button:hover{background:rgba(255,255,255,.16)}button.primary{background:linear-gradient(135deg,#f3cf78,#c8973e);color:#172032;border-color:rgba(255,230,170,.7);font-weight:800}button.danger{background:rgba(255,105,105,.13);border-color:rgba(255,105,105,.38);color:#ffd5d5}button.small{padding:6px 8px;font-size:12px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.section{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.12)}.row{display:grid;grid-template-columns:78px 1fr;gap:8px;align-items:center;margin:7px 0}.row label{color:#c8d8e8;font-size:12px}.row input,.row select{width:100%;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(0,0,0,.24);color:var(--text);padding:7px}.objectList{display:grid;gap:6px;max-height:180px;overflow:auto}.objectItem{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.055);font-size:12px}.objectItem.active{border-color:rgba(241,199,110,.75);background:rgba(241,199,110,.13)}.objectItem span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.note{font-size:12px;color:var(--muted);line-height:1.45}.hiddenFile{display:none}.loading{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 30%,#18365a,#07101c 68%);z-index:4}.loadingCard{width:min(480px,calc(100vw - 32px));text-align:center}.loading h2{margin:0 0 8px;color:#fff3c8}.loading p{margin:0;color:#b7c9da;line-height:1.4}.bar{height:8px;margin-top:16px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}.bar div{height:100%;width:42%;border-radius:inherit;background:linear-gradient(90deg,#6fc5ff,#f1c76e);animation:load 1.2s ease-in-out infinite alternate}@keyframes load{to{transform:translateX(145%)}}
-    #heroPicker{position:absolute;left:50%;top:14px;transform:translateX(-50%);display:flex;gap:8px}.toast{position:absolute;left:50%;top:74px;transform:translateX(-50%);opacity:0;transition:.25s ease;padding:9px 12px;border-radius:999px;background:rgba(7,14,23,.75);border:1px solid rgba(255,255,255,.16);font-size:13px}.toast.show{opacity:1;top:84px}
-    @media(max-width:760px){.topbar{align-items:flex-start}.brand{min-width:0}.brand h1{font-size:19px}.stats{display:none}#heroPicker{top:auto;bottom:78px}.centerHint{display:none}.controls{display:none}#editor{left:14px;top:74px;width:calc(100vw - 28px)}}
+    :root {
+      --bg: #07101b;
+      --panel: rgba(7, 17, 30, 0.76);
+      --panel-strong: rgba(10, 23, 39, 0.92);
+      --gold: #f2c86f;
+      --text: #eef7ff;
+      --muted: #a8bdd0;
+      --blue: #76c9ff;
+      --green: #7bd884;
+      --red: #ff7474;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      user-select: none;
+    }
+    button { font: inherit; }
+    #game {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      outline: none;
+      background: #8fc9ef;
+    }
+    #hud {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+    .panel {
+      pointer-events: auto;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: linear-gradient(145deg, var(--panel), rgba(16, 32, 52, 0.66));
+      box-shadow: 0 16px 46px rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(14px);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .topbar {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .brand {
+      width: min(430px, calc(100vw - 28px));
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff5d2;
+    }
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      background: rgba(0, 7, 15, 0.44);
+      padding: 8px 10px;
+      color: #dceeff;
+      font-size: 13px;
+    }
+    .hero-picker {
+      position: absolute;
+      left: 50%;
+      top: 14px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    button {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-radius: 9px;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+    button:hover { background: rgba(255, 255, 255, 0.16); }
+    button.primary {
+      color: #172032;
+      border-color: rgba(255, 230, 170, 0.76);
+      background: linear-gradient(135deg, #f3cf78, #c8973e);
+      font-weight: 800;
+    }
+    button.small {
+      padding: 6px 9px;
+      font-size: 12px;
+    }
+    .controls {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      width: min(520px, calc(100vw - 28px));
+      color: #c2d4e4;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .controls b { color: #fff0bc; }
+    .center-hint {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      background: rgba(7, 14, 23, 0.58);
+      padding: 10px 13px;
+      color: #dcecff;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .toast {
+      position: absolute;
+      left: 50%;
+      top: 74px;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: 0.24s ease;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      background: rgba(7, 14, 23, 0.76);
+      padding: 9px 12px;
+      color: #eef7ff;
+      font-size: 13px;
+    }
+    .toast.show {
+      opacity: 1;
+      top: 84px;
+    }
+    .loading {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 50% 30%, #18365a, #07101c 68%);
+    }
+    .loading-card {
+      width: min(500px, calc(100vw - 32px));
+      text-align: center;
+    }
+    .loading h2 {
+      margin: 0 0 8px;
+      color: #fff3c8;
+    }
+    .loading p {
+      margin: 0;
+      color: #b8cadd;
+      line-height: 1.42;
+    }
+    .bar {
+      height: 8px;
+      margin-top: 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+    .bar div {
+      width: 42%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #6fc5ff, #f1c76e);
+      animation: loading 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes loading {
+      to { transform: translateX(145%); }
+    }
+    @media (max-width: 760px) {
+      .brand h1 { font-size: 19px; }
+      .status { display: none; }
+      .hero-picker { top: auto; bottom: 78px; }
+      .center-hint { display: none; }
+      .controls { display: none; }
+    }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
-  <div class="loading" id="loading"><div class="loadingCard panel"><h2>Building Aethelos</h2><p>Loading the 3D world, modular map objects, and warrior character.</p><div class="bar"><div></div></div></div></div>
+  <div class="loading" id="loading">
+    <div class="loading-card panel">
+      <h2>Loading Aethelos</h2>
+      <p id="loadingText">Preparing the 3D world, approved warrior model, movement, and third-person camera.</p>
+      <div class="bar"><div></div></div>
+    </div>
+  </div>
   <div id="hud">
     <div class="topbar">
-      <div class="panel brand"><h1>Aethelos</h1><p>One editable 3D open-world stage. The old 2D Stage 1, Stage 2, and side-scrolling transition flow are replaced here.</p></div>
-      <div class="stats"><span class="pill">Mode: <b id="modeLabel">Explore</b></span><span class="pill">Objects: <b id="objectCount">0</b></span><span class="pill">Selected: <b id="selectedName">None</b></span></div>
+      <div class="panel brand">
+        <h1>Aethelos</h1>
+        <p>Phase 1 foundation: one playable 3D world, approved warrior, smooth third-person camera, walk, run, turn, jump, and attack preview.</p>
+      </div>
+      <div class="status">
+        <span class="pill">Hero: <b id="heroLabel">Male Warrior</b></span>
+        <span class="pill">State: <b id="stateLabel">Loading</b></span>
+        <span class="pill">Speed: <b id="speedLabel">0.0</b></span>
+      </div>
     </div>
-    <div id="heroPicker" class="panel"><button class="small primary" id="maleHero">Male Warrior</button><button class="small" id="femaleHero">Female Warrior</button><button class="small" id="editorToggle">Editor: E</button></div>
-    <div id="toast" class="toast">Saved</div>
-    <div class="centerHint">WASD move | Shift run | Space jump | Mouse drag rotate | E editor | F attack preview</div>
-    <div class="panel controls"><b>Open-world controls:</b> WASD moves relative to camera, Shift runs, Space jumps, F plays attack, mouse drag rotates. <b>Editor:</b> E toggles edit mode. Click an object, then move/rotate/scale/delete it or add modular houses, roads, trees, rocks, mountains, NPCs, and spawn points.</div>
-    <aside id="editor" class="panel">
-      <div class="editorTitle"><div><h2>World Editor</h2><span>Modular editable map layout</span></div><button class="small" id="closeEditor">Close</button></div>
-      <div class="grid">
-        <button data-add="house">Add House</button><button data-add="road">Add Road</button><button data-add="tree">Add Tree</button><button data-add="rock">Add Rock</button><button data-add="mountain">Add Mountain</button><button data-add="npc">Add NPC</button><button data-add="enemySpawn">Enemy Spawn</button><button data-add="decor">Decoration</button>
-      </div>
-      <div class="section">
-        <div class="row"><label>Name</label><input id="editName" placeholder="Select an object" /></div>
-        <div class="row"><label>Category</label><select id="editCategory"><option>City</option><option>Nature</option><option>Roads</option><option>Mountains</option><option>Houses</option><option>Enemies</option><option>NPCs</option><option>Decorations</option></select></div>
-        <div class="row"><label>Position X</label><input id="posX" type="number" step=".5" /></div><div class="row"><label>Position Z</label><input id="posZ" type="number" step=".5" /></div>
-        <div class="row"><label>Rotate Y</label><input id="rotY" type="number" step="5" /></div><div class="row"><label>Scale</label><input id="scaleU" type="number" step=".1" min=".1" /></div>
-        <div class="grid"><button class="primary" id="applyEdit">Apply</button><button class="danger" id="deleteObject">Delete</button></div>
-      </div>
-      <div class="section grid"><button class="primary" id="saveMap">Save Map</button><button id="loadMap">Load Saved</button><button id="exportMap">Export JSON</button><button id="importMap">Import JSON</button><button id="resetMap" class="danger">Reset Default</button><input id="importFile" class="hiddenFile" type="file" accept="application/json" /></div>
-      <div class="section"><p class="note">Saved maps load automatically from this browser. Export JSON if you want to keep a backup or send the layout to another developer.</p><div id="objectList" class="objectList"></div></div>
-    </aside>
+    <div class="hero-picker panel">
+      <button class="small primary" id="maleHero">Male Warrior</button>
+      <button class="small" id="femaleHero">Female Warrior</button>
+    </div>
+    <div id="toast" class="toast">Ready</div>
+    <div class="center-hint">WASD move | Shift run | Space jump | Mouse drag rotate | F attack preview</div>
+    <div class="panel controls">
+      <b>Controls:</b> WASD/Arrow Keys move relative to the camera. Shift runs. Space jumps. Hold and drag the mouse/touch to rotate the camera. F plays the attack preview. This branch is Phase 1 only; kingdom layout and editor come in later branches.
+    </div>
   </div>
+
   <script>window.AethelosModelParts={male:[],female:[]};window.LoveAdventureModelParts=window.AethelosModelParts;</script>
-  <script src="assets/viewer/three-runtime.js?v=open-world-1"></script>
-  <script src="assets/viewer/female-warrior-rig.js?v=open-world-1"></script>
-  <script src="assets/viewer/hero-config.js?v=open-world-1"></script>
+  <script src="assets/viewer/three-runtime.js?v=phase-1-foundation"></script>
+  <script src="assets/viewer/female-warrior-rig.js?v=phase-1-foundation"></script>
+  <script src="assets/viewer/hero-config.js?v=phase-1-foundation"></script>
   <script>
-  (()=>{
-    const STORAGE_KEY='aethelos-open-world-layout-v1';
-    const DEFAULT_LAYOUT=[
-      {id:'road-main-north',name:'Main North Road',type:'road',category:'Roads',pos:[0,.03,-16],rot:[0,0,0],scale:[5,1,28]},
-      {id:'road-main-east',name:'Market East Road',type:'road',category:'Roads',pos:[16,.035,0],rot:[0,90,0],scale:[4.5,1,24]},
-      {id:'house-city-01',name:'Blue Roof House',type:'house',category:'Houses',pos:[-8,0,-8],rot:[0,18,0],scale:[1.2,1.1,1.2]},
-      {id:'house-city-02',name:'Golden Roof House',type:'house',category:'Houses',pos:[8,0,-10],rot:[0,-12,0],scale:[1.1,1,1.15]},
-      {id:'house-city-03',name:'Market House',type:'house',category:'City',pos:[-10,0,8],rot:[0,42,0],scale:[1.35,1,1.05]},
-      {id:'house-city-04',name:'Gate House',type:'house',category:'City',pos:[11,0,8],rot:[0,-28,0],scale:[1.05,1.15,1]},
-      {id:'tower-city-01',name:'City Watch Tower',type:'tower',category:'City',pos:[0,0,12],rot:[0,0,0],scale:[1,1,1]},
-      {id:'forest-01',name:'Forest Tree 01',type:'tree',category:'Nature',pos:[-22,0,-12],rot:[0,0,0],scale:[1.2,1.2,1.2]},
-      {id:'forest-02',name:'Forest Tree 02',type:'tree',category:'Nature',pos:[-27,0,-4],rot:[0,21,0],scale:[1,1.35,1]},
-      {id:'forest-03',name:'Forest Tree 03',type:'tree',category:'Nature',pos:[-24,0,9],rot:[0,-18,0],scale:[1.1,1.1,1.1]},
-      {id:'forest-04',name:'Forest Tree 04',type:'tree',category:'Nature',pos:[20,0,-18],rot:[0,0,0],scale:[1.35,1.35,1.35]},
-      {id:'forest-05',name:'Forest Tree 05',type:'tree',category:'Nature',pos:[27,0,-8],rot:[0,12,0],scale:[1.05,1.2,1.05]},
-      {id:'mountain-north',name:'North Mountain',type:'mountain',category:'Mountains',pos:[-36,0,-42],rot:[0,0,0],scale:[4,3.2,4]},
-      {id:'mountain-east',name:'East Hill Ridge',type:'mountain',category:'Mountains',pos:[42,0,27],rot:[0,25,0],scale:[3.4,2.2,3.4]},
-      {id:'rock-field-01',name:'Rock Cluster 01',type:'rock',category:'Nature',pos:[-17,0,21],rot:[0,30,0],scale:[1.3,1.1,1]},
-      {id:'enemy-spawn-01',name:'Future Enemy Spawn 01',type:'enemySpawn',category:'Enemies',pos:[25,0,17],rot:[0,0,0],scale:[1,1,1]},
-      {id:'npc-spot-01',name:'Future NPC Spot 01',type:'npc',category:'NPCs',pos:[-4,0,5],rot:[0,150,0],scale:[1,1,1]},
-      {id:'decor-camp-01',name:'Camp Decoration',type:'decor',category:'Decorations',pos:[18,0,25],rot:[0,0,0],scale:[1,1,1]}
-    ];
-    const TYPES={house:{category:'Houses'},road:{category:'Roads'},tree:{category:'Nature'},rock:{category:'Nature'},mountain:{category:'Mountains'},tower:{category:'City'},npc:{category:'NPCs'},enemySpawn:{category:'Enemies'},decor:{category:'Decorations'}};
-    const $=id=>document.getElementById(id), canvas=$('game'), hud=$('hud'), toast=$('toast');
-    if(!window.THREE){$('loading').querySelector('p').textContent='Three.js runtime could not load from assets/viewer/three-runtime.js.';return;}
-    const scene=new THREE.Scene();scene.background=new THREE.Color(0x9ed2f4);scene.fog=new THREE.Fog(0x9ed2f4,70,210);
-    const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
-    const camera=new THREE.PerspectiveCamera(58,1,.1,500);const clock=new THREE.Clock();const raycaster=new THREE.Raycaster();const pointer=new THREE.Vector2();
-    const worldGroup=new THREE.Group();worldGroup.name='Editable World Objects';scene.add(worldGroup);
-    scene.add(new THREE.HemisphereLight(0xedf8ff,0x45604a,1.35));const sun=new THREE.DirectionalLight(0xffefca,2.2);sun.position.set(-30,55,18);sun.castShadow=true;sun.shadow.camera.near=1;sun.shadow.camera.far=130;sun.shadow.camera.left=-75;sun.shadow.camera.right=75;sun.shadow.camera.top=75;sun.shadow.camera.bottom=-75;scene.add(sun);
-    const groundMat=new THREE.MeshStandardMaterial({color:0x6cab65,roughness:.9});const ground=new THREE.Mesh(new THREE.PlaneGeometry(260,260,80,80),groundMat);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
-    const grid=new THREE.GridHelper(260,52,0xffffff,0xffffff);grid.material.opacity=.12;grid.material.transparent=true;grid.position.y=.04;scene.add(grid);
-    const player=new THREE.Group();player.position.set(0,0,4);scene.add(player);
-    let rig=null,heroGender='male',heroClip='Idle',heroTime=0,heroReady=false,heroFallback=null,attackTimer=0;
-    const state={keys:{},camYaw:0,camPitch:.42,velocity:new THREE.Vector3(),grounded:true,jumpVel:0,speed:0,editor:false,selected:null,layout:[],objects:new Map(),dragging:false,lastX:0,lastY:0};
-    function mat(color,rough=.72,metal=0){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});}
-    function box(w,h,d,color){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));m.castShadow=m.receiveShadow=true;return m;}
-    function cyl(r1,r2,h,color,segments=18){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,segments),mat(color));m.castShadow=m.receiveShadow=true;return m;}
-    function cone(r,h,color,segments=4){const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,segments),mat(color));m.castShadow=m.receiveShadow=true;return m;}
-    function makeHouse(){const g=new THREE.Group();g.add(box(4,2.6,4,0xd8c6a7));g.children[0].position.y=1.3;const roof=cone(3.25,1.65,0x416d92,4);roof.position.y=3.45;roof.rotation.y=Math.PI/4;g.add(roof);const door=box(.75,1.25,.08,0x6b4630);door.position.set(0,.62,2.04);g.add(door);for(const x of[-1.25,1.25]){const win=box(.65,.55,.09,0xa8d9ff);win.position.set(x,1.5,2.05);g.add(win)}return g;}
-    function makeTower(){const g=new THREE.Group();const base=cyl(1.65,1.95,5.4,0xb9b0a0,12);base.position.y=2.7;g.add(base);const top=cone(2.15,1.8,0x6f3b3b,12);top.position.y=6.3;g.add(top);return g;}
-    function makeRoad(){const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),mat(0x756d5b));m.rotation.x=-Math.PI/2;m.receiveShadow=true;return m;}
-    function makeTree(){const g=new THREE.Group();const trunk=cyl(.25,.34,2.2,0x654025,10);trunk.position.y=1.1;g.add(trunk);for(const [y,r,c] of [[2.3,1.25,0x2f7f46],[3.15,1.05,0x3a9650],[3.9,.72,0x51ad61]]){const leaf=cone(r,1.75,c,10);leaf.position.y=y;g.add(leaf)}return g;}
-    function makeRock(){const m=new THREE.Mesh(new THREE.DodecahedronGeometry(1,1),mat(0x7b8790));m.scale.set(1.4,.75,1);m.castShadow=m.receiveShadow=true;return m;}
-    function makeMountain(){const g=new THREE.Group();const main=cone(3.6,7.6,0x6f786c,7);main.position.y=3.8;g.add(main);const snow=cone(1.25,1.9,0xdce8ef,7);snow.position.y=7.05;g.add(snow);return g;}
-    function makeNPC(){const g=new THREE.Group();g.add(cyl(.35,.35,1.45,0x6bb9ff,16));g.children[0].position.y=.75;const head=cyl(.28,.28,.28,0xffd0a0,16);head.position.y=1.64;g.add(head);return g;}
-    function makeSpawn(){const g=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.045,8,32),new THREE.MeshBasicMaterial({color:0xff5a5a}));ring.rotation.x=Math.PI/2;ring.position.y=.07;g.add(ring);const beam=cyl(.55,.55,.08,0xff4040,32);beam.material.transparent=true;beam.material.opacity=.32;beam.position.y=.04;g.add(beam);return g;}
-    function makeDecor(){const g=new THREE.Group();g.add(box(1,.35,1,0x8a623b));const flame=cone(.42,1.2,0xff8133,12);flame.position.y=.95;g.add(flame);const glow=new THREE.PointLight(0xff7b2d,1.2,8);glow.position.y=1;g.add(glow);return g;}
-    const factories={house:makeHouse,road:makeRoad,tree:makeTree,rock:makeRock,mountain:makeMountain,tower:makeTower,npc:makeNPC,enemySpawn:makeSpawn,decor:makeDecor};
-    function cloneLayout(layout){return JSON.parse(JSON.stringify(layout));}
-    function createObject(item){const factory=factories[item.type]||makeRock;const obj=factory();obj.name=item.name||item.id;obj.userData.mapItem=item;obj.traverse(c=>{c.userData.mapItem=item;if(c.isMesh){c.castShadow=true;c.receiveShadow=true}});applyTransform(obj,item);worldGroup.add(obj);state.objects.set(item.id,obj);return obj;}
-    function applyTransform(obj,item){obj.position.set(item.pos[0],item.pos[1],item.pos[2]);obj.rotation.set(THREE.MathUtils.degToRad(item.rot[0]),THREE.MathUtils.degToRad(item.rot[1]),THREE.MathUtils.degToRad(item.rot[2]));obj.scale.set(item.scale[0],item.scale[1],item.scale[2]);}
-    function loadLayout(layout){worldGroup.clear();state.objects.clear();state.layout=cloneLayout(layout);state.layout.forEach(createObject);selectObject(null);refreshUI();}
-    function savedLayout(){try{const raw=localStorage.getItem(STORAGE_KEY);return raw?JSON.parse(raw):null}catch{return null}}
-    function saveLayout(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state.layout,null,2));showToast('Map saved in browser');refreshUI();}
-    function resetLayout(){loadLayout(DEFAULT_LAYOUT);saveLayout();showToast('Default open world restored');}
-    function showToast(text){toast.textContent=text;toast.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('show'),1600)}
-    let helper=new THREE.BoxHelper(new THREE.Object3D(),0xf1c76e);helper.visible=false;scene.add(helper);
-    function selectObject(obj){state.selected=obj;helper.visible=!!obj;if(obj)helper.setFromObject(obj);const item=obj?.userData.mapItem;$('selectedName').textContent=item?item.name:'None';$('editName').value=item?.name||'';$('editCategory').value=item?.category||'Nature';$('posX').value=item?item.pos[0].toFixed(1):'';$('posZ').value=item?item.pos[2].toFixed(1):'';$('rotY').value=item?item.rot[1].toFixed(0):'';$('scaleU').value=item?item.scale[0].toFixed(2):'';refreshUI();}
-    function refreshUI(){$('objectCount').textContent=state.layout.length;$('modeLabel').textContent=state.editor?'Editor':'Explore';const list=$('objectList');list.innerHTML='';state.layout.slice().sort((a,b)=>a.category.localeCompare(b.category)||a.name.localeCompare(b.name)).forEach(item=>{const row=document.createElement('button');row.className='objectItem'+(state.selected?.userData.mapItem.id===item.id?' active':'');row.innerHTML='<span>'+item.category+' / '+item.name+'</span><b>'+item.type+'</b>';row.onclick=()=>selectObject(state.objects.get(item.id));list.appendChild(row);});}
-    function newItem(type){const def=TYPES[type]||TYPES.rock;const fwd=new THREE.Vector3(Math.sin(state.camYaw),0,Math.cos(state.camYaw));const p=player.position.clone().addScaledVector(fwd,8);const id=type+'-'+Date.now().toString(36);const item={id,name:type.replace(/[A-Z]/g,m=>' '+m).replace(/^./,m=>m.toUpperCase())+' '+state.layout.length,type,category:def.category,pos:[Math.round(p.x*2)/2,0,Math.round(p.z*2)/2],rot:[0,Math.round(THREE.MathUtils.radToDeg(state.camYaw)),0],scale:type==='road'?[4,1,10]:[1,1,1]};state.layout.push(item);const obj=createObject(item);selectObject(obj);saveLayout();}
-    function applyEditorFields(){const obj=state.selected;if(!obj)return;const item=obj.userData.mapItem;item.name=$('editName').value.trim()||item.name;item.category=$('editCategory').value;item.pos[0]=Number($('posX').value)||0;item.pos[2]=Number($('posZ').value)||0;item.rot[1]=Number($('rotY').value)||0;const s=Math.max(.1,Number($('scaleU').value)||1);item.scale=[s,s,s];if(item.type==='road')item.scale=[Math.max(.5,s*4),1,Math.max(.5,s*10)];obj.name=item.name;applyTransform(obj,item);selectObject(obj);saveLayout();}
-    function deleteSelected(){const obj=state.selected;if(!obj)return;const id=obj.userData.mapItem.id;worldGroup.remove(obj);state.objects.delete(id);state.layout=state.layout.filter(i=>i.id!==id);selectObject(null);saveLayout();}
-    function exportMap(){const blob=new Blob([JSON.stringify(state.layout,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aethelos-open-world-map.json';a.click();URL.revokeObjectURL(url);}
-    function importMap(file){const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!Array.isArray(data))throw new Error('Map must be an array');loadLayout(data);saveLayout();showToast('Imported map layout')}catch(e){showToast('Import failed: '+e.message)}};reader.readAsText(file);}
-    function toggleEditor(force){state.editor=force??!state.editor;hud.classList.toggle('editorOpen',state.editor);refreshUI();}
-    document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>newItem(b.dataset.add));$('editorToggle').onclick=()=>toggleEditor();$('closeEditor').onclick=()=>toggleEditor(false);$('applyEdit').onclick=applyEditorFields;$('deleteObject').onclick=deleteSelected;$('saveMap').onclick=saveLayout;$('loadMap').onclick=()=>loadLayout(savedLayout()||DEFAULT_LAYOUT);$('exportMap').onclick=exportMap;$('importMap').onclick=()=>$('importFile').click();$('importFile').onchange=e=>e.target.files[0]&&importMap(e.target.files[0]);$('resetMap').onclick=resetLayout;
-    function buildFallbackHero(){const g=new THREE.Group();const body=cyl(.45,.35,1.4,heroGender==='female'?0x2d9b86:0x3d75b6,18);body.position.y=1.05;g.add(body);const head=cyl(.28,.28,.3,0xffd2aa,18);head.position.y=1.9;g.add(head);const sword=box(.08,1.8,.08,0xdde8ef);sword.position.set(.55,1.1,.2);sword.rotation.z=-.55;g.add(sword);const cape=box(.9,1.1,.08,0x8a1f3a);cape.position.set(0,.9,-.36);g.add(cape);return g;}
-    async function setHero(gender){heroGender=gender;$('maleHero').classList.toggle('primary',gender==='male');$('femaleHero').classList.toggle('primary',gender==='female');heroReady=false;rig=null;heroClip='Idle';heroTime=0;player.clear();heroFallback=buildFallbackHero();player.add(heroFallback);try{if(window.HeroSystem&&window.createWarriorAsset){const hero=HeroSystem.resolve(gender);rig=await HeroSystem.createRig(THREE,hero);await rig.textureReady;player.remove(heroFallback);heroFallback=null;rig.root.scale.setScalar(1.75);rig.root.rotation.y=Math.PI;player.add(rig.root);heroReady=true;showToast(hero.name+' loaded');}}catch(e){console.warn(e);showToast('Using fallback hero until model loads');}}
-    function animateHero(dt,moving,running,jumping){attackTimer=Math.max(0,attackTimer-dt);if(rig){let next=attackTimer>0?'Combo':jumping?'Jump':moving?(running?'Run':'Walk'):'Idle';if(next!==heroClip){heroClip=next;heroTime=0}else heroTime+=dt*(next==='Combo'?1.6:1);const clip=rig.channels[next]||rig.channels.Idle;rig.sample(next,heroTime%clip.duration);rig.root.updateMatrixWorld(true);rig.skeleton.update();}else if(heroFallback){const s=1+Math.sin(performance.now()*.006)*(moving?.035:.015);heroFallback.scale.set(1,s,1);heroFallback.rotation.z=moving?Math.sin(performance.now()*.01)*.035:0;}}
-    function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
-    addEventListener('keydown',e=>{state.keys[e.code]=true;if(e.code==='KeyE')toggleEditor();if(e.code==='KeyF')attackTimer=.85});addEventListener('keyup',e=>state.keys[e.code]=false);
-    canvas.addEventListener('pointerdown',e=>{state.dragging=true;state.lastX=e.clientX;state.lastY=e.clientY;if(state.editor){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(worldGroup.children,true);let obj=hits[0]?.object;while(obj&&!obj.userData.mapItem)obj=obj.parent;if(obj)selectObject(state.objects.get(obj.userData.mapItem.id));}});
-    addEventListener('pointerup',()=>state.dragging=false);addEventListener('pointermove',e=>{if(!state.dragging)return;const dx=e.clientX-state.lastX,dy=e.clientY-state.lastY;state.lastX=e.clientX;state.lastY=e.clientY;state.camYaw-=dx*.006;state.camPitch=THREE.MathUtils.clamp(state.camPitch+dy*.004,.12,.95)});
-    $('maleHero').onclick=()=>setHero('male');$('femaleHero').onclick=()=>setHero('female');
-    function update(dt){const k=state.keys;const input=new THREE.Vector3(Number(k.KeyD||k.ArrowRight)-Number(k.KeyA||k.ArrowLeft),0,Number(k.KeyS||k.ArrowDown)-Number(k.KeyW||k.ArrowUp));const moving=input.lengthSq()>0;const running=!!k.ShiftLeft||!!k.ShiftRight;if(moving){input.normalize();const sin=Math.sin(state.camYaw),cos=Math.cos(state.camYaw);const dir=new THREE.Vector3(input.x*cos+input.z*sin,0,input.z*cos-input.x*sin);const target=running?13:7;state.velocity.x=THREE.MathUtils.lerp(state.velocity.x,dir.x*target,.18);state.velocity.z=THREE.MathUtils.lerp(state.velocity.z,dir.z*target,.18);const yaw=Math.atan2(dir.x,dir.z);player.rotation.y=THREE.MathUtils.lerp(player.rotation.y,yaw,.2);}else{state.velocity.x=THREE.MathUtils.lerp(state.velocity.x,0,.22);state.velocity.z=THREE.MathUtils.lerp(state.velocity.z,0,.22)}if(k.Space&&state.grounded){state.jumpVel=10.5;state.grounded=false}state.jumpVel-=27*dt;player.position.y+=state.jumpVel*dt;if(player.position.y<=0){player.position.y=0;state.jumpVel=0;state.grounded=true}player.position.x=THREE.MathUtils.clamp(player.position.x+state.velocity.x*dt,-120,120);player.position.z=THREE.MathUtils.clamp(player.position.z+state.velocity.z*dt,-120,120);animateHero(dt,moving,running,!state.grounded);const dist=running?13:11;const height=running?6.2:6.8;const offset=new THREE.Vector3(Math.sin(state.camYaw)*-dist,height,Math.cos(state.camYaw)*-dist);camera.position.lerp(player.position.clone().add(offset),.12);const look=player.position.clone().add(new THREE.Vector3(0,2.4,0));camera.lookAt(look);if(helper.visible&&state.selected)helper.setFromObject(state.selected);}
-    function animate(){requestAnimationFrame(animate);const dt=Math.min(.033,clock.getDelta());update(dt);renderer.render(scene,camera)}
-    loadLayout(savedLayout()||DEFAULT_LAYOUT);setHero('male').finally(()=>{$('loading').style.display='none';showToast('3D open world ready');});animate();
+  (() => {
+    const $ = id => document.getElementById(id);
+    const canvas = $('game');
+    const loading = $('loading');
+    const loadingText = $('loadingText');
+    const toast = $('toast');
+
+    if (!window.THREE) {
+      loadingText.textContent = 'Three.js runtime could not load. Check assets/viewer/three-runtime.js.';
+      return;
+    }
+
+    const clamp = THREE.MathUtils.clamp;
+    const lerp = THREE.MathUtils.lerp;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x9ed2f4);
+    scene.fog = new THREE.Fog(0x9ed2f4, 72, 220);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 500);
+    const clock = new THREE.Clock();
+
+    const world = new THREE.Group();
+    world.name = 'Phase 1 Test World';
+    scene.add(world);
+
+    const player = new THREE.Group();
+    player.name = 'Player Root';
+    player.position.set(0, 0, 8);
+    scene.add(player);
+
+    const heroMount = new THREE.Group();
+    heroMount.name = 'Hero Model Mount';
+    player.add(heroMount);
+
+    const materials = {
+      grass: new THREE.MeshStandardMaterial({ color: 0x6cab65, roughness: 0.92 }),
+      path: new THREE.MeshStandardMaterial({ color: 0x756d5b, roughness: 0.88 }),
+      stone: new THREE.MeshStandardMaterial({ color: 0x8a9299, roughness: 0.8 }),
+      wood: new THREE.MeshStandardMaterial({ color: 0x6a4326, roughness: 0.82 }),
+      roof: new THREE.MeshStandardMaterial({ color: 0x416d92, roughness: 0.72 }),
+      wall: new THREE.MeshStandardMaterial({ color: 0xd7c4a6, roughness: 0.84 }),
+      gold: new THREE.MeshStandardMaterial({ color: 0xf1c76e, roughness: 0.45, metalness: 0.12 }),
+      water: new THREE.MeshStandardMaterial({ color: 0x4fa4d8, roughness: 0.35, metalness: 0.03, transparent: true, opacity: 0.68 })
+    };
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove('show'), 1700);
+    }
+
+    function makeBox(w, h, d, material) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    function makeCylinder(r1, r2, h, material, segments = 16) {
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, segments), material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    function makeCone(r, h, material, segments = 8) {
+      const mesh = new THREE.Mesh(new THREE.ConeGeometry(r, h, segments), material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    function addRoad(name, x, z, w, d, rotation = 0) {
+      const road = new THREE.Mesh(new THREE.PlaneGeometry(w, d), materials.path);
+      road.name = name;
+      road.rotation.x = -Math.PI / 2;
+      road.rotation.z = rotation;
+      road.position.set(x, 0.025, z);
+      road.receiveShadow = true;
+      world.add(road);
+      return road;
+    }
+
+    function addHouse(name, x, z, color = 0x416d92) {
+      const group = new THREE.Group();
+      group.name = name;
+      const body = makeBox(4, 2.5, 4, materials.wall);
+      body.position.y = 1.25;
+      group.add(body);
+      const roofMat = new THREE.MeshStandardMaterial({ color, roughness: 0.72 });
+      const roof = makeCone(3.2, 1.6, roofMat, 4);
+      roof.position.y = 3.35;
+      roof.rotation.y = Math.PI / 4;
+      group.add(roof);
+      const door = makeBox(0.8, 1.3, 0.08, materials.wood);
+      door.position.set(0, 0.65, 2.05);
+      group.add(door);
+      group.position.set(x, 0, z);
+      world.add(group);
+      return group;
+    }
+
+    function addTree(name, x, z, scale = 1) {
+      const group = new THREE.Group();
+      group.name = name;
+      const trunk = makeCylinder(0.24, 0.34, 2.1, materials.wood, 10);
+      trunk.position.y = 1.05;
+      group.add(trunk);
+      const leafMat = new THREE.MeshStandardMaterial({ color: 0x327f45, roughness: 0.9 });
+      [[2.25, 1.25], [3.05, 1.0], [3.75, 0.72]].forEach(([y, r]) => {
+        const leaf = makeCone(r, 1.7, leafMat, 10);
+        leaf.position.y = y;
+        group.add(leaf);
+      });
+      group.scale.setScalar(scale);
+      group.position.set(x, 0, z);
+      world.add(group);
+      return group;
+    }
+
+    function addRock(name, x, z, scale = 1) {
+      const mesh = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 1), materials.stone);
+      mesh.name = name;
+      mesh.scale.set(1.4 * scale, 0.75 * scale, scale);
+      mesh.position.set(x, 0.7 * scale, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      world.add(mesh);
+      return mesh;
+    }
+
+    function addLandmark(name, x, z) {
+      const group = new THREE.Group();
+      group.name = name;
+      const base = makeCylinder(0.72, 0.9, 0.45, materials.stone, 18);
+      base.position.y = 0.225;
+      group.add(base);
+      const marker = makeCone(0.55, 2.2, materials.gold, 6);
+      marker.position.y = 1.55;
+      group.add(marker);
+      group.position.set(x, 0, z);
+      world.add(group);
+      return group;
+    }
+
+    function buildWorld() {
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 260, 90, 90), materials.grass);
+      ground.name = 'Training Field Terrain';
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      world.add(ground);
+
+      const river = new THREE.Mesh(new THREE.PlaneGeometry(16, 120), materials.water);
+      river.name = 'Future River Placeholder';
+      river.rotation.x = -Math.PI / 2;
+      river.rotation.z = 0.34;
+      river.position.set(-37, 0.035, 8);
+      river.receiveShadow = true;
+      world.add(river);
+
+      addRoad('North Training Road', 0, -20, 5.5, 58, 0);
+      addRoad('East Test Road', 18, 1, 4.5, 38, Math.PI / 2);
+      addHouse('Phase 1 Test House A', -10, -9, 0x416d92);
+      addHouse('Phase 1 Test House B', 9, -11, 0x7a4e7e);
+      addHouse('Phase 1 Test House C', 13, 7, 0x8b5c36);
+      addLandmark('Player Spawn Landmark', 0, 14);
+      addLandmark('Future City Direction Marker', 0, -46);
+      addLandmark('Future Forest Direction Marker', 36, 4);
+
+      for (let i = 0; i < 14; i++) {
+        const angle = i * 1.41;
+        const radius = 25 + (i % 4) * 6;
+        addTree('Test Tree ' + (i + 1), Math.cos(angle) * radius, Math.sin(angle) * radius, 0.82 + (i % 3) * 0.18);
+      }
+      for (let i = 0; i < 7; i++) {
+        addRock('Test Rock ' + (i + 1), -22 + i * 7, 24 + Math.sin(i) * 4, 0.75 + (i % 3) * 0.22);
+      }
+
+      const grid = new THREE.GridHelper(260, 52, 0xffffff, 0xffffff);
+      grid.name = 'Scale Grid';
+      grid.material.opacity = 0.08;
+      grid.material.transparent = true;
+      grid.position.y = 0.045;
+      world.add(grid);
+    }
+
+    function setupLighting() {
+      const hemi = new THREE.HemisphereLight(0xedf8ff, 0x45604a, 1.35);
+      scene.add(hemi);
+      const sun = new THREE.DirectionalLight(0xffefca, 2.2);
+      sun.name = 'Phase 1 Sun Light';
+      sun.position.set(-34, 58, 24);
+      sun.castShadow = true;
+      sun.shadow.camera.near = 1;
+      sun.shadow.camera.far = 150;
+      sun.shadow.camera.left = -80;
+      sun.shadow.camera.right = 80;
+      sun.shadow.camera.top = 80;
+      sun.shadow.camera.bottom = -80;
+      scene.add(sun);
+    }
+
+    const state = {
+      keys: Object.create(null),
+      camYaw: 0,
+      camPitch: 0.42,
+      camDistance: 12,
+      cameraTarget: new THREE.Vector3(),
+      cameraVelocity: new THREE.Vector3(),
+      velocity: new THREE.Vector3(),
+      grounded: true,
+      jumpVelocity: 0,
+      jumpLatch: false,
+      pointerDown: false,
+      lastPointerX: 0,
+      lastPointerY: 0,
+      currentSpeed: 0,
+      heroGender: 'male',
+      heroClip: 'Idle',
+      heroTime: 0,
+      rig: null,
+      fallback: null,
+      attackTimer: 0,
+      loadedHeroId: null
+    };
+
+    function buildFallbackHero(gender) {
+      const group = new THREE.Group();
+      group.name = 'Temporary Fallback Warrior';
+      const bodyMat = new THREE.MeshStandardMaterial({ color: gender === 'female' ? 0x2d9b86 : 0x3d75b6, roughness: 0.7 });
+      const capeMat = new THREE.MeshStandardMaterial({ color: 0x8a1f3a, roughness: 0.85 });
+      const body = makeCylinder(0.44, 0.35, 1.45, bodyMat, 18);
+      body.position.y = 1.05;
+      group.add(body);
+      const head = makeCylinder(0.28, 0.28, 0.3, new THREE.MeshStandardMaterial({ color: 0xffd2aa, roughness: 0.65 }), 18);
+      head.position.y = 1.9;
+      group.add(head);
+      const sword = makeBox(0.08, 1.85, 0.08, new THREE.MeshStandardMaterial({ color: 0xdde8ef, roughness: 0.35, metalness: 0.25 }));
+      sword.position.set(0.62, 1.12, 0.2);
+      sword.rotation.z = -0.55;
+      group.add(sword);
+      const cape = makeBox(0.9, 1.15, 0.08, capeMat);
+      cape.position.set(0, 0.9, -0.36);
+      group.add(cape);
+      return group;
+    }
+
+    async function setHero(gender) {
+      state.heroGender = gender === 'female' ? 'female' : 'male';
+      $('maleHero').classList.toggle('primary', state.heroGender === 'male');
+      $('femaleHero').classList.toggle('primary', state.heroGender === 'female');
+      $('heroLabel').textContent = state.heroGender === 'male' ? 'Male Warrior' : 'Female Warrior';
+      $('stateLabel').textContent = 'Loading Hero';
+      state.heroClip = 'Idle';
+      state.heroTime = 0;
+      state.attackTimer = 0;
+      state.rig = null;
+      state.loadedHeroId = null;
+      heroMount.clear();
+
+      state.fallback = buildFallbackHero(state.heroGender);
+      heroMount.add(state.fallback);
+
+      try {
+        if (!window.HeroSystem || !window.createWarriorAsset) {
+          throw new Error('Hero runtime is missing.');
+        }
+        const hero = HeroSystem.resolve(state.heroGender);
+        const rig = await HeroSystem.createRig(THREE, hero);
+        await rig.textureReady;
+        heroMount.remove(state.fallback);
+        state.fallback = null;
+        state.rig = rig;
+        state.loadedHeroId = hero.id;
+        rig.root.scale.setScalar(1.75);
+        rig.root.rotation.y = Math.PI;
+        heroMount.add(rig.root);
+        showToast(hero.name + ' loaded');
+      } catch (error) {
+        console.warn(error);
+        showToast('Using fallback until model loads');
+      } finally {
+        $('stateLabel').textContent = 'Ready';
+      }
+    }
+
+    function chooseHeroClip(moving, running, jumping) {
+      if (state.attackTimer > 0) return 'Combo';
+      if (jumping) return 'Jump';
+      if (moving) return running ? 'Run' : 'Walk';
+      return 'Idle';
+    }
+
+    function animateHero(dt, moving, running, jumping) {
+      state.attackTimer = Math.max(0, state.attackTimer - dt);
+      if (state.rig) {
+        const nextClip = chooseHeroClip(moving, running, jumping);
+        if (nextClip !== state.heroClip) {
+          state.heroClip = nextClip;
+          state.heroTime = 0;
+        } else {
+          state.heroTime += dt * (nextClip === 'Combo' ? 1.7 : running ? 1.2 : 1);
+        }
+        const clip = state.rig.channels[nextClip] || state.rig.channels.Idle;
+        state.rig.sample(nextClip, state.heroTime % clip.duration);
+        state.rig.root.updateMatrixWorld(true);
+        state.rig.skeleton.update();
+      } else if (state.fallback) {
+        const t = performance.now() * 0.006;
+        const breath = 1 + Math.sin(t) * (moving ? 0.035 : 0.014);
+        state.fallback.scale.set(1, breath, 1);
+        state.fallback.rotation.z = moving ? Math.sin(t * 1.7) * 0.04 : 0;
+      }
+    }
+
+    function updateMovement(dt) {
+      const k = state.keys;
+      const input = new THREE.Vector3(
+        Number(!!(k.KeyD || k.ArrowRight)) - Number(!!(k.KeyA || k.ArrowLeft)),
+        0,
+        Number(!!(k.KeyS || k.ArrowDown)) - Number(!!(k.KeyW || k.ArrowUp))
+      );
+      const moving = input.lengthSq() > 0;
+      const running = !!(k.ShiftLeft || k.ShiftRight);
+      const targetSpeed = moving ? (running ? 13 : 7) : 0;
+      state.currentSpeed = lerp(state.currentSpeed, targetSpeed, targetSpeed > state.currentSpeed ? 0.16 : 0.22);
+
+      if (moving) {
+        input.normalize();
+        const sin = Math.sin(state.camYaw);
+        const cos = Math.cos(state.camYaw);
+        const direction = new THREE.Vector3(
+          input.x * cos + input.z * sin,
+          0,
+          input.z * cos - input.x * sin
+        ).normalize();
+        const desiredX = direction.x * state.currentSpeed;
+        const desiredZ = direction.z * state.currentSpeed;
+        state.velocity.x = lerp(state.velocity.x, desiredX, 0.2);
+        state.velocity.z = lerp(state.velocity.z, desiredZ, 0.2);
+        const targetYaw = Math.atan2(direction.x, direction.z);
+        player.rotation.y += Math.atan2(Math.sin(targetYaw - player.rotation.y), Math.cos(targetYaw - player.rotation.y)) * 0.22;
+      } else {
+        state.velocity.x = lerp(state.velocity.x, 0, 0.24);
+        state.velocity.z = lerp(state.velocity.z, 0, 0.24);
+      }
+
+      const wantsJump = !!k.Space;
+      if (wantsJump && !state.jumpLatch && state.grounded) {
+        state.jumpVelocity = 10.8;
+        state.grounded = false;
+        showToast('Jump');
+      }
+      state.jumpLatch = wantsJump;
+
+      state.jumpVelocity -= 27 * dt;
+      player.position.y += state.jumpVelocity * dt;
+      if (player.position.y <= 0) {
+        player.position.y = 0;
+        state.jumpVelocity = 0;
+        state.grounded = true;
+      }
+
+      player.position.x = clamp(player.position.x + state.velocity.x * dt, -120, 120);
+      player.position.z = clamp(player.position.z + state.velocity.z * dt, -120, 120);
+
+      animateHero(dt, moving, running, !state.grounded);
+      $('speedLabel').textContent = state.currentSpeed.toFixed(1);
+      $('stateLabel').textContent = !state.grounded ? 'Jumping' : state.attackTimer > 0 ? 'Attack Preview' : moving ? running ? 'Running' : 'Walking' : 'Idle';
+    }
+
+    function updateCamera() {
+      const dist = state.currentSpeed > 9 ? 13.5 : 11.5;
+      const height = state.currentSpeed > 9 ? 6.15 : 6.85;
+      state.camDistance = lerp(state.camDistance, dist, 0.08);
+      const horizontal = Math.cos(state.camPitch) * state.camDistance;
+      const offset = new THREE.Vector3(
+        -Math.sin(state.camYaw) * horizontal,
+        Math.sin(state.camPitch) * state.camDistance + height * 0.32,
+        -Math.cos(state.camYaw) * horizontal
+      );
+      const desired = player.position.clone().add(offset);
+      state.cameraVelocity.lerp(desired, 0.12);
+      camera.position.copy(state.cameraVelocity);
+      const look = player.position.clone().add(new THREE.Vector3(0, 2.35, 0));
+      state.cameraTarget.lerp(look, 0.18);
+      camera.lookAt(state.cameraTarget);
+    }
+
+    function resize() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+
+    function onKeyDown(event) {
+      state.keys[event.code] = true;
+      if (event.code === 'KeyF') {
+        state.attackTimer = 0.95;
+        showToast('Attack preview');
+      }
+    }
+
+    function onKeyUp(event) {
+      state.keys[event.code] = false;
+    }
+
+    function onPointerDown(event) {
+      state.pointerDown = true;
+      state.lastPointerX = event.clientX;
+      state.lastPointerY = event.clientY;
+      canvas.setPointerCapture?.(event.pointerId);
+    }
+
+    function onPointerMove(event) {
+      if (!state.pointerDown) return;
+      const dx = event.clientX - state.lastPointerX;
+      const dy = event.clientY - state.lastPointerY;
+      state.lastPointerX = event.clientX;
+      state.lastPointerY = event.clientY;
+      state.camYaw -= dx * 0.006;
+      state.camPitch = clamp(state.camPitch + dy * 0.004, 0.15, 0.86);
+    }
+
+    function onPointerUp() {
+      state.pointerDown = false;
+    }
+
+    function bindInput() {
+      window.addEventListener('resize', resize);
+      window.addEventListener('keydown', onKeyDown);
+      window.addEventListener('keyup', onKeyUp);
+      canvas.addEventListener('pointerdown', onPointerDown);
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+      $('maleHero').addEventListener('click', () => setHero('male'));
+      $('femaleHero').addEventListener('click', () => setHero('female'));
+    }
+
+    function tick() {
+      requestAnimationFrame(tick);
+      const dt = Math.min(0.033, clock.getDelta());
+      updateMovement(dt);
+      updateCamera();
+      renderer.render(scene, camera);
+    }
+
+    async function start() {
+      setupLighting();
+      buildWorld();
+      bindInput();
+      resize();
+      updateCamera();
+      await setHero('male');
+      loading.style.display = 'none';
+      showToast('Phase 1 foundation ready');
+      tick();
+    }
+
+    start().catch(error => {
+      console.error(error);
+      loadingText.textContent = 'Aethelos could not start: ' + error.message;
+    });
   })();
   </script>
 </body>
