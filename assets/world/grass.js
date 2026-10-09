@@ -6,10 +6,11 @@
 (() => {
   const A = window.Aethelos ||= {};
   const QUAL = {
-    // denser meadows: tighter clumps, more blades per clump, a deeper far ring (blades per clump: near, far)
-    high: { near: [0.145, 16], far: [0.40, 48], flowers: [0.85, 38], blades: [4, 4] },
-    medium: { near: [0.19, 13], far: [0.50, 36], flowers: [1.1, 30], blades: [4, 4] },
-    low: { near: [0.27, 10], far: null, flowers: [1.6, 18], blades: [4, 4] }
+    // rings of [spacing m, radius m, blades per clump, segments per blade]: full blades near the camera, then fewer, wider and
+    // simpler blades further out (a 1-segment blade is a single triangle), so the meadow stays full at a third of the triangles
+    high: { rings: [[0.15, 10, 4, 3], [0.26, 24, 3, 2], [0.5, 50, 3, 1]], flowers: [0.85, 34] },
+    medium: { rings: [[0.2, 9, 4, 3], [0.32, 20, 3, 2], [0.6, 38, 3, 1]], flowers: [1.1, 28] },
+    low: { rings: [[0.28, 8, 3, 2], [0.6, 20, 3, 1]], flowers: [1.6, 16] }
   };
   function bladeGeometry(THREE, blades, segs) {
     const pos = [], b = [], idx = [];
@@ -43,7 +44,7 @@
   }
   const PLACE = /* glsl */`
     uniform sampler2D uData; uniform sampler2D uMask; uniform float uN; uniform float uCell; uniform float uHalf; uniform float uMaskRes;
-    uniform vec2 uCenter; uniform float uSpacing; uniform float uG; uniform float uRadius; uniform float uFadeIn; uniform float uFadeOut;
+    uniform vec2 uCenter; uniform float uSpacing; uniform float uG; uniform float uRadius; uniform float uFadeIn; uniform float uFadeOut; uniform float uWidK;
     vec4 dataAt(vec2 xz){ vec2 f = (xz + uHalf) / uCell; ivec2 i = ivec2(floor(f)); vec2 t = fract(f); int n = int(uN) - 1;
       vec4 a = texelFetch(uData, clamp(i, ivec2(0), ivec2(n)), 0), b = texelFetch(uData, clamp(i + ivec2(1, 0), ivec2(0), ivec2(n)), 0);
       vec4 c = texelFetch(uData, clamp(i + ivec2(0, 1), ivec2(0), ivec2(n)), 0), d = texelFetch(uData, clamp(i + ivec2(1, 1), ivec2(0), ivec2(n)), 0);
@@ -90,9 +91,9 @@
           vec3 root = vec3(cl.x + off.x, dat.x - 0.03, cl.y + off.y);
           float pch = vn2(cl.xy * 0.35) * 0.6 + vn2(cl.xy * 0.07) * 0.4;
           float wheat = step(0.3, dat.z);
-          float hgt = (0.16 + 0.2 * rr + 0.3 * pch * pch) * (0.55 + 0.45 * smoothstep(0.0, 0.6, dens)) * min(1.0, cl.w * 1.5);
+          float hgt = 0.8 * (0.16 + 0.2 * rr + 0.3 * pch * pch) * (0.55 + 0.45 * smoothstep(0.0, 0.6, dens)) * min(1.0, cl.w * 1.5);   // a little shorter
           if (wheat > 0.5) hgt = (0.82 + 0.25 * rr) * min(1.0, cl.w * 1.5);
-          float wid = (0.018 + 0.013 * h12(cl.xy * 1.9 + aB.z)) * sqrt(uSpacing / 0.14);
+          float wid = (0.018 + 0.013 * h12(cl.xy * 1.9 + aB.z)) * sqrt(uSpacing / 0.14) * uWidK;      // fewer blades -> wider ones
           vec3 face = vec3(cos(a0), 0.0, sin(a0)), side = vec3(-face.z, 0.0, face.x);
           // wind: slow gusts rolling across the meadow + quick flutter; the hero pushes blades aside
           float gust = vn2(cl.xy * 0.045 - uWind.xz * uTime * 0.35) ;
@@ -168,18 +169,17 @@
       for (const r of rings) { group.remove(r.mesh); r.mesh.geometry.dispose(); r.mesh.material.dispose(); }
       rings = [];
       const cfg = QUAL[q] || QUAL.high;
-      const ring = (spacing, radius, fadeIn, kind, blades, segs) => {
+      const ring = (spacing, radius, fadeIn, kind, blades = 3, segs = 1) => {
         // the grid only needs to cover what the camera can see: it is pushed forward along the view and is 1.5 R wide, not 2 R
         const G = Math.ceil(radius * 2 * HALF / spacing) + 1;
         const geo = kind === 'flower' ? flowerGeometry(THREE) : bladeGeometry(THREE, blades, segs); geo.instanceCount = G * G;
         const u = { uData: { value: data }, uMask: { value: mask }, uN: { value: data.userData.n }, uCell: { value: data.userData.cell }, uHalf: { value: half }, uMaskRes: { value: res },
-          uCenter: { value: new THREE.Vector2() }, uSpacing: { value: spacing }, uG: { value: G }, uRadius: { value: radius }, uFadeIn: { value: fadeIn }, uFadeOut: { value: radius * 0.75 } };
+          uCenter: { value: new THREE.Vector2() }, uSpacing: { value: spacing }, uG: { value: G }, uRadius: { value: radius }, uFadeIn: { value: fadeIn }, uFadeOut: { value: radius * 0.75 }, uWidK: { value: Math.sqrt(4 / blades) * (segs === 1 ? 1.45 : segs === 2 ? 1.18 : 1) } };   // single-triangle blades cover half a quad: wider
         const mesh = new THREE.Mesh(geo, makeMaterial(THREE, u, kind)); mesh.frustumCulled = false; mesh.receiveShadow = true; mesh.castShadow = false; mesh.name = 'Grass_' + kind + '_' + spacing;
         group.add(mesh); rings.push({ mesh, u, spacing, radius });
       };
-      const [ns, nr] = cfg.near, [nb, fb] = cfg.blades || [3, 4]; ring(ns, nr, 0, 'blade', nb, 4);
-      if (cfg.far) { const [fs, fr] = cfg.far; ring(fs, fr, nr * 0.85, 'blade', fb, 3); rings[0].u.uFadeOut.value = nr * 0.7; }
-      else rings[0].u.uFadeOut.value = nr * 0.7;
+      let prevR = 0;
+      cfg.rings.forEach(([sp, r, bl, sg], i) => { ring(sp, r, prevR * 0.85, 'blade', bl, sg); if (i > 0) rings[i - 1].u.uFadeOut.value = prevR * 0.7; prevR = r; });
       const [flS, flR] = cfg.flowers; ring(flS, flR, 0, 'flower');
     }
     const HALF = 0.75, fwd = new THREE.Vector3();

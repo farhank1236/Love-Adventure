@@ -101,15 +101,25 @@
         v = I * v; vec3 a = v * (v + 0.0245786) - 0.000090537, b = v * (0.983729 * v + 0.4329510) + 0.238081; return clamp(O * (a / b), 0.0, 1.0); }
       vec3 srgb(vec3 c){ c = max(c, vec3(0.0)); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
       void main(){
-        vec3 c = texture2D(tLit, vUv).rgb + texture2D(tBloom, vUv).rgb * uBloom;
+        vec3 c = texture2D(tLit, vUv).rgb;
+        // clarity: a light unsharp mask (crisper textures, also undoes the softness of dynamic resolution), clamped against halos
+        vec2 px = 1.0 / vec2(textureSize(tLit, 0));
+        vec3 nb = (texture2D(tLit, vUv + vec2(px.x, 0.0)).rgb + texture2D(tLit, vUv - vec2(px.x, 0.0)).rgb + texture2D(tLit, vUv + vec2(0.0, px.y)).rgb + texture2D(tLit, vUv - vec2(0.0, px.y)).rgb) * 0.25;
+        float cl = dot(c, vec3(0.2126, 0.7152, 0.0722)), nl = dot(nb, vec3(0.2126, 0.7152, 0.0722));
+        c *= 1.0 + clamp((cl - nl) / max(nl, 0.02), -0.25, 0.25) * 0.45;
+        c += texture2D(tBloom, vUv).rgb * uBloom;
         c *= uExposure;
         // grade: cool moonlit shadows at night, slightly warm sunlit highlights by day
         float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
         c = mix(c, c * vec3(0.86, 0.95, 1.18), uNight * 0.6);
         c = mix(c, c * vec3(1.04, 1.0, 0.95), uDay * smoothstep(0.2, 1.5, l) * 0.6);
+        c = mix(c, c * vec3(0.96, 0.99, 1.06), uDay * (1.0 - smoothstep(0.02, 0.25, l)) * 0.5);      // daylight shadows lean a little cool (sky fill)
         c = aces(c * 1.6);
-        float g = dot(c, vec3(0.2126, 0.7152, 0.0722)); c = mix(vec3(g), c, 1.07);            // saturation
-        c = mix(c, c * c * (3.0 - 2.0 * c), 0.12);                                          // gentle S-curve
+        // vibrance: richer colour where it is muted, skin and already strong colours are left alone
+        float g = dot(c, vec3(0.2126, 0.7152, 0.0722)), sat = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));
+        c = mix(vec3(g), c, 1.06 + 0.16 * (1.0 - smoothstep(0.05, 0.45, sat)));
+        c = mix(c, c * c * (3.0 - 2.0 * c), 0.26);                                          // more contrast (S-curve)
+        c = max(c - 0.006, 0.0) * 1.006;                                                    // deeper blacks
         vec2 v = vUv - 0.5; c *= 1.0 - 0.32 * dot(v, v) * 1.6;                             // vignette
         c = srgb(clamp(c, 0.0, 1.0));
         c += (fract(sin(dot(gl_FragCoord.xy + fract(uTime) * 7.0, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 255.0;

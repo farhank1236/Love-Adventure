@@ -28,7 +28,8 @@
       const T = this.T, groups = new Map();
       for (const o of this.objects) {
         if (!A.Models.TYPES[o.type]) continue;
-        const k = o.type + '|' + Math.floor(o.position.x / this.tile) + ',' + Math.floor(o.position.z / this.tile);
+        const ts = A.Models.TYPES[o.type].tree ? 96 : this.tile;              // trees use smaller tiles so their detail level can switch by distance
+        const k = o.type + '|' + Math.floor(o.position.x / ts) + ',' + Math.floor(o.position.z / ts);
         (groups.get(k) || groups.set(k, []).get(k)).push(o);
       }
       const m = new T.Matrix4(); this.where = new Map(); this.lights = [];
@@ -41,7 +42,8 @@
           mesh.receiveShadow = part === 'std'; mesh.castShadow = false; if (part === 'std') mesh.customDepthMaterial = this.depthMat; mesh.name = `${type}@${k.split('|')[1]}:${part}`;
           geo.boundingSphere || geo.computeBoundingSphere();
           const r = geo.boundingSphere.radius, cull = r < 1.6 ? 150 : r < 4 ? 280 : r < 10 ? 520 : 1e9;      // distance detail: small props fade out first
-          mesh.userData = { type, ids: list.map(o => o.id), part, flat: !!def.flat, center: mesh.boundingSphere.center.clone(), extent: mesh.boundingSphere.radius, cull, lamp: !!def.lamp };
+          mesh.userData = { type, ids: list.map(o => o.id), part, flat: !!def.flat, center: mesh.boundingSphere.center.clone(), extent: mesh.boundingSphere.radius, cull, lamp: !!def.lamp,
+            lods: def.tree ? [0, 1, 2].map(l => A.Models.getLod(T, type, l)[part] || geo) : null, lod: 0 };
           this.group.add(mesh); this.meshes.push(mesh);
         }
         if (type === 'windmill') for (const o of list) this.addSails(o);
@@ -65,6 +67,8 @@
       for (const m of this.meshes) {
         const u = m.userData, c = u.center, d = Math.hypot(c.x - px, c.z - pz);
         m.visible = d - u.extent < u.cull * this.lodScale;
+        if (u.lods && m.visible) { const near = d - u.extent, lvl = near > 180 * this.lodScale ? 2 : near > 45 * this.lodScale ? 1 : 0;
+          if (lvl !== u.lod) { u.lod = lvl; m.geometry = u.lods[lvl]; } }
         m.castShadow = u.part === 'std' && !u.flat && d - u.extent < 110;
       }
     }
@@ -186,7 +190,14 @@
       world.sky = A.createSky({ THREE, renderer, scene, quality }); world.sun = world.sky.sun;
       world.post = A.createPost({ THREE, renderer, sky: world.sky, quality });
       // lamp, lantern and campfire lights: a small pool moved to the nearest lights after dusk
-      world.lampPool = Array.from({ length: quality === 'low' ? 4 : 8 }, () => { const l = new THREE.PointLight(0xffa860, 0, 22, 2); l.castShadow = false; scene.add(l); return l; });
+      // ONE fixed pool of point lights for the whole game (each light costs every lit pixel, and a fixed count never recompiles
+      // shaders): effects borrow one while they glow (sword aura, sonic boom, horse portal), lamps use the rest after dusk
+      world.lampPool = Array.from({ length: quality === 'low' ? 4 : quality === 'medium' ? 5 : 6 }, () => { const l = new THREE.PointLight(0xffa860, 0, 22, 2); l.castShadow = false; l.userData = { fx: false, src: null }; scene.add(l); return l; });
+      world.lightPool = {
+        take() { const free = world.lampPool.filter(l => !l.userData.fx); if (!free.length) return null;
+          const l = free.find(x => !x.userData.src) || free[free.length - 1]; l.userData.fx = true; l.userData.src = null; l.intensity = 0; return l; },
+        give(l) { if (!l) return; l.userData.fx = false; l.intensity = 0; l.color.setRGB(1, 0.66, 0.38); l.distance = 22; l.decay = 2; }
+      };
       // HUD clock
       const host = canvas.parentElement; if (host && !host.querySelector('#kClock')) {
         const el = document.createElement('div'); el.id = 'kClock';
@@ -199,11 +210,12 @@
       world.lampTimer = (world.lampTimer || 0) - dt;
       if (world.lampTimer <= 0) {
         world.lampTimer = 0.3; const p = camera.position;
-        const near = k > 0.02 ? lights.map(l => [l, (l.x - p.x) ** 2 + (l.z - p.z) ** 2]).filter(a => a[1] < 90 * 90).sort((a, b) => a[1] - b[1]).slice(0, pool.length) : [];
-        pool.forEach((pl, i) => { const a = near[i]; pl.userData.src = a ? a[0] : null; if (a) pl.position.set(a[0].x, a[0].y, a[0].z); });
+        const free = pool.filter(l => !l.userData.fx);
+        const near = k > 0.02 ? lights.map(l => [l, (l.x - p.x) ** 2 + (l.z - p.z) ** 2]).filter(a => a[1] < 90 * 90).sort((a, b) => a[1] - b[1]).slice(0, free.length) : [];
+        free.forEach((pl, i) => { const a = near[i]; pl.userData.src = a ? a[0] : null; if (a) pl.position.set(a[0].x, a[0].y, a[0].z); });
       }
       const t = timeU.value;
-      pool.forEach((pl, i) => { const src = pl.userData.src; pl.intensity = src ? k * (src.kind === 'fire' ? 26 : 16) * (0.92 + 0.08 * Math.sin(t * (src.kind === 'fire' ? 13 : 3) + i * 1.7)) : 0; if (src && src.kind === 'fire') pl.color.setRGB(1, 0.55, 0.22); else pl.color.setRGB(1, 0.66, 0.38); });
+      pool.forEach((pl, i) => { if (pl.userData.fx) return; const src = pl.userData.src; pl.intensity = src ? k * (src.kind === 'fire' ? 26 : 16) * (0.92 + 0.08 * Math.sin(t * (src.kind === 'fire' ? 13 : 3) + i * 1.7)) : 0; if (src && src.kind === 'fire') pl.color.setRGB(1, 0.55, 0.22); else pl.color.setRGB(1, 0.66, 0.38); });
     }
     function buildWorld() {
       say('Shaping the kingdom: hills, rivers and Ironpeak…');
@@ -221,23 +233,35 @@
       say('Planting the meadows…');
       world.grass = A.createGrass({ THREE, scene, terrain, world, quality });
     }
+    /* the 3D world uses a lighter copy of the Female Warrior (47k triangles, tools/lod; the approved 490k model in
+       assets/models/female-NN.js stays untouched for the menus and its integrity checks) */
+    const FEMALE_WORLD_PARTS = 2;
+    async function loadWorldFemale() {
+      const MP = (window.AethelosModelParts ||= {}); MP.femaleworld = [];
+      for (let i = 1; i <= FEMALE_WORLD_PARTS; i++) await new Promise((ok, fail) => { const sc = document.createElement('script');
+        sc.src = `assets/models/femaleworld-${String(i).padStart(2, '0')}.js?v=lod-1`; sc.onload = () => { sc.remove(); ok(); }; sc.onerror = () => { sc.remove(); fail(new Error('femaleworld part ' + i)); }; document.head.appendChild(sc); });
+      const encoded = MP.femaleworld.join(''); MP.femaleworld = [];
+      const rig = createWarriorAsset(THREE, encoded); if (rig.revision !== 'BODY_AND_SWORD_V14') throw new Error('unexpected revision ' + rig.revision);
+      return rig;
+    }
     async function loadHero() {
       heroLabel && (heroLabel.textContent = hero.name);
       say('Calling your warrior…');
       if (hero.gender === 'male' && window.HeroRig) {
         const rig = await HeroRig.loadHero(THREE);
-        rig.root.traverse(o => { if (o.isMesh) o.castShadow = !o.material.transparent && o.name !== 'HeroSword'; });   // the 500k-tri sword skips the shadow pass
-        if (A.clusterDecimate && rig.body) {        // the 500k-triangle body draws no shadow itself: a light twin (same bones) casts it
-          const twin = new THREE.SkinnedMesh(A.clusterDecimate(THREE, rig.body.geometry, 110), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
-          twin.name = 'HeroShadowTwin'; twin.bind(rig.body.skeleton, rig.body.bindMatrix); twin.frustumCulled = false; twin.castShadow = true; rig.body.parent.add(twin); rig.body.castShadow = false;
-        }
+        rig.root.traverse(o => { if (o.isMesh) o.castShadow = !o.material.transparent; });   // body 44k + sword 5k triangles (tools/lod)
         state.heroRig = rig; heroMount.add(rig.root);
-        if (A.createSonicSkill) { world.skill = A.createSonicSkill({ THREE, scene, rig, player, world, camera, root: canvas.parentElement, showToast }); world.skill.setAim(() => inputDir()); }
+        if (A.createSonicSkill) { world.skill = A.createSonicSkill({ THREE, scene, rig, player, world, camera, root: canvas.parentElement, showToast, lightPool: world.lightPool }); world.skill.setAim(() => inputDir()); }
+        // the sword aura's own light is replaced by a pooled one that follows the blade while it glows
+        const auraL = rig.fxMeshes.AuraLight; if (auraL && auraL.parent) { auraL.parent.remove(auraL); world.auraLight = { src: auraL, mesh: rig.fxMeshes.SwordAuraGlow, pooled: null }; }
         if (A.createHeroExtras) world.extras = A.createHeroExtras({ THREE, scene, rig, camera, root: canvas.parentElement });
         if (A.createHorse) world.horse = A.createHorse({ THREE, scene, world, player, camera, showToast, heroMount, hero: () => state.heroRig,
           say: k => world.extras && world.extras.say(k), onMount: on => { state.idleT = 0; if (!on) world.extras && setTimeout(() => world.extras.say('dismounted'), 250); } });
       } else {
-        const rig = await HeroSystem.createRig(THREE, hero); await rig.textureReady;
+        let rig = null;
+        try { rig = await loadWorldFemale(); } catch (e) { console.warn('Light Female Warrior model missing, using the full one:', e); }
+        if (!rig) rig = await HeroSystem.createRig(THREE, hero);
+        await rig.textureReady;
         rig.root.scale.setScalar(1.75); rig.root.rotation.y = Math.PI; rig.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
         state.rig = rig; heroMount.add(rig.root);
       }
@@ -298,10 +322,17 @@
     function updateRiding(dt, ctl, horse) {
       state.velocity.set(0, 0, 0); state.grounded = true; state.jumpVelocity = 0; state.currentSpeed = horse.speed; state.idleT = 0;
       ctl.update(dt, { moving: false, running: false, airborne: false, speed: 0 });
-      world.skill && world.skill.update(dt); world.extras && world.extras.update(dt);
+      world.skill && world.skill.update(dt); world.extras && world.extras.update(dt); updateAuraLight();
       const st = horse.state.state;
       stateLabel && (stateLabel.textContent = st === 'mounting' ? 'Mounting' : st === 'dismounting' || horse.state.slowToDismount ? 'Dismounting'
         : horse.speed > 4.5 ? 'Galloping' : horse.speed > 0.15 ? 'Riding' : 'On horseback');
+    }
+    function updateAuraLight() {
+      const a = world.auraLight; if (!a) return;
+      const want = a.src.intensity;                           // set by the glow mesh each frame it renders (0 when the aura is off)
+      if (want > 0.05) { if (!a.pooled) a.pooled = world.lightPool.take();
+        if (a.pooled) { a.mesh.getWorldPosition(a.pooled.position); a.pooled.color.copy(a.src.color); a.pooled.distance = a.src.distance; a.pooled.decay = a.src.decay; a.pooled.intensity = want; } }
+      else if (a.pooled) { world.lightPool.give(a.pooled); a.pooled = null; }
     }
     function updateWarriorV4(dt) {
       const k = state.keys, ctl = state.heroRig.controller, horse = world.horse, running = !!(k.KeyX || k.ShiftLeft || k.ShiftRight);
@@ -341,6 +372,7 @@
       ctl.update(dt, { moving: moving && moved > 0.25, running, airborne: !state.grounded, speed: state.currentSpeed });
       world.skill && world.skill.update(dt);                 // after the mixer: the skill overrides the sword aura
       world.extras && world.extras.update(dt);               // sword portal, idle ball, speech bubble
+      updateAuraLight();
       const S = ctl.state;
       stateLabel && (stateLabel.textContent = S.mode === 'dodge' ? 'Dodge roll' : S.mode === 'attack' ? (S.attackKind === 'up' ? 'Rising stab' : S.attackKind === 'down' ? 'Low slash' : 'Attack ' + (S.combo + 1))
         : S.mode === 'summon' ? 'Summoning sword' : S.mode === 'dismiss' ? 'Sword vanishing' : S.mode === 'idlefun' ? 'Playing' : !state.grounded ? 'Jumping' : moving ? (running ? 'Running' : 'Walking') : S.swordOut ? 'Guard' : 'Idle');
@@ -419,8 +451,7 @@
       showToast('Graphics: ' + q[0].toUpperCase() + q.slice(1));
     }
     function renderFrame() {
-      const hide = [world.grass.group, world.waterGroup]; if (world.horse && world.horse.fullGroup) hide.push(world.horse.fullGroup);   // the 500k-triangle horse stays out of the mirror
-      world.water.beforeRender(camera, hide, dbSize.clone().multiplyScalar(world.post.scale));
+      world.water.beforeRender(camera, [world.grass.group, world.waterGroup], dbSize.clone().multiplyScalar(world.post.scale));
       world.post.render(scene, camera);
     }
     const GAME_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);

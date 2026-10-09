@@ -190,8 +190,12 @@
         uniforms: { uTime: time, uFade: { value: 1 }, uSeed: { value: Math.random() * 50 }, uDeep: { value: C.deep }, uMid: { value: C.mid }, uHot: { value: C.hot } },
         vertexShader: boomVS, fragmentShader: `uniform float uTime; uniform float uFade; uniform float uSeed; uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uHot; varying vec2 vUv; varying vec3 vN; varying vec3 vV; ${NOISE}\nvoid main(){ ${fs} }` });
     }
-    const lights = Array.from({ length: MAX_LIGHTS }, () => { const l = new THREE.PointLight(0x3d8cff, 0, 16, 1.6); scene.add(l); return { l, busy: false }; });
-    const takeLight = () => { const s = lights.find(x => !x.busy); if (s) s.busy = true; return s; };
+    // lights: borrowed from the game's shared pool when there is one (no extra always-on lights), else a small own set
+    const pool = ctx.lightPool, own = pool ? [] : Array.from({ length: MAX_LIGHTS }, () => { const l = new THREE.PointLight(0x3d8cff, 0, 16, 1.6); scene.add(l); return { l, busy: false }; });
+    const takeLight = () => {
+      if (pool) { const l = pool.take(); if (!l) return null; l.color.set(0x3d8cff); l.distance = 16; l.decay = 1.6; return { l, busy: true, pooled: true }; }
+      const s = own.find(x => !x.busy); if (s) s.busy = true; return s; };
+    const releaseLight = s => { if (!s) return; s.l.intensity = 0; if (s.pooled) pool.give(s.l); else s.busy = false; };
 
     /* nearest registered enemy in front (within 45 m and +-40 deg of `fwd`): the boom flies straight at it */
     function aimAt(origin, fwd) {
@@ -365,13 +369,13 @@
       S.booms = S.booms.filter(b => !b.dead);
       for (const r of rings) { r.age += dt; const t = r.age / r.life; r.mesh.position.copy(r.at); r.mesh.quaternion.copy(cam.quaternion); r.mesh.scale.setScalar(0.5 + t * r.size); r.mesh.material.uniforms.uFade.value = 1 - t; if (t >= 1) { scene.remove(r.mesh); r.mesh.material.dispose(); r.done = true; } }
       for (let i = rings.length - 1; i >= 0; i--) if (rings[i].done) rings.splice(i, 1);
-      for (const f of flashes) { f.age += dt; f.s.l.intensity = f.power * Math.max(0, 1 - f.age / f.life); if (f.age >= f.life) { f.s.l.intensity = 0; f.s.busy = false; f.done = true; } }
+      for (const f of flashes) { f.age += dt; f.s.l.intensity = f.power * Math.max(0, 1 - f.age / f.life); if (f.age >= f.life) { releaseLight(f.s); f.done = true; } }
       for (let i = flashes.length - 1; i >= 0; i--) if (flashes[i].done) flashes.splice(i, 1);
       embers.update(dt, emberColor); smoke.update(dt, smokeColor); flames.update(dt, flameColor);
       S.shake *= Math.exp(-dt * 7);
       hud();
     }
-    function kill(b) { b.dead = true; scene.remove(b.g); for (const m of b.mats) m.dispose(); if (b.light) { b.light.l.intensity = 0; b.light.busy = false; } }
+    function kill(b) { b.dead = true; scene.remove(b.g); for (const m of b.mats) m.dispose(); if (b.light) { releaseLight(b.light); b.light = null; } }
 
     // ============================================================ HUD: skill icon with countdown ring
     const root = ctx.root, icon = document.createElement('div');
@@ -401,7 +405,7 @@
 
     function dispose() {
       off(); for (const m of shells) { m.parent && m.parent.remove(m); m.material.dispose(); } sleeve.parent && sleeve.parent.remove(sleeve); sleeveMat.dispose();
-      for (const b of S.booms) kill(b); embers.dispose(); smoke.dispose(); flames.dispose(); for (const s of lights) scene.remove(s.l); scene.remove(column); icon.remove(); ctl.state.holdSword = false;
+      for (const b of S.booms) kill(b); embers.dispose(); smoke.dispose(); flames.dispose(); for (const s of own) scene.remove(s.l); for (const f of flashes) releaseLight(f.s); scene.remove(column); icon.remove(); ctl.state.holdSword = false;
     }
     return { activate, update, dispose, state: S, get shake() { return S.shake; }, setAim(fn) { S.aimDir = fn; }, spawnBoom, burst };
   }

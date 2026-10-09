@@ -110,9 +110,13 @@
     if (hat) b.cone(0.3, 0.32, 8, [x, 1.9, z], hat);
     if (spear) { b.cyl(0.03, 0.03, 2.6, 5, [x + 0.45, 0, z + 0.1], C.wood); b.cone(0.07, 0.3, 5, [x + 0.45, 2.6, z + 0.1], C.iron); }
   }
+  /* level of detail while building: 0 full, 1 mid distance (fewer, larger cards), 2 far (silhouette only) */
+  let LOD = 0;
   /* a crown of leaf cards around (cx,cy,cz): n cards within radius r (each card shows a few procedural leaves) */
   function foliage(b, cx, cy, cz, r, color, n, { size = 1.4, seed = 1, flat = 0.8, droop = 0 } = {}) {
     let sd = Math.floor(seed * 7919) % 2147483646 + 1; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    if (LOD === 2) return;
+    if (LOD === 1) { n = Math.max(3, Math.round(n * 0.4)); size *= 1.45; }
     for (let i = 0; i < n; i++) {
       const u = rnd() * 2 - 1, th = rnd() * Math.PI * 2, rr = r * Math.cbrt(0.3 + 0.7 * rnd()), q = Math.sqrt(1 - u * u);
       const sz = size * (0.7 + 0.6 * rnd());
@@ -122,10 +126,12 @@
   }
   /* a pine tier: a dark core cone plus drooping needle cards around its rim */
   function pineTier(b, y, r, h, color, n, seed) {
-    b.cone(r * 0.8, h, 8, [0, y, 0], color, { jitter: 0.08 });
+    b.cone(LOD === 2 ? r : r * 0.8, h, LOD ? 6 : 8, [0, y, 0], color, { jitter: 0.08 });
     let sd = seed * 48271 % 2147483646 + 1; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-    for (let i = 0; i < n * 2; i++) {
-      const a = i / (n * 2) * Math.PI * 2 + rnd() * 0.4, rr = r * (0.5 + 0.4 * rnd()), sz = r * (0.6 + 0.35 * rnd());
+    if (LOD === 2) return;
+    const cards = LOD === 1 ? Math.max(4, Math.round(n * 0.7)) : n * 2, grow = LOD === 1 ? 1.35 : 1;
+    for (let i = 0; i < cards; i++) {
+      const a = i / cards * Math.PI * 2 + rnd() * 0.4, rr = r * (0.5 + 0.4 * rnd()), sz = r * (0.6 + 0.35 * rnd()) * grow;
       b.add(new b.T.PlaneGeometry(sz, sz * 1.2), color, [Math.cos(a) * rr, y + h * (0.25 + 0.2 * rnd()), Math.sin(a) * rr],
         { rx: -0.9 - 0.3 * rnd(), ry: -a + Math.PI / 2, rz: (rnd() - 0.5) * 0.6, mat: 'leafcard', center: [0, y + h * 0.4, 0], card: Math.floor(rnd() * 60), jitter: 0.1, needles: true });
     }
@@ -336,12 +342,12 @@
     for (const [x, z, a, l] of [[0.2, 0, -0.75, 2.6], [-0.15, 0.1, 0.7, 2.4], [0, -0.2, 0.55, 2.2], [0.05, 0.2, -0.5, 2.0]]) b.cyl(0.1, 0.2, l, 6, [x, 2.6, z], C.trunk, { rz: a, ry: x * 4 + z * 3 });
     b.cyl(0.14, 0.26, 2.2, 6, [0, 3.2, 0], C.trunk);
     const crowns = [[0, 5.0, 0, 2.3], [1.7, 4.5, 0.6, 1.7], [-1.6, 4.6, -0.4, 1.8], [0.3, 6.2, -0.6, 1.6], [-0.4, 4.3, 1.5, 1.6], [0.6, 4.4, -1.5, 1.5]];
-    crowns.forEach(([x, y, z, r], i) => { b.ball(r * 0.72, 0, [x, y, z], C.leaf, { jitter: 0.1 }); foliage(b, x, y, z, r, C.leaf, Math.round(10 + r * 7), { size: 1.5, seed: 3 + i }); });
+    crowns.forEach(([x, y, z, r], i) => { b.ball(r * (LOD === 2 ? 1.0 : 0.72), 0, [x, y, z], C.leaf, { jitter: 0.1 }); foliage(b, x, y, z, r, C.leaf, Math.round(10 + r * 7), { size: 1.5, seed: 3 + i }); });
   }, { col: [circ(0.6, 0, 0, 6)], tree: true, monkeyPerch: [[0, 4.4, 0]] });
   def('tree_birch', 'Birch tree', 'Trees', b => {
     b.cyl(0.11, 0.2, 6.2, 7, [0, 0, 0], C.birch);
     for (const [y, a] of [[3.2, 0.8], [3.8, -0.9], [4.5, 0.6]]) b.cyl(0.04, 0.07, 1.4, 5, [0, y, 0], C.birch, { rz: a, ry: y * 2 });
-    [[0, 5.6, 0, 1.4], [0.6, 4.6, 0.3, 1.1], [-0.5, 4.7, -0.3, 1.1], [0.1, 6.5, 0.2, 0.9]].forEach(([x, y, z, r], i) => { b.ball(r * 0.6, 0, [x, y, z], C.leaf2, { jitter: 0.1 }); foliage(b, x, y, z, r, C.leaf2, Math.round(9 + r * 7), { size: 1.0, seed: 17 + i, flat: 1.2 }); });
+    [[0, 5.6, 0, 1.4], [0.6, 4.6, 0.3, 1.1], [-0.5, 4.7, -0.3, 1.1], [0.1, 6.5, 0.2, 0.9]].forEach(([x, y, z, r], i) => { b.ball(r * (LOD === 2 ? 0.95 : 0.6), 0, [x, y, z], C.leaf2, { jitter: 0.1 }); foliage(b, x, y, z, r, C.leaf2, Math.round(9 + r * 7), { size: 1.0, seed: 17 + i, flat: 1.2 }); });
   }, { col: [circ(0.3, 0, 0, 6)], tree: true });
   def('bush', 'Bush', 'Nature', b => {
     b.ball(0.75, 1, [0, 0.55, 0], C.leaf, { jitter: 0.12 }); b.ball(0.55, 1, [0.7, 0.45, 0.2], C.leaf2, { jitter: 0.12 });
@@ -387,5 +393,12 @@
   const lightCache = new Map();
   /* lantern / fire points of a type in local space ([{x,y,z,kind}]) */
   function lightsOf(THREE, id) { get(THREE, id); return lightCache.get(id) || []; }
-  A.Models = { TYPES: T, get, lightsOf, MATS, C, CATEGORIES: ['City', 'Houses', 'Roads', 'Palace', 'Noble Houses', 'Farms', 'Forest', 'Mountains', 'Rivers', 'Bridges', 'Nature', 'Trees', 'Rocks', 'Shops', 'Restaurants', 'Adventure Guild', 'Enemies', 'NPCs', 'Stores', 'Portals', 'Decorations', 'Quest Areas', 'Boss Areas', 'Save Points', 'Treasure', 'Wildlife', 'River Life', 'Farm Animals', 'City Animals', 'Forest Wildlife', 'Dangerous Wildlife', 'Monster Wildlife'] };
+  /* lighter versions of trees for distance (level 1: fewer, bigger leaf/needle cards; level 2: core shapes only) */
+  function getLod(THREE, id, level) {
+    if (!level || !T[id] || !T[id].tree) return get(THREE, id);
+    const k = id + '#lod' + level;
+    if (!cache.has(k)) { LOD = level; try { const b = new MB(THREE); T[id].build(b); cache.set(k, b.finish()); } finally { LOD = 0; } }
+    return cache.get(k);
+  }
+  A.Models = { TYPES: T, get, getLod, lightsOf, MATS, C, CATEGORIES: ['City', 'Houses', 'Roads', 'Palace', 'Noble Houses', 'Farms', 'Forest', 'Mountains', 'Rivers', 'Bridges', 'Nature', 'Trees', 'Rocks', 'Shops', 'Restaurants', 'Adventure Guild', 'Enemies', 'NPCs', 'Stores', 'Portals', 'Decorations', 'Quest Areas', 'Boss Areas', 'Save Points', 'Treasure', 'Wildlife', 'River Life', 'Farm Animals', 'City Animals', 'Forest Wildlife', 'Dangerous Wildlife', 'Monster Wildlife'] };
 })();

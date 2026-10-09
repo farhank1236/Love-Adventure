@@ -8,7 +8,7 @@
    Riding: arrow keys steer (camera-relative), X / Shift gallops, otherwise it walks. */
 (() => {
   const A = window.Aethelos ||= {};
-  const PARTS = 4, CACHE = 'horse-v1';
+  const PARTS = 1, CACHE = 'horse-v2';
   function loadHorseBytes() {
     if (loadHorseBytes.p) return loadHorseBytes.p;
     loadHorseBytes.p = (async () => {
@@ -22,27 +22,6 @@
       return bytes;
     })().catch(e => { loadHorseBytes.p = null; throw e; });
     return loadHorseBytes.p;
-  }
-  /* vertex-clustering decimation (same skin space, same skeleton): a light stand-in for the shadow pass and for distance */
-  function clusterDecimate(THREE, geo, cellsAcross = 70) {
-    if (!geo.boundingBox) geo.computeBoundingBox();
-    const bb = geo.boundingBox, size = bb.getSize(new THREE.Vector3()), cell = Math.max(size.x, size.y, size.z) / cellsAcross;
-    const P = geo.attributes.position, n = P.count, map = new Int32Array(n), keys = new Map(), rep = [], acc = [];
-    for (let i = 0; i < n; i++) {
-      const x = P.getX(i), y = P.getY(i), z = P.getZ(i), k = Math.floor((x - bb.min.x) / cell) + Math.floor((y - bb.min.y) / cell) * 4096 + Math.floor((z - bb.min.z) / cell) * 16777216;
-      let id = keys.get(k); if (id === undefined) { id = rep.length; keys.set(k, id); rep.push(i); acc.push(0, 0, 0, 0); }
-      acc[id * 4] += x; acc[id * 4 + 1] += y; acc[id * 4 + 2] += z; acc[id * 4 + 3]++; map[i] = id;
-    }
-    const m = rep.length, out = new THREE.BufferGeometry(), pos = new Float32Array(m * 3);
-    for (let j = 0; j < m; j++) { const c = acc[j * 4 + 3]; pos[j * 3] = acc[j * 4] / c; pos[j * 3 + 1] = acc[j * 4 + 1] / c; pos[j * 3 + 2] = acc[j * 4 + 2] / c; }
-    out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    for (const name of ['normal', 'uv', 'skinIndex', 'skinWeight']) { const a = geo.attributes[name]; if (!a) continue;
-      const w = a.itemSize, arr = new a.array.constructor(m * w); for (let j = 0; j < m; j++) for (let c = 0; c < w; c++) arr[j * w + c] = a.array[rep[j] * w + c];
-      out.setAttribute(name, new THREE.BufferAttribute(arr, w, a.normalized)); }
-    const I = geo.index.array, idx = [];
-    for (let t = 0; t < I.length; t += 3) { const a = map[I[t]], b = map[I[t + 1]], c = map[I[t + 2]]; if (a !== b && b !== c && a !== c) idx.push(a, b, c); }
-    out.setIndex(m > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
-    return out;
   }
   /* minimal glTF reader for the horse GLB (quantized, multi-primitive, two skins) */
   function createHorseAsset(THREE, bytes) {
@@ -71,7 +50,7 @@
     const materials = g.materials.map(m => { const p = m.pbrMetallicRoughness || {}, c = p.baseColorFactor || [1, 1, 1, 1];
       return new THREE.MeshStandardMaterial({ name: m.name, map: p.baseColorTexture ? textures[p.baseColorTexture.index] : null, color: new THREE.Color(c[0], c[1], c[2]),
         metalness: p.metallicFactor ?? 0, roughness: p.roughnessFactor ?? 0.8, side: THREE.DoubleSide, envMapIntensity: m.name === 'Horse' ? 0.55 : 1.0 }); });
-    const meshes = [], lods = [], full = new THREE.Group(), lod = new THREE.Group(); full.name = 'HorseFull'; lod.name = 'HorseLod'; root.add(full, lod);
+    const meshes = [], full = new THREE.Group(); full.name = 'HorseMeshes'; root.add(full);
     g.nodes.forEach(n => {
       if (n.mesh === undefined) return;
       for (const prim of g.meshes[n.mesh].primitives) {
@@ -79,11 +58,9 @@
         for (const [nm, k, s] of [['position', 'POSITION', 3], ['normal', 'NORMAL', 3], ['uv', 'TEXCOORD_0', 2], ['skinIndex', 'JOINTS_0', 4], ['skinWeight', 'WEIGHTS_0', 4]])
           if (a[k] !== undefined) geo.setAttribute(nm, attr(a[k], s));
         geo.setIndex(new THREE.BufferAttribute(acc(prim.indices), 1));
-        // full-resolution mesh for the close view (no shadow pass: its light twin below casts the shadow)
+        // the model is already light (about 48k triangles in all, see tools/lod), so it draws and casts its shadow directly
         const m = new THREE.SkinnedMesh(geo, materials[prim.material]); m.name = g.meshes[n.mesh].name;
-        m.bind(skeletons[n.skin], new THREE.Matrix4()); m.frustumCulled = false; m.castShadow = false; m.receiveShadow = true; full.add(m); meshes.push(m);
-        const lg = clusterDecimate(THREE, geo, n.skin === 0 ? 70 : 90), l = new THREE.SkinnedMesh(lg, materials[prim.material]); l.name = m.name + '_lod';
-        l.bind(skeletons[n.skin], new THREE.Matrix4()); l.frustumCulled = false; l.castShadow = true; l.receiveShadow = true; lod.add(l); lods.push(l);
+        m.bind(skeletons[n.skin], new THREE.Matrix4()); m.frustumCulled = false; m.castShadow = true; m.receiveShadow = true; full.add(m); meshes.push(m);
       }
     });
     const clips = {};
@@ -96,7 +73,7 @@
       }
       clips[an.name] = new THREE.AnimationClip(an.name, g.extras.clips[an.name].duration, tracks);
     }
-    return { root, bones, byName, meshes, lods, full, lod, materials, clips, extras: g.extras, textureReady: Promise.all(texReady) };
+    return { root, bones, byName, meshes, full, materials, clips, extras: g.extras, textureReady: Promise.all(texReady) };
   }
 
   const WALK = 1.8, GALLOP = 15.0;
@@ -108,16 +85,14 @@
     const clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6);
     const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), q1 = new THREE.Quaternion();
     // the summoning portal exists from the start (its light is always in the scene: no shader recompiles on first summon)
-    H.portal = A.createPortalFX(THREE, scene, { radius: 1.75, aspect: 1.22, sparks: 140, lampPower: 40 }); scene.add(H.portal.group); H.portalT = 99;
+    H.portal = A.createPortalFX(THREE, scene, { radius: 1.75, aspect: 1.22, sparks: 140, light: false });   // its light is borrowed from the shared pool while open scene.add(H.portal.group); H.portalT = 99;
     function load() {
       if (H.loading) return H.loading;
       H.loading = loadHorseBytes().then(async bytes => {
         const a = createHorseAsset(THREE, bytes); await a.textureReady;
         H.asset = a; root.add(a.root); H.mixer = new THREE.AnimationMixer(a.root);
         for (const m of a.materials) { m.clippingPlanes = [clipPlane]; m.clipShadows = true; }
-        // near: the full mesh draws, the light twin only casts the shadow (invisible material); far: only the twin draws
-        H.ghost = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, clippingPlanes: [clipPlane], clipShadows: true });
-        H.lodMats = a.lods.map(l => l.material); H.near = null;
+
         // the rider anchor: rides on the saddle bone; its origin = the hero model origin while seated
         const saddle = a.byName.Saddle; const anchor = new THREE.Group(); anchor.name = 'RiderAnchor';
         anchor.position.set(0, -1.62, -0.59 + 0.25); saddle.add(anchor); H.anchor = anchor;
@@ -288,6 +263,10 @@
         H.portalT += dt; H.portal.update(dt);
         const t = H.portalT, open = H.state === 'summoning' || t < 3.4 ? Math.min(1, t / 0.7) * (1 - Math.max(0, (t - 2.9) / 0.6)) : 0;
         H.portal.setOpen(Math.max(0, open));
+        const pool = world.lightPool;
+        if (pool && open > 0.02) { if (!H.portalLight) H.portalLight = pool.take();
+          if (H.portalLight) { const L = H.portalLight; L.color.set(0x3a8cff); L.distance = 24; L.decay = 1.8; L.position.copy(H.portal.group.position); L.intensity = 40 * open; } }
+        else if (H.portalLight) { pool.give(H.portalLight); H.portalLight = null; }
       }
       if (H.state === 'summoning') {
         if (H.portalT > 0.75) {
@@ -357,9 +336,6 @@
       // rider clip follows the horse's gait
       if (hero && H.state === 'ridden') hero.controller.ride(H.speed < 0.15 ? 'idle' : H.speed < 4.5 ? 'walk' : 'gallop', H.actions[H.cur], H.cur);
       updateReins();
-      // level of detail: full mesh within 30 m of the camera, the light twin beyond
-      const near = root.visible && root.position.distanceTo(camera.position) < 30;
-      if (near !== H.near) { H.near = near; H.asset.full.visible = near; H.asset.lods.forEach((l, i) => { l.material = near ? H.ghost : H.lodMats[i]; }); }
       // the unridden horse blocks the hero (two body circles)
       if (world.dynamic) { const f = v1.set(Math.sin(H.yaw), 0, Math.cos(H.yaw));
         world.dynamic.horse = (root.visible && H.state !== 'ridden' && H.state !== 'mounting' && H.state !== 'dismounting' && H.state !== 'approach')
@@ -367,7 +343,6 @@
     }
     return {
       root, load, summon, pressH, update, state: H,
-      get fullGroup() { return H.asset ? H.asset.full : null; },
       cancel() { if (H.state === 'approach' || H.state === 'coming') { H.state = 'idle'; H.heroMoving = false; H.speed = 0; } },
       get riding() { return H.state === 'ridden' || H.state === 'mounting' || H.state === 'dismounting'; },
       get approaching() { return H.state === 'approach'; },
@@ -376,5 +351,5 @@
       dispose() { scene.remove(root); reinSegs.forEach(m => scene.remove(m)); H.portal && H.portal.dispose(); }
     };
   }
-  A.clusterDecimate = clusterDecimate; A.createHorse = createHorse; A.loadHorseBytes = loadHorseBytes; A.createHorseAsset = createHorseAsset;
+  A.createHorse = createHorse; A.loadHorseBytes = loadHorseBytes; A.createHorseAsset = createHorseAsset;
 })();
