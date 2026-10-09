@@ -89,6 +89,22 @@
       chirp(o, t0) { const f = 3200 + Math.random() * 1800, n = 2 + (Math.random() * 4 | 0);
         for (let i = 0; i < n; i++) { const t = t0 + i * (0.09 + Math.random() * 0.05), s = osc('sine', f, t, 0.08), g = ctx.createGain();
           s.frequency.setValueAtTime(f, t); s.frequency.exponentialRampToValueAtTime(f * (0.7 + Math.random() * 0.6), t + 0.07); env(g, t, 0.01, 0.06, 0.06); s.connect(g); g.connect(o); } },
+      // ---- red birds
+      squawk(o, t0, v = 1) {                              // a harsh, nasal caw
+        const f = 900 + Math.random() * 300, s = osc('sawtooth', f, t0, 0.32), g = ctx.createGain(), b = filt('bandpass', 1800, 3);
+        s.frequency.setValueAtTime(f, t0); s.frequency.exponentialRampToValueAtTime(f * 1.35, t0 + 0.06); s.frequency.exponentialRampToValueAtTime(f * 0.7, t0 + 0.3);
+        env(g, t0, 0.015, 0.22 * v, 0.28); s.connect(b); b.connect(g); g.connect(o); hiss(o, t0, 'bandpass', 2600, 2, 0.01, 0.08 * v, 0.25);
+      },
+      screech(o, t0) {                                    // locking on: a rising, trembling shriek
+        const s = osc('sawtooth', 1300, t0, 0.75), vib = osc('sine', 28, t0, 0.75), vg = ctx.createGain(), g = ctx.createGain(), b = filt('bandpass', 2600, 2.5);
+        vg.gain.value = 90; vib.connect(vg); vg.connect(s.frequency); s.frequency.setValueAtTime(1300, t0); s.frequency.exponentialRampToValueAtTime(2300, t0 + 0.55);
+        env(g, t0, 0.08, 0.2, 0.6); s.connect(b); b.connect(g); g.connect(o); hiss(o, t0, 'highpass', 4200, 1, 0.1, 0.06, 0.55);
+      },
+      flap(o, t0, v = 1) { hiss(o, t0, 'bandpass', 600 + Math.random() * 200, 1.1, 0.02, 0.22 * v, 0.09); },
+      dash(o, t0) { hiss(o, t0, 'bandpass', 500, 1.2, 0.08, 0.5, 0.45, 2600); hiss(o, t0 + 0.05, 'highpass', 3500, 0.8, 0.05, 0.12, 0.35); },
+      birdHit(o, t0) { S.squawk(o, t0, 1.3); thump(o, t0, 220, 90, 0.08, 0.6); hiss(o, t0, 'bandpass', 1500, 1, 0.003, 0.5, 0.18); },          // struck: squawk + feathers
+      birdCrash(o, t0) { thump(o, t0, 130, 45, 0.18, 0.9); hiss(o, t0, 'lowpass', 1600, 0.8, 0.004, 0.6, 0.25); S.squawk(o, t0 + 0.02, 0.7); },
+      hurt(o, t0) { thump(o, t0, 140, 55, 0.16, 0.8); hiss(o, t0, 'bandpass', 900, 1.4, 0.004, 0.45, 0.16); hiss(o, t0 + 0.02, 'highpass', 3000, 1, 0.003, 0.25, 0.08); },
       cricket(o, t0) { for (let i = 0; i < 3; i++) { const t = t0 + i * 0.06, s = osc('sine', 4300, t, 0.04), g = ctx.createGain(); env(g, t, 0.004, 0.03, 0.03); s.connect(g); g.connect(o); } }
     };
     function play(name, { at = null, vol = 1, ...opt } = {}) {

@@ -261,6 +261,7 @@
           else if (type === 'powerBurst') playAt('ignite');
           else if (type === 'mountStart') playAt('saddle');
           else if (type === 'dismountEnd') playAt('land', null, { arg: 0.7 });
+          else if (type === 'hit') world.birds && world.birds.swordHit(d);          // sword hit frames cut down red birds
         });
         // the sword aura's own light is replaced by a pooled one that follows the blade while it glows
         const auraL = rig.fxMeshes.AuraLight; if (auraL && auraL.parent) { auraL.parent.remove(auraL); world.auraLight = { src: auraL, mesh: rig.fxMeshes.SwordAuraGlow, pooled: null }; }
@@ -431,7 +432,8 @@
       const desired = player.position.clone().add(new THREE.Vector3(-Math.sin(state.camYaw) * horizontal, Math.sin(state.camPitch) * state.camDistance + 0.9, -Math.cos(state.camYaw) * horizontal));
       const floor = world.terrain.heightAt(desired.x, desired.z) + 0.6; if (desired.y < floor) desired.y = floor;
       state.cameraVelocity.lerp(desired, riding ? 0.22 : 0.14); camera.position.copy(state.cameraVelocity);
-      const shake = world.skill ? world.skill.shake : 0;
+      state.hurtShake = Math.max(0, (state.hurtShake || 0) - dt * 2.2);
+      const shake = Math.max(world.skill ? world.skill.shake : 0, state.hurtShake);
       if (shake > 0.002) camera.position.add(new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).multiplyScalar(shake * 0.35));
       state.cameraTarget.lerp(player.position.clone().add(new THREE.Vector3(0, riding ? 2.45 : state.heroRig ? 1.45 : 1.3, 0)), 0.2);
       camera.lookAt(state.cameraTarget);
@@ -493,7 +495,7 @@
         else if (e.code === 'KeyC' && state.grounded && ctl.dodge()) { showToast('Dodge roll'); playAt('roll'); }
         return;
       }
-      if (e.code === 'Space' || e.code === 'KeyF') state.attackTimer = 0.95;
+      if (e.code === 'Space' || e.code === 'KeyF') { state.attackTimer = 0.95; setTimeout(() => world.birds && world.birds.swordHit({ kind: 'combo' }), 280); }
     };
     const onKeyUp = e => { state.keys[e.code] = false; if (e.code === 'KeyT') world.sky && world.sky.fastForward(false); };
     const onBlur = () => { for (const k in state.keys) state.keys[k] = false; };
@@ -540,13 +542,34 @@
       if (document.pointerLockElement === canvas) document.exitPointerLock?.();
     }
 
+    // ------------------------------------------------ damage (red birds) and defeat
+    function heroHit(frac, dir, at) {
+      if (!world.health || world.health.dead) return;
+      world.health.damage(frac, { at });
+      state.hurtShake = 0.7; state.idleT = 0; state.heroRig && state.heroRig.controller.cancelIdleFun && state.heroRig.controller.cancelIdleFun();
+      if (!(world.horse && world.horse.riding) && dir) { state.velocity.x += dir.x * 7; state.velocity.z += dir.z * 7; }
+      if (!state.birdTip && !world.health.dead) { state.birdTip = true; setTimeout(() => showToast(world.touch && world.touch.enabled ? 'Tap Roll as a red bird dives: if it misses, it crashes' : 'Roll (C) as a red bird dives: if it misses, it crashes'), 900); }
+    }
+    function heroDefeated() {
+      world.birds && world.birds.resetHunts();
+      showToast('You were defeated…');
+      let fade = document.getElementById('heroFade');
+      if (!fade) { fade = document.createElement('div'); fade.id = 'heroFade'; Object.assign(fade.style, { position: 'absolute', inset: '0', background: '#000', opacity: '0', transition: 'opacity .9s', pointerEvents: 'none', zIndex: '45' }); canvas.parentElement.appendChild(fade); }
+      requestAnimationFrame(() => fade.style.opacity = '1');
+      setTimeout(() => {
+        if (!running) return;
+        if (!(world.horse && world.horse.riding)) { const S = L.SPAWN; debug.teleport(S.x, S.z, S.yaw); state.velocity.set(0, 0, 0); }   // back to the safety of Dawnmeadow
+        world.health && world.health.reset(); fade.style.opacity = '0'; showToast('You wake in Dawnmeadow');
+      }, 2200);
+    }
+
     // ------------------------------------------------ loop
     function step(dt) {
       timeU.value += dt;
       if (state.editing && world.editor) {                 // gameplay paused: hero idles, editor drives the camera
         state.heroRig?.controller.update(dt, { moving: false, running: false, airborne: false, speed: 0 }); world.skill && world.skill.update(dt); world.extras && world.extras.update(dt);
         world.editor.update(dt);
-      } else { updateMovement(dt); updateCamera(dt); updateRegion(dt); world.npcs && world.npcs.update(dt); }
+      } else { updateMovement(dt); updateCamera(dt); updateRegion(dt); world.npcs && world.npcs.update(dt); world.birds && world.birds.update(dt); world.health && world.health.update(dt); }
       world.layer.update(dt, camera.position.x, camera.position.z);
       world.sky.update(dt, camera, state.editing && world.editor ? world.editor.cam.focus : player.position);   // shadows follow whatever we look at
       world.grass.update(camera, player.position);
@@ -554,7 +577,7 @@
       sfx && sfx.ambient(dt, { day: A.Mat.U.uDay.value, night: MU.uNight.value });
       if (world.clockEl) { const t = world.sky.clockText(); if (world.clockEl.textContent !== t) world.clockEl.textContent = t; }
     }
-    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get horse() { return world.horse; }, get extras() { return world.extras; }, get npcs() { return world.npcs; }, get touch() { return world.touch; }, get audio() { return sfx; }, get rig() { return state.heroRig || state.rig; },
+    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get horse() { return world.horse; }, get extras() { return world.extras; }, get npcs() { return world.npcs; }, get touch() { return world.touch; }, get birds() { return world.birds; }, get health() { return world.health; }, get audio() { return sfx; }, get rig() { return state.heroRig || state.rig; },
       tick: dt => step(dt), render: () => renderFrame(), setHour: h => world.sky.setHour(h), setQuality: q => setQuality(q), get quality() { return quality; }, texturesReady,
       teleport(x, z, yaw = player.rotation.y) { player.position.set(x, groundAt(x, z, 999).h, z); player.rotation.y = yaw; state.camYaw = yaw; state.cameraVelocity.copy(player.position).add(new THREE.Vector3(-Math.sin(yaw) * 5, 3, -Math.cos(yaw) * 5)); state.cameraTarget.copy(player.position); state.region = null; state.regionTimer = 0; } };
     window.Phase1Debug = debug; window.KingdomDebug = debug;
@@ -572,6 +595,13 @@
         const hint = document.getElementById('keyHintLine'); if (hint) hint.style.display = 'none';      // no controls text over the 3D world
         await nextFrame(); buildWorld(); await nextFrame();
         await loadHero(); spawn(); updateCamera(); updateRegion(0);
+        // hero health + the red birds (flocks across the wilds; the model streams in now, it is small)
+        const fx = (n, o) => playAt(n, o && o.at, o || {});
+        if (A.createHeroHealth) world.health = A.createHeroHealth({ root: canvas.parentElement, sfx: fx, onDefeat: heroDefeated });
+        if (A.createRedBirds) { world.birds = A.createRedBirds({ THREE, scene, world, player, camera, sfx: fx, showToast, health: world.health,
+          hero: () => state.heroRig || state.rig, controller: () => state.heroRig && state.heroRig.controller,
+          horseFast: () => !!(world.horse && world.horse.riding && world.horse.speed > 6), onHeroHit: heroHit });
+          world.birds.load().catch(e => console.warn('Red birds:', e)); }
         if (A.createTownsfolk) { say('Waking the townsfolk…'); world.npcs = A.createTownsfolk({ THREE, scene, world, player, camera, root: canvas.parentElement }); }
         say('Painting stone, soil and bark…'); await texturesReady;
         step(0); renderFrame();                          // compile every shader before the loading screen lifts
@@ -581,7 +611,7 @@
         loading && loading.classList.add('hidden'); showToast(world.fromSave ? 'Saved kingdom loaded' : 'Welcome to Aethelos'); tick();
         if (world.horse) setTimeout(() => running && world.horse.load().catch(e => console.warn('Horse:', e)), 2500);   // stream the horse in the background
       },
-      stop() { running = false; unbindInput(); world.touch && world.touch.dispose(); world.touch = null; sfx && sfx.dispose(); world.npcs && world.npcs.dispose(); const hint = document.getElementById('keyHintLine'); if (hint) hint.style.display = ''; world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.horse && world.horse.dispose(); world.extras && world.extras.dispose(); world.layer && world.layer.dispose();
+      stop() { running = false; unbindInput(); world.birds && world.birds.dispose(); world.birds = null; world.health && world.health.dispose(); world.health = null; document.getElementById('heroFade')?.remove(); world.touch && world.touch.dispose(); world.touch = null; sfx && sfx.dispose(); world.npcs && world.npcs.dispose(); const hint = document.getElementById('keyHintLine'); if (hint) hint.style.display = ''; world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.horse && world.horse.dispose(); world.extras && world.extras.dispose(); world.layer && world.layer.dispose();
         world.grass && world.grass.dispose(); world.water && world.water.dispose(); world.post && world.post.dispose(); world.sky && world.sky.dispose(); world.clockEl && world.clockEl.remove(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
       toggleEditor() { world.editor && world.editor.toggle(); },
       resetCamera() { state.camYaw = player.rotation.y; state.camPitch = 0.30; state.camZoom = 1; showToast('Camera reset'); }

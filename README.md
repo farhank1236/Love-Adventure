@@ -101,6 +101,28 @@ On a touch phone or tablet (iPhone, Android, iPad), the 3D world switches to tou
 
 `?touch=1` forces the touch layout on a desktop and `?touch=0` turns it off. `node tests/touch-mobile.cjs` checks it on an emulated iPhone, in portrait and landscape.
 
+### Red Birds (first enemy)
+
+The weakest enemy: one hit kills them. They live in flocks of 6–18 across the open country (`assets/world/birds.js`; the model and poser are in `assets/world/redbird-rig.js`).
+
+- **Flying flocks**
+  - They roam their patch of sky 8–13 m up. When they see the hero (within 40 m) they circle above him and attack in pairs.
+  - The two birds take positions on his left and right and hover. A red aura grows on them, they screech, and a red ring marks the locked spot. Then both dash in a straight line, the second a beat after the first.
+  - A hit costs 10% of the hero's health; the bird bounces off and rejoins the flock.
+  - If he rolls through the dash (or simply isn't there any more), the bird can't pull out: it crashes into the ground and dies.
+- **Ground flocks**
+  - They peck at the grass in their meadow, look around and hop, and ignore the hero. They only hop aside if he walks right up, or gallops past on the horse.
+  - Strike one of them, with the sword or a sonic boom, and the whole group takes off and hunts him. Afterwards they settle back on their meadow.
+- **Night:** flying flocks roost on the ground and take off again at dawn.
+- **Guarded areas:** they never enter the city, the palace, the noble houses or Dawnmeadow, and a hunt breaks off at the edge of those areas.
+- **Respawn:** a dead bird returns to its flock one game day later (24 game hours = 24 real minutes).
+- **Hero health:**
+  - The bar sits bottom-left on a computer and top-left on a phone.
+  - It regenerates 3% per second after 8 s without damage.
+  - At 0 the hero wakes in Dawnmeadow with full health.
+- **Model:** 3,000 triangles, baked from the 500,000-triangle sculpt with the same design; see `tools/bird/README.md`.
+- **Test:** `node tests/red-birds.cjs`.
+
 ### Azure Tempest (V)
 
 V plays a full power-up pose (the sword is summoned and planted, then thrust out at the burst), then he burns with dark-cored blue fire over his whole body and sword for 6 s. During that window every attack also throws a sonic boom: a crescent of blue fire over 4 m tall that flies dead straight along the line he faces. Combo hits 1 and 3 throw it tilted right, 2 and 4 tilted left, and the finisher throws both at once as an X. Each boom skims the ground, throwing up dust, embers and a flame wake. Hold an arrow key while attacking to aim. If an enemy is in front (within 45 m and 40°), the boom locks on and flies straight into it. Booms burst on walls and buildings. The blue fire is a thin glow over his whole body, so his face and armour stay visible. V can be used again 12 s after ignition (6 s active, then a 6 s cooldown, shown by the V icon). Only the Male Warrior has the skill. Booms report hits through `Aethelos.Combat` (`register({position, radius, onHit})`), ready for enemies. The code is in `assets/world/sonic-skill.js`, and `node tests/hero-skill.cjs` checks it.
