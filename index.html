@@ -1930,6 +1930,11 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 <script src="assets/viewer/three-runtime.js?v=heroes-v14-1"></script>
 <script src="assets/viewer/female-warrior-rig.js?v=heroes-v14-1"></script>
 <script src="assets/viewer/hero-rig.js?v=hero-v4-2"></script>
+<script src="assets/world/kingdom-layout.js?v=kingdom-1"></script>
+<script src="assets/world/terrain.js?v=kingdom-1"></script>
+<script src="assets/world/models.js?v=kingdom-1"></script>
+<script src="assets/world/kingdom-objects.js?v=kingdom-1"></script>
+<script src="assets/world/world.js?v=kingdom-1"></script>
 <script>
 let WARRIOR_MODEL='',FEMALE_WARRIOR_MODEL='';
 function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAsset(THREE,encoded,options);}
@@ -2097,6 +2102,10 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
 <script src="assets/viewer/enemy-rig.js?v=14"></script>
 <script src="assets/viewer/enemy-game.js?v=14"></script>
 <style>
+  #phase1Banner { position: fixed; left: 50%; top: 17%; transform: translate(-50%, 8px); text-align: center; pointer-events: none; opacity: 0; transition: opacity .7s ease, transform .7s ease; z-index: 40; }
+  #phase1Banner.show { opacity: 1; transform: translate(-50%, 0); }
+  #phase1Banner b { display: block; font: 700 clamp(26px, 4.4vw, 46px)/1.05 'Fredoka', 'Nunito', sans-serif; letter-spacing: .08em; color: #fff7e2; text-transform: uppercase; text-shadow: 0 3px 14px rgba(8, 22, 40, .7), 0 0 2px rgba(8, 22, 40, .9); }
+  #phase1Banner span { display: inline-block; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255, 236, 190, .7); font: 600 clamp(12px, 1.4vw, 15px)/1.2 'Nunito', sans-serif; letter-spacing: .28em; color: #ffe9b8; text-transform: uppercase; text-shadow: 0 2px 8px rgba(8, 22, 40, .8); }
   body.phase1-3d-running {
     overflow: hidden;
     background: #07101b;
@@ -2296,14 +2305,14 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       <div id="phase1Loading">
         <div class="phase1-load-card phase1-panel">
           <h1>Loading Aethelos</h1>
-          <p id="phase1LoadingText">Preparing the 3D world, approved warrior model, movement, and third-person camera.</p>
+          <p id="phase1LoadingText">Preparing the kingdom of Aethelos…</p>
         </div>
       </div>
       <div id="phase1Hud">
         <div class="phase1-top">
           <div class="phase1-panel">
             <h1>Aethelos</h1>
-            <p>Phase 1: the selected warrior in one playable 3D scene with a smooth third-person camera. The Male Warrior summons his sword, chains a 5-hit combo, does directional attacks and dodge-rolls.</p>
+            <p>The Kingdom of Aethelos: roam the city, the palace, the noble houses, Farm Valley, Moonpine Forest and the Ironpeak Mountains.</p>
           </div>
           <div class="phase1-status">
             <span class="phase1-pill">Hero: <b id="phase1HeroLabel">Warrior</b></span>
@@ -2312,6 +2321,7 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
           </div>
         </div>
         <div id="phase1Toast">Ready</div>
+        <div id="phase1Banner" aria-live="polite"><b></b><span></span></div>
         <div class="phase1-center">Arrows move | X run | Z jump | Space attack (↑+Space stab up, ↓+Space low slash) | C dodge roll | Mouse turns camera · wheel zooms</div>
         <div class="phase1-controls phase1-panel"><b>Controls:</b> Arrow keys (or WASD) move relative to the camera. Hold X (or Shift) to run. Z jumps. Space attacks: the first press summons the sword from the pocket dimension and presses chain a 5-hit combo; ↑ + Space (or Space then ↑) is a rising vertical stab and ↓ + Space a low horizontal slash. C is a forward dodge roll. The sword vanishes after 5 s without attacking. Move the mouse to turn the camera (click the world once to lock the mouse for unlimited turning, Esc releases); mouse wheel zooms; on touch, drag.</div>
         <div class="phase1-actions phase1-panel">
@@ -2859,7 +2869,11 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
     gameScreen?.classList.remove('hidden');
     gameScreen?.classList.add('flex');
     document.body.classList.add('phase1-3d-running');
-    app = createPhase1World(hero);
+    if (window.Aethelos?.createKingdom) ensurePhase1Shell();
+    app = window.Aethelos?.createKingdom
+      ? Aethelos.createKingdom(hero, { canvas: $('phase1Canvas'), loading: $('phase1Loading'), loadingText: $('phase1LoadingText'), toast: $('phase1Toast'),
+          heroLabel: $('phase1HeroLabel'), stateLabel: $('phase1StateLabel'), speedLabel: $('phase1SpeedLabel'), banner: $('phase1Banner') })
+      : createPhase1World(hero);
     await app.start();
     return true;
   };

@@ -35,17 +35,18 @@ const OUT = process.env.QA_DIR || '/tmp/hero-qa';
     const ev = (type, code) => dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
     for (const key of Object.keys(k)) k[key] = false; hold.forEach(h => ev('keydown', h));
     const log = [], p0 = D.player.position.clone(); let maxY = 0, clipTs = 0;
+    const ground = () => D.world ? D.world.terrain.heightAt(D.player.position.x, D.player.position.z) : 0;   // kingdom terrain is not at y = 0
     for (let i = 0; i < Math.round(sec * 30); i++) {
       if (i === 0) press.forEach(p => ev('keydown', p));
       D.tick(1 / 30);
       if (i === 1) press.forEach(p => { if (!hold.includes(p)) ev('keyup', p); });
       const s = D.rig.controller.state; log.push(s.mode + (s.swordOut ? '+' : '-') + (s.attackKind && s.mode === 'attack' ? ':' + s.attackKind : ''));
-      maxY = Math.max(maxY, D.player.position.y);
+      maxY = Math.max(maxY, D.player.position.y - ground());
     }
     hold.forEach(h => ev('keyup', h)); for (const key of Object.keys(k)) k[key] = false;
     const m = D.rig.controller.mixer, acts = m._actions.filter(a => a.isRunning() && a.getEffectiveWeight() > .5).map(a => a.getClip().name + '@' + a.timeScale.toFixed(2));
     const s = D.rig.controller.state, g = D.rig.byName.Sword_Grip, v = g.getWorldScale(g.position.clone());
-    return { mode: s.mode, swordOut: s.swordOut, combo: s.combo, kind: s.attackKind, swordScale: +v.x.toFixed(3), y: +D.player.position.y.toFixed(2), maxY: +maxY.toFixed(2),
+    return { mode: s.mode, swordOut: s.swordOut, combo: s.combo, kind: s.attackKind, swordScale: +v.x.toFixed(3), y: +(D.player.position.y - ground()).toFixed(2), maxY: +maxY.toFixed(2),
       moved: +D.player.position.clone().sub(p0).setY(0).length().toFixed(2), acts, log: [...new Set(log)] };
   }, { sec, hold, press });
   const shot = async n => { await page.evaluate(() => Phase1Debug.render()); await page.screenshot({ path: `${OUT}/${n}.png` }); };
@@ -77,7 +78,7 @@ const OUT = process.env.QA_DIR || '/tmp/hero-qa';
   expect(cam.dyaw < -.3 && cam.dpitch < 0, 'mouse movement without clicking turns the camera', cam);
   expect(cam.dist > 4 && cam.dist < 7.5, 'camera is close to the warrior', cam);
   let p = await run(1.0); expect(!p.swordOut && p.swordScale < .05, 'sword stored at start', p); await shot('01-idle-stored');
-  p = await run(0.5, [], ['Space']); expect(p.mode === 'summon' || p.swordOut, 'Space summons the sword (does not jump)', p); expect(p.maxY === 0, 'Space does not jump', p);
+  p = await run(0.5, [], ['Space']); expect(p.mode === 'summon' || p.swordOut, 'Space summons the sword (does not jump)', p); expect(p.maxY < 0.05, 'Space does not jump', p);
   p = await run(2.0); expect(p.swordOut, 'sword out after summon + Attack1', p); await shot('02-attack1');
   p = await run(1.0); p = await run(0.15, [], ['Space']); expect(p.mode === 'attack' && p.kind === 'combo', 'combo attack starts', p);
   for (let i = 0; i < 4; i++) { p = await run(0.12, [], ['Space']); }
@@ -99,7 +100,7 @@ const OUT = process.env.QA_DIR || '/tmp/hero-qa';
   p = await run(0.2, [], ['KeyC']); expect(p.mode === 'dodge' && !p.swordOut, 'C = dodge roll unarmed', p); await shot('11-dodge');
   p = await run(1.3); expect(p.mode === 'free', 'unarmed roll finishes', p);
   p = await run(0.3, [], ['KeyZ']); expect(p.y > .3, 'Z jumps', p); await shot('12-jump');
-  p = await run(1.0); expect(p.y === 0, 'lands', p);
+  p = await run(1.0); expect(Math.abs(p.y) < 0.05, 'lands', p);
   await browser.close();
   console.log(JSON.stringify({ info: { ...info, clips: info.clips.length }, missing, errors, fails }, null, 1));
   if (missing.length || errors.length || fails.length || info.revision !== 'HERO_V4' || info.bodyTex < 2048 || info.swordTex < 1024 || !info.glow || !info.light) process.exit(1);

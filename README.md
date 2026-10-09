@@ -2,6 +2,32 @@
 
 The game has two playable heroes: **Male Warrior** and **Female Warrior**, both using the verified V14 3D bodies, rigs, and full-body sword animations. Selection previews, gameplay, both stages, restart, and Continue share `assets/viewer/hero-config.js`. Old saves migrate to `maleWarrior` or `femaleWarrior` while preserving stage, health, and ultimate charge.
 
+## The Kingdom of Aethelos (3D open world)
+
+**Begin Adventure** opens one continuous 1.2 km × 1.2 km kingdom. The title screen, menus and hero select are unchanged.
+
+- **Starting area:** you start in Dawnmeadow (safe area, waystone, portal, practice dummies). King's Way crosses the Silvermere on a stone bridge to the city.
+- **Main City (Aethelgard):** walls with four gates and eight towers, ring and cross streets, about 130 houses, Crown Plaza (fountain, market stalls, statue), the Adventure Guild with quest board and training dummies, the Gilded Tankard tavern, a restaurant, shops, a general store, street lamps, NPC and guard placeholders.
+- **Royal Palace:** on its plateau north of the city, reached by the Royal Road. Banners, curtain walls, towers, gate and guard posts, garden courtyard, story marker.
+- **House Aldmere** (west): elegant manor, hedged gardens, gazebo, fountain.
+- **House Brenmoor** (south): granary hall, barns, silos, hay.
+- **House Varkhold** (Ironpeak foothills): keep, stone walls, watchtowers, soldiers' camp.
+- **Farm Valley:** wheat and vegetable fields, fences, barns, farmhouses, a turning windmill, wells, the Millrace irrigation channel.
+- **Moonpine Forest:** about 2,000 trees, Pinewhisper Path, a woodcutters' camp, a cave, treasure chests, enemy spawn markers.
+- **Ironpeak Mountains:** snow peaks, the Ironpeak Pass, the mine, the Shattered Crown boss-arena placeholder, camps.
+- **Rivers:** the Silvermere, Moonbrook and Millrace. Bridges are placed automatically where roads cross.
+
+**Movement:** the hero walks on the terrain, crosses bridges, wades only in shallow water, and can't pass through buildings, walls, trees or rocks. A banner names each area as you enter it.
+
+**Code:** the world is modular, in `assets/world/`:
+- `kingdom-layout.js`: regions, rivers, roads, height shaping.
+- `terrain.js`: heightfield with carved rivers and graded roads.
+- `models.js`: about 75 low-poly model types with colliders. A type can be replaced by a GLB later under the same id.
+- `kingdom-objects.js`: the default object list. Every object has id, name, type, category, position, rotation, scale and metadata, ready for the editor and JSON save/load.
+- `world.js`: rendering (tiled instancing, shadows near the player), collision, player, camera.
+
+**Tests:** `node tests/kingdom-world.cjs` checks regions, landmarks, bridges, water, walls and banners for both warriors.
+
 ## Male Warrior: v4 caped sword warrior (3D world)
 
 New Game → Begin Adventure opens the Phase 1 3D world. There, the **Male Warrior** is the v4 caped sword warrior (`assets/viewer/hero-rig.js`, model `assets/models/hero-01.js` … `hero-08.js`, revision `HERO_V4`). The Female Warrior keeps her V14 model.
