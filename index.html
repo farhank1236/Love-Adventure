@@ -2,7 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- installable: "Add to Home Screen" opens the game with no browser bars (the only true full screen on iPhone) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Æthelos">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="assets/icons/icon-180.png">
     <title>Æthelos — A Noble End</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1944,7 +1952,7 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 <script src="assets/world/sonic-skill.js?v=lod-1"></script>
 <script src="assets/world/audio.js?v=sfx-1"></script>
 <script src="assets/world/npcs.js?v=npc-1"></script>
-<script src="assets/world/touch.js?v=touch-2"></script>
+<script src="assets/world/touch.js?v=touch-3"></script>
 <script src="assets/world/portal.js?v=horse-1"></script>
 <script src="assets/world/hero-extras.js?v=perf-1"></script>
 <script src="assets/world/horse.js?v=lod-1"></script>
@@ -2871,6 +2879,7 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
   }
 
   window.startGame = async function startPhase1Game() {
+    try { window.Aethelos?.enterGameFullscreen?.(); } catch (_) {}   // phones: the game takes the whole screen (still inside the tap)
     stopPhase1World();
     const hero = HeroSystem.resolve(playerGender);
     gameRunning = false;

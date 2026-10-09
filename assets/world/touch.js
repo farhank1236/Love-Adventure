@@ -27,6 +27,19 @@
     mute: '<path d="M14 26 H22 L34 16 V48 L22 38 H14 Z" fill="currentColor"/><path d="M40 26 L52 38 M52 26 L40 38" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>',
     full: '<path d="M14 24 V14 H24 M40 14 H50 V24 M50 40 V50 H40 M24 50 H14 V40" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'
   };
+  const standalone = () => (window.matchMedia && matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) || navigator.standalone === true;
+  const canFullscreen = () => !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+  // call straight from a tap (Begin Adventure / Continue): fullscreen + landscape lock where the browser allows it (Android, iPad)
+  function enterGameFullscreen() {
+    if (!isTouchDevice() || standalone()) return;
+    const el = document.documentElement;
+    try {
+      const done = () => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (_) {} };
+      if (document.fullscreenElement || document.webkitFullscreenElement) return done();
+      const r = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen ? el.webkitRequestFullscreen() : null;
+      if (r && r.then) r.then(done, () => {}); else done();
+    } catch (_) {}
+  }
   const svg = k => `<svg viewBox="0 0 64 64" aria-hidden="true">${ICON[k]}</svg>`;
   function createTouchControls({ root, state, showToast, onRotate }) {
     if (!isTouchDevice()) return { enabled: false, rotated: false, dispose() {} };
@@ -75,6 +88,12 @@
       #touchRotateHint { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); padding: 10px 16px; border-radius: 12px; background: rgba(8, 16, 30, .78); color: #eaf4ff;
         font: 600 14px/1.3 system-ui, sans-serif; pointer-events: none; opacity: 0; transition: opacity .4s; z-index: 41; text-align: center; }
       #touchRotateHint.show { opacity: 1; }
+      #touchIosTip { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, 80%); padding: 14px 18px; border-radius: 14px; background: rgba(8, 16, 30, .9);
+        border: 1px solid rgba(190, 220, 255, .35); color: #eaf4ff; font: 500 14px/1.45 system-ui, sans-serif; text-align: center; z-index: 42; pointer-events: none; opacity: 0; transition: opacity .35s; }
+      #touchIosTip.show { opacity: 1; pointer-events: auto; }
+      #touchIosTip .sh { display: inline-block; padding: 0 6px; border-radius: 6px; background: rgba(120, 170, 255, .25); font-weight: 700; }
+      #touchIosTip small { display: block; margin-top: 8px; opacity: .6; font-size: 11px; }
+      html.touch-lock, html.touch-lock body { background: #000 !important; }
       body.touch-ui #skillV { position: absolute !important; pointer-events: auto !important; right: calc(176px + var(--sr)) !important; bottom: 128px !important; width: 62px !important; height: 62px !important; }
     `; document.head.appendChild(st); }
     const ui = document.createElement('div'); ui.id = 'touchUI'; root.appendChild(ui);
@@ -144,14 +163,24 @@
     }
     async function goLandscape(toggle = false) {
       const el = document.documentElement;
+      if (toggle && !canFullscreen() && !standalone()) { showIosTip(true); return; }
       try {
-        if (toggle && document.fullscreenElement) { await document.exitFullscreen(); return; }
+        if (toggle && (document.fullscreenElement || document.webkitFullscreenElement)) { await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen()); return; }
         if (!document.fullscreenElement && el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
-        else if (!document.fullscreenElement && el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        else if (!document.webkitFullscreenElement && el.webkitRequestFullscreen) el.webkitRequestFullscreen();
       } catch (_) {}
       try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch (_) {}
       setTimeout(layout, 350);
     }
+    const tip = document.createElement('div'); tip.id = 'touchIosTip';
+    tip.innerHTML = '<b>Full screen on iPhone</b><br>Tap <span class="sh">Share</span> then <b>Add to Home Screen</b>.<br>Open Æthelos from that icon: no Safari bars, only the game.<small>tap to close</small>';
+    tip.addEventListener('pointerdown', e => { e.stopPropagation(); tip.classList.remove('show'); }); ui.appendChild(tip);
+    function showIosTip(force) {
+      let n = 0; try { n = +localStorage.getItem('aethelos.iosTip.v1') || 0; } catch (_) {}
+      if (!force && n >= 3) return; try { localStorage.setItem('aethelos.iosTip.v1', String(n + 1)); } catch (_) {}
+      tip.classList.add('show'); clearTimeout(showIosTip.t); showIosTip.t = setTimeout(() => tip.classList.remove('show'), 9000);
+    }
+    if (!canFullscreen() && !standalone()) setTimeout(() => showIosTip(false), 1500);
     const first = () => { goLandscape(); };
     root.addEventListener('pointerdown', first, { once: true, capture: true });
     addEventListener('resize', layout); window.visualViewport && visualViewport.addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(layout, 250));
@@ -165,5 +194,5 @@
         removeEventListener('resize', layout); state.touchMove = null; }
     };
   }
-  A.createTouchControls = createTouchControls; A.isTouchDevice = isTouchDevice;
+  A.createTouchControls = createTouchControls; A.isTouchDevice = isTouchDevice; A.enterGameFullscreen = enterGameFullscreen;
 })();
