@@ -10,3 +10,5 @@ This file is not loaded directly by the browser game. The current game runtime l
 The script saves `hero-sword-v3.blend`. After that, export the hero as a GLB and convert it into the same chunked JavaScript model format used by the existing playable heroes. Store the generated runtime chunks in this directory or replace the approved `male-XX.js` chunks, then update `assets/viewer/hero-config.js` to point at the new chunk set and revision.
 
 Until those exported runtime chunks exist, the playable in-game hero remains the approved V14 warrior so the menu, character selection, and 3D world do not break.
+
+**Update:** this hero is now live as v4. Its runtime chunks are `assets/models/hero-01.js` … `hero-08.js`, loaded by `assets/viewer/hero-rig.js`, and the Phase 1 3D world plays it as the Male Warrior. It was built with the pure-Python pipeline in `tools/hero/`, so Blender wasn't needed.

@@ -1924,10 +1924,11 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 })();
 
 </script>
-<div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">R run · Ctrl sprint · Space attack · Full-body combo</div>
+<div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">Arrows move · X run · Z jump · Space attack · C dodge</div>
 <script>window.AethelosModelParts={male:[],female:[]};window.LoveAdventureModelParts=window.AethelosModelParts;</script>
 <script src="assets/viewer/three-runtime.js?v=heroes-v14-1"></script>
 <script src="assets/viewer/female-warrior-rig.js?v=heroes-v14-1"></script>
+<script src="assets/viewer/hero-rig.js?v=hero-v4-1"></script>
 <script>
 let WARRIOR_MODEL='',FEMALE_WARRIOR_MODEL='';
 function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAsset(THREE,encoded,options);}
@@ -2301,7 +2302,7 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
         <div class="phase1-top">
           <div class="phase1-panel">
             <h1>Aethelos</h1>
-            <p>Phase 1 foundation: selected warrior, one playable 3D scene, smooth third-person camera, walk, run, turn, jump, and attack preview.</p>
+            <p>Phase 1: the selected warrior in one playable 3D scene with a smooth third-person camera. The Male Warrior summons his sword, chains a 5-hit combo, does directional attacks and dodge-rolls.</p>
           </div>
           <div class="phase1-status">
             <span class="phase1-pill">Hero: <b id="phase1HeroLabel">Warrior</b></span>
@@ -2310,8 +2311,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
           </div>
         </div>
         <div id="phase1Toast">Ready</div>
-        <div class="phase1-center">WASD move | Shift run | Space jump | Mouse drag rotate | F attack preview</div>
-        <div class="phase1-controls phase1-panel"><b>Controls:</b> WASD/Arrow Keys move relative to camera. Shift runs. Space jumps. Hold and drag mouse/touch to rotate camera. F plays attack preview.</div>
+        <div class="phase1-center">Arrows move | X run | Z jump | Space attack (↑+Space stab up, ↓+Space low slash) | C dodge roll | Mouse drag rotate</div>
+        <div class="phase1-controls phase1-panel"><b>Controls:</b> Arrow keys (or WASD) move relative to the camera. Hold X (or Shift) to run. Z jumps. Space attacks: the first press summons the sword from the pocket dimension and presses chain a 5-hit combo; ↑ + Space (or Space then ↑) is a rising vertical stab and ↓ + Space a low horizontal slash. C is a forward dodge roll. The sword vanishes after 5 s without attacking. Hold and drag mouse/touch to rotate the camera.</div>
         <div class="phase1-actions phase1-panel">
           <button type="button" id="phase1BackToMenu">Main Menu</button>
           <button type="button" id="phase1ResetCamera">Reset Camera</button>
@@ -2558,10 +2559,28 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       sun.shadow.camera.bottom = -80;
       scene.add(sun);
     }
+    // The Male Warrior is the v4 caped sword warrior (assets/viewer/hero-rig.js + hero-01..08.js): summonable sword,
+    // 5-hit combo, Up/Down directional attacks, dodge roll, layered animation controller. Other heroes use HeroSystem.
+    const useV4Warrior = hero.gender === 'male' && !!window.HeroRig;
     async function loadHero() {
       heroLabel.textContent = hero.name;
       state.fallback = createFallbackHero(THREE, hero.gender, helpers);
       heroMount.add(state.fallback);
+      if (useV4Warrior) {
+        try {
+          const rig = await HeroRig.loadHero(THREE);
+          rig.root.traverse(o => { if (o.isMesh && !o.material.transparent) o.castShadow = true; });
+          heroMount.remove(state.fallback);
+          state.fallback = null;
+          state.heroRig = rig;                      // native 2 m tall, faces +Z: speeds below match its clips 1:1
+          heroMount.add(rig.root);
+          showToast(hero.name + ' loaded');
+        } catch (error) {
+          console.warn(error);
+          showToast('Using fallback until model loads');
+        }
+        return;
+      }
       try {
         const rig = await HeroSystem.createRig(THREE, hero);
         await rig.textureReady;
@@ -2595,7 +2614,58 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
         state.fallback.rotation.z = moving ? Math.sin(performance.now() * 0.0102) * 0.04 : 0;
       }
     }
+    function updateWarriorV4(dt) {
+      const k = state.keys, ctl = state.heroRig.controller;
+      const input = new THREE.Vector3(
+        Number(!!(k.KeyD || k.ArrowRight)) - Number(!!(k.KeyA || k.ArrowLeft)),
+        0,
+        Number(!!(k.KeyS || k.ArrowDown)) - Number(!!(k.KeyW || k.ArrowUp))
+      );
+      const moving = input.lengthSq() > 0;
+      const running = !!(k.KeyX || k.ShiftLeft || k.ShiftRight);
+      if (ctl.dodging) {
+        // the roll moves the player along its ground-contact curve, so the planted feet never slide
+        const v = ctl.dodgeSpeed();
+        state.velocity.x = Math.sin(player.rotation.y) * v;
+        state.velocity.z = Math.cos(player.rotation.y) * v;
+      } else if (moving) {
+        input.normalize();
+        const sin = Math.sin(state.camYaw), cos = Math.cos(state.camYaw);
+        const dir = new THREE.Vector3(input.x * cos + input.z * sin, 0, input.z * cos - input.x * sin).normalize();
+        const target = ctl.speedFor(true, running) * (ctl.attacking ? 0.15 : 1);
+        state.velocity.x = THREE.MathUtils.lerp(state.velocity.x, dir.x * target, 0.18);
+        state.velocity.z = THREE.MathUtils.lerp(state.velocity.z, dir.z * target, 0.18);
+        const targetYaw = Math.atan2(dir.x, dir.z);
+        player.rotation.y += Math.atan2(Math.sin(targetYaw - player.rotation.y), Math.cos(targetYaw - player.rotation.y)) * 0.22;
+      } else {
+        state.velocity.x = THREE.MathUtils.lerp(state.velocity.x, 0, 0.22);
+        state.velocity.z = THREE.MathUtils.lerp(state.velocity.z, 0, 0.22);
+      }
+      const wantsJump = !!k.KeyZ;
+      if (wantsJump && !state.jumpLatch && state.grounded && !ctl.busy) {
+        state.jumpVelocity = 6.8;
+        state.grounded = false;
+      }
+      state.jumpLatch = wantsJump;
+      state.jumpVelocity -= 24 * dt;
+      player.position.y += state.jumpVelocity * dt;
+      if (player.position.y <= 0) {
+        player.position.y = 0;
+        state.jumpVelocity = 0;
+        state.grounded = true;
+      }
+      player.position.x = THREE.MathUtils.clamp(player.position.x + state.velocity.x * dt, -120, 120);
+      player.position.z = THREE.MathUtils.clamp(player.position.z + state.velocity.z * dt, -120, 120);
+      state.currentSpeed = Math.hypot(state.velocity.x, state.velocity.z);
+      ctl.update(dt, { moving, running, airborne: !state.grounded, speed: state.currentSpeed });
+      speedLabel.textContent = state.currentSpeed.toFixed(1);
+      const S = ctl.state;
+      stateLabel.textContent = S.mode === 'dodge' ? 'Dodge roll' : S.mode === 'attack' ? (S.attackKind === 'up' ? 'Rising stab' : S.attackKind === 'down' ? 'Low slash' : 'Attack ' + (S.combo + 1))
+        : S.mode === 'summon' ? 'Summoning sword' : S.mode === 'dismiss' ? 'Sword vanishing' : !state.grounded ? 'Jumping'
+        : moving ? (running ? 'Running' : 'Walking') : S.swordOut ? 'Guard' : 'Idle';
+    }
     function updateMovement(dt) {
+      if (state.heroRig) return updateWarriorV4(dt);
       const k = state.keys;
       const input = new THREE.Vector3(
         Number(!!(k.KeyD || k.ArrowRight)) - Number(!!(k.KeyA || k.ArrowLeft)),
@@ -2603,7 +2673,7 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
         Number(!!(k.KeyS || k.ArrowDown)) - Number(!!(k.KeyW || k.ArrowUp))
       );
       const moving = input.lengthSq() > 0;
-      const sprinting = !!(k.ShiftLeft || k.ShiftRight);
+      const sprinting = !!(k.KeyX || k.ShiftLeft || k.ShiftRight);
       const targetSpeed = moving ? (sprinting ? 13 : 7) : 0;
       state.currentSpeed = THREE.MathUtils.lerp(state.currentSpeed, targetSpeed, targetSpeed > state.currentSpeed ? 0.16 : 0.22);
       if (moving) {
@@ -2618,7 +2688,7 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
         state.velocity.x = THREE.MathUtils.lerp(state.velocity.x, 0, 0.24);
         state.velocity.z = THREE.MathUtils.lerp(state.velocity.z, 0, 0.24);
       }
-      const wantsJump = !!k.Space;
+      const wantsJump = !!k.KeyZ;
       if (wantsJump && !state.jumpLatch && state.grounded) {
         state.jumpVelocity = 10.8;
         state.grounded = false;
@@ -2650,7 +2720,7 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       ));
       state.cameraVelocity.lerp(desired, 0.12);
       camera.position.copy(state.cameraVelocity);
-      const look = player.position.clone().add(new THREE.Vector3(0, 2.35, 0));
+      const look = player.position.clone().add(new THREE.Vector3(0, state.heroRig ? 1.5 : 2.35, 0));
       state.cameraTarget.lerp(look, 0.18);
       camera.lookAt(state.cameraTarget);
     }
@@ -2660,9 +2730,22 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
     }
+    const GAME_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
     const onKeyDown = event => {
+      if (GAME_KEYS.has(event.code) && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) event.preventDefault();
       state.keys[event.code] = true;
-      if (event.code === 'KeyF') {
+      if (event.repeat) return;
+      const ctl = state.heroRig?.controller;
+      if (ctl) {
+        const k = state.keys;
+        const dir = (k.ArrowUp && !k.ArrowDown) ? 'up' : (k.ArrowDown && !k.ArrowUp) ? 'down' : undefined;
+        if (event.code === 'Space' || event.code === 'KeyF') ctl.attack(dir);
+        else if (event.code === 'ArrowUp') ctl.direction('up');
+        else if (event.code === 'ArrowDown') ctl.direction('down');
+        else if (event.code === 'KeyC' && state.grounded && ctl.dodge()) showToast('Dodge roll');
+        return;
+      }
+      if (event.code === 'KeyF' || event.code === 'Space') {
         state.attackTimer = 0.95;
         showToast('Attack preview');
       }
@@ -2700,10 +2783,13 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
     }
+    window.Phase1Debug = { state, player, camera, paused: false, get rig() { return state.heroRig || state.rig; },
+      tick: dt => { updateMovement(dt); updateCamera(); }, render: () => renderer.render(scene, camera) };
     function tick() {
       if (!running) return;
       requestAnimationFrame(tick);
       const dt = Math.min(0.033, clock.getDelta());
+      if (window.Phase1Debug?.paused) return;
       updateMovement(dt);
       updateCamera();
       renderer.render(scene, camera);
@@ -2724,6 +2810,7 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       },
       stop() {
         running = false;
+        if (window.Phase1Debug?.state === state) delete window.Phase1Debug;
         unbindInput();
         renderer.dispose();
       },

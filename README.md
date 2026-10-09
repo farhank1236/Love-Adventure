@@ -2,6 +2,24 @@
 
 The game has two playable heroes: **Male Warrior** and **Female Warrior**, both using the verified V14 3D bodies, rigs, and full-body sword animations. Selection previews, gameplay, both stages, restart, and Continue share `assets/viewer/hero-config.js`. Old saves migrate to `maleWarrior` or `femaleWarrior` while preserving stage, health, and ultimate charge.
 
+## Male Warrior: v4 caped sword warrior (3D world)
+
+New Game → Begin Adventure opens the Phase 1 3D world. There, the **Male Warrior** is the v4 caped sword warrior (`assets/viewer/hero-rig.js`, model `assets/models/hero-01.js` … `hero-08.js`, revision `HERO_V4`). The Female Warrior keeps her V14 model.
+
+| Key | Action |
+|---|---|
+| Arrow keys (or WASD) | move (relative to the camera) |
+| X (or Shift) | run |
+| Z | jump |
+| Space (or F) | attack: the first press summons the sword from the pocket dimension, and presses chain a 5-hit combo |
+| ↑ + Space, or Space then ↑ | rising vertical stab |
+| ↓ + Space | crouching straight horizontal slash |
+| C | forward dodge roll |
+
+With no fighting, the sword stays stored, and he walks and runs normally. After 5 s without attacking, the sword vanishes into the pocket dimension. The run is authored for the game speed of 5 m/s and plays 1:1. Swings light a blue aura with a glow, a trail and a blue light. The pipeline that authored and exported this model is in `tools/hero/` (see `tools/hero/README.md`). `node tests/hero-game.cjs` starts the game through `startGame()` and checks the warrior with real key events.
+
+## Stages and V14 warriors
+
 Open `index.html`, choose New Game, select a 3D warrior, then Begin Adventure. Both approved models finish loading before spawning. A loading failure keeps selection usable and shows an error; retry uses the same approved asset. There is no playable sprite or alternate-model fallback. Keep the entire `assets` directory beside the pages.
 
 Arrow keys move, Space attacks, Shift jumps, R runs, Ctrl sprints, and Q uses the charged ultimate. Controls can be remapped in Settings. Each press triggers one cut; five male presses or six female presses queue the full combo. A one-second input gap resets it. Attacking while jumping works in both stages. Movement preserves V14 hip/torso rotation, shoulder-led cuts, planted feet, knee flexion, grip synchronization, and red sword/body effects.

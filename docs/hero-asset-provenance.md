@@ -41,3 +41,7 @@ For movement verification and deformation limits, see `warrior-v14-validation.md
 The web game cannot load that Python file directly. The current runtime requires exported GLB data converted into the same chunked JavaScript asset format used by `assets/models/male-01.js` through `male-08.js` and `assets/models/female-01.js` through `female-08.js`. Because the required Blender source file, sword GLB, and Blender runtime were not present in this workspace, Hero Sword V3 is recorded as an authoring source candidate rather than the active playable runtime model.
 
 When `hero-sword-v3.blend` or an exported `hero-sword-v3.glb` is available, convert it into runtime chunks and update `assets/viewer/hero-config.js` with a new model revision so the selected warrior loads the V3 character in game.
+
+## Hero Sword V4: live Male Warrior in the Phase 1 3D world
+
+The Hero Sword character is now exported and playable. `assets/models/hero-01.js` … `hero-08.js` hold a 31 MB GLB with revision `HERO_V4`, which `assets/viewer/hero-rig.js` loads. The Phase 1 world plays it whenever the Male Warrior is selected. It contains 22 clips: the 5-hit combo, AttackLow and AttackUp, the pocket-dimension Summon and Dismiss, sword-stored and sword-out locomotion, the jump, and dodge rolls. The V14 male chunks remain in the repository for the 2D stage code paths and the character preview.
