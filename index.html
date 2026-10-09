@@ -2273,6 +2273,10 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
 </style>
 <script>
 (() => {
+  if (!window.THREE && typeof THREE !== 'undefined') {
+    window.THREE = THREE;
+  }
+
   let app = null;
   const $ = id => document.getElementById(id);
   const oldShowMainMenu = window.showMainMenu;
