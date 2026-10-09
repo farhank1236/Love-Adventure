@@ -1929,19 +1929,22 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 <script>window.AethelosModelParts={male:[],female:[]};window.LoveAdventureModelParts=window.AethelosModelParts;</script>
 <script src="assets/viewer/three-runtime.js?v=heroes-v14-1"></script>
 <script src="assets/viewer/female-warrior-rig.js?v=heroes-v14-1"></script>
-<script src="assets/viewer/hero-rig.js?v=hero-v5"></script>
+<script src="assets/viewer/hero-rig.js?v=hero-v6"></script>
 <script src="assets/world/kingdom-layout.js?v=kingdom-2"></script>
 <script src="assets/world/terrain.js?v=real-1"></script>
 <script src="assets/world/models.js?v=real-1"></script>
 <script src="assets/world/kingdom-objects.js?v=kingdom-2"></script>
 <script src="assets/world/materials.js?v=real-1"></script>
-<script src="assets/world/sky.js?v=real-1"></script>
-<script src="assets/world/post.js?v=real-1"></script>
-<script src="assets/world/grass.js?v=real-1"></script>
+<script src="assets/world/sky.js?v=horse-1"></script>
+<script src="assets/world/post.js?v=horse-1"></script>
+<script src="assets/world/grass.js?v=horse-1"></script>
 <script src="assets/world/water.js?v=real-1"></script>
-<script src="assets/world/world.js?v=real-1"></script>
+<script src="assets/world/world.js?v=horse-1"></script>
 <script src="assets/world/editor.js?v=real-1"></script>
-<script src="assets/world/sonic-skill.js?v=skill-2"></script>
+<script src="assets/world/sonic-skill.js?v=skill-3"></script>
+<script src="assets/world/portal.js?v=horse-1"></script>
+<script src="assets/world/hero-extras.js?v=horse-1"></script>
+<script src="assets/world/horse.js?v=horse-1"></script>
 <script>
 let WARRIOR_MODEL='',FEMALE_WARRIOR_MODEL='';
 function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAsset(THREE,encoded,options);}
@@ -2329,8 +2332,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
         </div>
         <div id="phase1Toast">Ready</div>
         <div id="phase1Banner" aria-live="polite"><b></b><span></span></div>
-        <div class="phase1-center">Arrows move | WASD / mouse camera | X run | Z jump | Space attack (↓+Space low slash) | C dodge | V Azure Tempest | E editor | hold T time | G graphics</div>
-        <div class="phase1-controls phase1-panel"><b>Controls:</b> Arrow keys move relative to the camera. W/A/S/D control the camera: A and D swing it left and right, W moves it in closer and straight ahead, S pulls it back. Hold X (or Shift) to run. Z jumps. Space attacks: the first press summons the sword from the pocket dimension and presses chain a 5-hit combo; ↓ + Space is a low horizontal slash. C is a forward dodge roll. V unleashes Azure Tempest: 6 s of blue fire where every attack also throws a sonic boom (aim with the arrow keys), ready again 12 s after it ignites. The sword vanishes after 5 s without attacking. Move the mouse to turn the camera (click the world once to lock the mouse for unlimited turning, Esc releases); mouse wheel zooms; on touch, drag. Hold T to fast-forward the day (1 real minute = 1 hour; two suns and three moons cross the sky from west to east). G switches graphics: Low, Medium, High.</div>
+        <div class="phase1-center">Arrows move | WASD / mouse camera | X run | Z jump | Space attack (↓+Space low slash) | C dodge | V Azure Tempest | H horse (H×3 summon) | E editor | hold T time | G graphics</div>
+        <div class="phase1-controls phase1-panel"><b>Controls:</b> Arrow keys move relative to the camera. W/A/S/D control the camera: A and D swing it left and right, W moves it in closer and straight ahead, S pulls it back. Hold X (or Shift) to run. Z jumps. Space attacks: the first press summons the sword from the pocket dimension and presses chain a 5-hit combo; ↓ + Space is a low horizontal slash. C is a forward dodge roll. V unleashes Azure Tempest: 6 s of blue fire where every attack also throws an upright sonic boom straight ahead (aim with the arrow keys; it locks onto an enemy in front), ready again 12 s after it ignites. Press H three times within 3 s to call your war horse through a blue portal; press H once to walk to it and mount (or to dismount). On horseback the arrow keys steer, it walks normally and gallops while X (or Shift) is held. The sword vanishes after 5 s without attacking. Move the mouse to turn the camera (click the world once to lock the mouse for unlimited turning, Esc releases); mouse wheel zooms; on touch, drag. Hold T to fast-forward the day (1 real minute = 1 hour; two suns and three moons cross the sky from west to east). G switches graphics: Low, Medium, High.</div>
         <div class="phase1-actions phase1-panel">
           <button type="button" id="phase1BackToMenu">Main Menu</button>
           <button type="button" id="phase1ResetCamera">Reset Camera</button>

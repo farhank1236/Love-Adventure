@@ -6,7 +6,7 @@
      Jump JumpStart JumpAir JumpLand
    Sword visibility, blue aura, ghost trail and the pocket-dimension portal are animated joints in the clips. */
 (() => {
-  const HERO_PARTS = 8, CACHE = 'hero-v5';
+  const HERO_PARTS = 8, CACHE = 'hero-v6';
   const parts = () => (window.AethelosModelParts ||= {}).hero ||= [];
 
   function loadHeroBytes() {
@@ -183,9 +183,21 @@
       L[layer] = a; cur[layer] = name; return a;
     }
     const playFull = (name, o) => { play('lower', name, o); return play('upper', name, o); };
+    /* switch both layers at once with no blend (used when the rig is re-parented: horse saddle <-> ground) */
+    function hardPlay(name, { once = false, timeScale = 1 } = {}) {
+      if (!rig.clips[name]) return null;
+      for (const layer of ['lower', 'upper']) {
+        for (const k in actions) if (k.endsWith('|' + layer)) actions[k].stop();          // also finished (clamped) and paused ones
+        const a = act(name, layer); a.reset(); a.timeScale = timeScale; a.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity); a.clampWhenFinished = once;
+        a.setEffectiveWeight(1); a.play(); L[layer] = a; cur[layer] = name;
+      }
+      mixer.update(0); return L.upper;
+    }
+    const RIDE_CLIP = { idle: 'RideIdle', walk: 'RideWalk', gallop: 'RideGallop' }, RIDING = new Set(['mount', 'ride', 'dismount']);
     const S = { swordOut: false, mode: 'free', modeAction: null, modeUpperOnly: false, timer: 0, combo: -1, queued: 0, queuedDir: null,
       lastAttackEnd: -9, now: 0, airborne: false, wasAirborne: false, landing: 0, pendingAttack: false, pendingDir: null,
-      attackKind: '', attackStart: -9, dodgeT: 0, dodgeClip: '', hitIdx: 0, attackClip: '', pendingPower: false, burstFired: false, holdSword: false };
+      attackKind: '', attackStart: -9, dodgeT: 0, dodgeClip: '', hitIdx: 0, attackClip: '', pendingPower: false, burstFired: false, holdSword: false,
+      onDone: null, rideKind: '', stowReq: false };
     const listeners = [], emit = (type, data = {}) => { for (const f of listeners) try { f(type, data); } catch (e) { console.error(e); } };
     const SWORD_TIMEOUT = 5, COMBO_GAP = 1.0, ATTACK_SPEED = 1.5, SUMMON_SPEED = 1.9, DISMISS_SPEED = 1.6, DIR_WINDOW = .16, DODGE_SPEED = 1.0;
     const DIR_CLIP = { up: 'AttackUp', down: 'AttackLow' };
@@ -206,6 +218,8 @@
       S.modeAction = playFull('PowerUp', { once: true, timeScale: 1, fade: .14, restart: true }); emit('powerStart');
     }
     function power() {
+      if (RIDING.has(S.mode)) return false;
+      if (S.mode === 'idlefun') cancelIdleFun();
       if (!rig.clips.PowerUp || S.airborne || S.mode === 'dodge' || S.mode === 'power' || S.mode === 'attack') return false;
       S.pendingAttack = false; S.pendingDir = null;
       if (S.mode === 'summon' && !S.modeUpperOnly) { S.pendingPower = true; return true; }
@@ -217,7 +231,9 @@
     }
     /* attack(dir): dir = 'up' | 'down' | undefined.  Up+attack = rising vertical stab, Down+attack = low horizontal slash. */
     function attack(dir) {
-      S.timer = SWORD_TIMEOUT;
+      if (RIDING.has(S.mode)) return;
+      if (S.mode === 'idlefun') cancelIdleFun();
+      S.timer = SWORD_TIMEOUT; S.stowReq = false;
       if (S.mode === 'dodge') return;
       if (S.mode === 'power') {                                     // after the burst an attack cuts the settle-back short; earlier it is queued
         const burstT = (X.power && X.power.burst) || .67;
@@ -246,6 +262,8 @@
       if (S.mode === 'attack' && S.attackKind === 'combo' && S.now - S.attackStart < DIR_WINDOW) startDirAttack(dir);
     }
     function dodge() {
+      if (RIDING.has(S.mode)) return false;
+      if (S.mode === 'idlefun') cancelIdleFun();
       if (S.airborne || S.mode === 'dodge' || S.mode === 'power' || S.mode === 'summon' && !S.modeUpperOnly || S.mode === 'dismiss' && !S.modeUpperOnly) return false;
       if (S.mode === 'summon' || S.mode === 'dismiss') { S.swordOut = S.mode === 'summon' ? S.swordOut : false; }
       S.pendingAttack = false; S.pendingDir = null; S.queued = 0; S.queuedDir = null; if (S.mode === 'attack') { S.combo = -1; S.lastAttackEnd = S.now; }
@@ -253,6 +271,39 @@
       S.modeAction = playFull(S.dodgeClip, { once: true, timeScale: DODGE_SPEED, fade: .08, restart: true });
       return true;
     }
+    /* ---- horse: Mount (left stirrup -> swing over -> seated), Ride* (synced to the horse's gait), Dismount */
+    function mount(cb) {
+      if (!rig.clips.Mount || S.swordOut || (S.mode !== 'free' && S.mode !== 'idlefun')) return false;
+      if (S.mode === 'idlefun') emit('idleFunEnd');
+      S.mode = 'mount'; S.modeUpperOnly = false; S.onDone = cb; S.rideKind = ''; S.pendingAttack = false; S.queued = 0;
+      S.modeAction = hardPlay('Mount', { once: true }); emit('mountStart'); return true;
+    }
+    function dismount(cb) {
+      if (S.mode !== 'ride' && S.mode !== 'mount') return false;
+      S.mode = 'dismount'; S.onDone = cb; S.rideKind = '';
+      S.modeAction = playFull('Dismount', { once: true, fade: .25, restart: true }); emit('dismountStart'); return true;
+    }
+    /* kind: 'idle' | 'walk' | 'gallop'; horseAction = the horse's current gait action (the rider's clip is phase-locked to it) */
+    function ride(kind, horseAction) {
+      if (S.mode !== 'ride') return;
+      const name = RIDE_CLIP[kind]; if (!rig.clips[name]) return;
+      const sync = kind !== 'idle' && horseAction;
+      playFull(name, { fade: S.rideKind ? .3 : .35, timeScale: sync ? 0 : 1 });
+      if (sync) {
+        const hd = horseAction.getClip().duration, f = ((horseAction.time % hd) + hd) % hd / hd, d = rig.clips[name].duration;
+        const t = (kind === 'gallop' ? f * 0.5 : f) * d;                // RideGallop holds two strides
+        act(name, 'upper').time = t; act(name, 'lower').time = t;
+      }
+      S.rideKind = kind;
+    }
+    /* put the sword away now (before walking to the horse) */
+    function stow() { if (S.swordOut) S.stowReq = true; }
+    /* 30 s of nothing: a ball drops out of a pocket portal and he plays keepy-uppy */
+    function idleFun() {
+      if (!rig.clips.IdleBall || S.mode !== 'free' || S.swordOut || S.airborne || S.moving) return false;
+      S.mode = 'idlefun'; S.modeUpperOnly = false; S.modeAction = playFull('IdleBall', { once: true, fade: .35, restart: true }); emit('idleFunStart'); return true;
+    }
+    function cancelIdleFun() { if (S.mode !== 'idlefun') return; S.mode = 'free'; S.modeAction = null; emit('idleFunEnd'); }
     /* current dodge travel speed (m/s) from the roll's ground-contact curve, so the planted feet never slide */
     function dodgeSpeed() {
       if (S.mode !== 'dodge' || !S.modeAction) return 0;
@@ -295,16 +346,22 @@
             else { S.mode = 'free'; S.lastAttackEnd = S.now; if (S.combo >= 4 || S.attackKind !== 'combo') S.combo = -1; S.queued = 0; }
           }
         } else if (S.mode === 'dismiss') {
-          if (done) { S.swordOut = false; S.mode = 'free'; }
+          if (done) { S.swordOut = false; S.mode = 'free'; S.stowReq = false; }
         } else if (S.mode === 'dodge') {
           if (done) { S.mode = 'free'; }
+        } else if (S.mode === 'mount') {
+          if (done) { S.mode = 'ride'; const f = S.onDone; S.onDone = null; f && f(); }
+        } else if (S.mode === 'dismount') {
+          if (done) { S.mode = 'free'; const f = S.onDone; S.onDone = null; hardPlay('Idle'); f && f(); emit('dismountEnd'); }
+        } else if (S.mode === 'idlefun') {
+          if (done) { S.mode = 'free'; emit('idleFunEnd'); }
         } else if (S.mode === 'power') {
           if (!S.burstFired && a.time >= ((X.power && X.power.burst) || .67)) { S.burstFired = true; emit('powerBurst'); }
           if (done) { S.mode = 'free'; S.timer = SWORD_TIMEOUT; emit('powerEnd'); if (S.pendingAttack) { S.pendingAttack = false; startAttack(0); } }
         }
       }
       if (S.mode === 'free' && S.swordOut) {
-        S.timer = S.holdSword ? SWORD_TIMEOUT : S.timer - dt;                 // an active skill keeps the sword out
+        S.timer = S.holdSword ? SWORD_TIMEOUT : S.stowReq ? 0 : S.timer - dt;     // an active skill keeps the sword out
         if (S.timer <= 0) {
           S.mode = 'dismiss'; S.modeUpperOnly = moving || airborne;
           S.modeAction = S.modeUpperOnly ? play('upper', 'Dismiss', { once: true, timeScale: DISMISS_SPEED, restart: true })
@@ -316,16 +373,17 @@
     }
     const speedFor = (moving, running) => !moving ? 0 : running ? X.speeds.Run : (S.swordOut ? 1.25 : 1.7);
     playFull('Idle', { fade: 0 });
-    return { mixer, update, attack, direction, dodge, dodgeSpeed, speedFor, power, state: S, on: fn => { listeners.push(fn); return () => listeners.splice(listeners.indexOf(fn), 1); },
+    return { mixer, update, attack, direction, dodge, dodgeSpeed, speedFor, power, mount, dismount, ride, stow, idleFun, cancelIdleFun, state: S,
+             get riding() { return RIDING.has(S.mode); }, get idleFunTime() { return S.mode === 'idlefun' && S.modeAction ? S.modeAction.time : -1; }, on: fn => { listeners.push(fn); return () => listeners.splice(listeners.indexOf(fn), 1); },
              get attacking() { return S.mode === 'attack'; }, get dodging() { return S.mode === 'dodge'; },
              get powering() { return S.mode === 'power' || (S.mode === 'summon' && S.pendingPower); },
-             get busy() { return S.mode === 'attack' || S.mode === 'dodge' || S.mode === 'power' || (S.mode !== 'free' && !S.modeUpperOnly); } };
+             get busy() { return S.mode === 'attack' || S.mode === 'dodge' || S.mode === 'power' || (S.mode !== 'free' && S.mode !== 'idlefun' && !S.modeUpperOnly); } };
   }
 
   async function loadHero(THREE) {
     const rig = createHeroAsset(THREE, await loadHeroBytes());
     await rig.textureReady;
-    if (rig.extras?.revision !== 'HERO_V4') throw new Error('Unexpected hero model revision');
+    if (!/^HERO_V[46]$/.test(rig.extras?.revision || '')) throw new Error('Unexpected hero model revision');
     rig.controller = createHeroController(THREE, rig);
     return rig;
   }

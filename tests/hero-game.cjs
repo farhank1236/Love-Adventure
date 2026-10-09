@@ -27,7 +27,8 @@ const OUT = process.env.QA_DIR || '/tmp/hero-qa';
       bodyTex: m && m.image ? m.image.width : 0, swordTex: s && s.image ? s.image.width : 0,
       normalized: r.body.geometry.attributes.normal.normalized, morphs: r.body.geometry.morphAttributes.position.length }; });
   const need = ['Attack1', 'Attack2', 'Attack3', 'Attack4', 'Attack5', 'AttackLow', 'AttackUp', 'BattleRun', 'CombatWalk', 'Combo', 'Dismiss',
-    'Dodge', 'DodgeSword', 'Idle', 'Jump', 'JumpAir', 'JumpLand', 'JumpStart', 'Run', 'Summon', 'SwordIdle', 'Walk'];
+    'Dodge', 'DodgeSword', 'Idle', 'Jump', 'JumpAir', 'JumpLand', 'JumpStart', 'Run', 'Summon', 'SwordIdle', 'Walk',
+    'Mount', 'Dismount', 'RideIdle', 'RideWalk', 'RideGallop', 'IdleBall'];
   const missing = need.filter(n => !info.clips.includes(n));
   // run the game for `sec` seconds with `hold` keys held; `press` keys get a real keydown on the first tick (keyup after 2)
   const run = (sec, hold = [], press = []) => page.evaluate(({ sec, hold, press }) => {
@@ -116,6 +117,6 @@ const OUT = process.env.QA_DIR || '/tmp/hero-qa';
   p = await run(1.0); expect(Math.abs(p.y) < 0.05, 'lands', p);
   await browser.close();
   console.log(JSON.stringify({ info: { ...info, clips: info.clips.length }, missing, errors, fails }, null, 1));
-  if (missing.length || errors.length || fails.length || info.revision !== 'HERO_V4' || info.bodyTex < 2048 || info.swordTex < 1024 || !info.glow || !info.light) process.exit(1);
+  if (missing.length || errors.length || fails.length || info.revision !== 'HERO_V6' || info.bodyTex < 2048 || info.swordTex < 1024 || !info.glow || !info.light) process.exit(1);
   console.log('hero-game: OK');
 })().catch(e => { console.error(e); process.exit(1); });

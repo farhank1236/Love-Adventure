@@ -29,7 +29,7 @@ The game has two playable heroes: **Male Warrior** and **Female Warrior**, both 
   - Two suns and three moons rise in the west and set in the east. The moons have phases.
   - The sky uses physically based scattering, so mornings, noon, sunsets and night look right. It has stars, a galaxy band, drifting clouds and cloud shadows.
   - Valley mist comes at dawn. Lamps, lanterns, campfires and windows light up at night.
-- **Nature:** GPU grass and wild flowers sway in the wind and part around the hero. Wheat fields grow real stalks. Trees and bushes are made of leaf and needle cards, sway in the wind and cast leafy shadows.
+- **Nature:** dense GPU grass (4–5 blades per clump, tight spacing, two rings out to 50 m on High) and wild flowers sway in the wind and part around the hero. Wheat fields grow real stalks. Trees and bushes are made of leaf and needle cards, sway in the wind and cast leafy shadows.
 - **Water:** rivers have depth colour (clear shallows show the pebble bed) and flow downstream. They reflect the banks, trees and buildings, show sun and moon glints, and have foam along the banks.
 - **Post-processing:** SSAO contact shadows, height fog and aerial haze, bloom, a filmic curve, a colour grade, and night-time exposure.
 - **Graphics quality:** Low, Medium and High are picked automatically from the GPU. **Press G** to switch (saved per browser), or open the page with `?gfx=high`. Dynamic resolution drops to 60 % when frames are slow. Small props fade out with distance, and there are two grass rings.
@@ -58,9 +58,9 @@ The game has two playable heroes: **Male Warrior** and **Female Warrior**, both 
 - `node tests/kingdom-world.cjs` checks regions, landmarks, bridges, water, walls and banners for both warriors.
 - `node tests/kingdom-editor.cjs` drives the editor with real mouse and keyboard events: select, drag, rotate, scale, rename, delete and undo, place, export and import, persistence across reload, reset.
 
-## Male Warrior: v4 caped sword warrior (3D world)
+## Male Warrior: caped sword warrior (3D world)
 
-New Game → Begin Adventure opens the Phase 1 3D world. There, the **Male Warrior** is the v4 caped sword warrior (`assets/viewer/hero-rig.js`, model `assets/models/hero-01.js` … `hero-08.js`, revision `HERO_V4`). The Female Warrior keeps her V14 model.
+New Game → Begin Adventure opens the Phase 1 3D world. There, the **Male Warrior** is the v4 caped sword warrior (`assets/viewer/hero-rig.js`, model `assets/models/hero-01.js` … `hero-08.js`, revision `HERO_V6`). The Female Warrior keeps her V14 model.
 
 | Key | Action |
 |---|---|
@@ -72,10 +72,18 @@ New Game → Begin Adventure opens the Phase 1 3D world. There, the **Male Warri
 | ↓ + Space | crouching straight horizontal slash |
 | C | forward dodge roll |
 | V | **Azure Tempest** (special skill) |
+| H ×3 (within 3 s) | summon the war horse through a blue portal |
+| H | walk to the horse and mount it / dismount |
 
-With no fighting, the sword stays stored, and he walks and runs normally. After 5 s without attacking, the sword vanishes into the pocket dimension. The run is authored for the game speed of 5 m/s and plays 1:1. Swings light a blue aura with a glow, a trail and a blue light. The pipeline that authored and exported this model is in `tools/hero/` (see `tools/hero/README.md`). ### Azure Tempest (V)
+With no fighting, the sword stays stored, and he walks and runs normally. After 5 s without attacking, the sword vanishes into the pocket dimension. The run is authored for the game speed of 5 m/s and plays 1:1. Swings light a blue aura with a glow, a trail and a blue light. The sword is drawn with the right hand out of a blue pocket-dimension portal that tears open at his left hip, and pushed back into it when it is put away (the blade is clipped by the portal, so it really comes out of the hole). After 30 s without any input he gets bored: a leather ball drops out of a small portal above him, he plays keepy-uppy and heads it back in, and a speech bubble shows what he says (any move ends it). The pipeline that authored and exported this model is in `tools/hero/` (see `tools/hero/README.md`); the extras live in `assets/world/hero-extras.js` and `assets/world/portal.js`.
 
-V plays a full power-up pose (the sword is summoned and planted, then thrust out at the burst), then he burns with dark-cored blue fire over his whole body and sword for 6 s. During that window every attack also throws a blue-fire sonic boom (the X finisher throws two). Hold an arrow key while attacking to aim the boom in that direction. Booms burst on walls and buildings. V can be used again 12 s after ignition (6 s active, then a 6 s cooldown, shown by the V icon). Only the Male Warrior has the skill. Booms report hits through `Aethelos.Combat` (`register({position, radius, onHit})`), ready for enemies. The code is in `assets/world/sonic-skill.js`, and `node tests/hero-skill.cjs` checks it.
+### War horse (H)
+
+The user's armored horse (`assets/models/horse-01.js` … `horse-04.js`, revision `HORSE_V1`), rigged without changing its design (spine, neck, head, five tail bones, shoulder blades and four full legs) and given a fitted war saddle with stirrups. Press H three times within 3 s: a blue portal tears open ahead and to the side, the horse gallops out, pulls up beside the hero and rears. Press H once and he walks to its left side, puts his left foot in the stirrup, steps up and swings over into the saddle. On horseback the arrow keys steer (camera-relative); it walks at 1.8 m/s and gallops at 15 m/s (3× the hero's 5 m/s run) while X or Shift is held. The rider's clips are phase-locked to the horse's walk and gallop. Press H again to slow down and dismount. You can't attack or use Azure Tempest while riding. The pipeline is in `tools/horse/` (see `tools/horse/README.md`); the runtime is `assets/world/horse.js`; `node tests/hero-horse.cjs` checks summoning, mounting, speeds, dismounting, the sword portal, the idle and the sonic boom.
+
+### Azure Tempest (V)
+
+V plays a full power-up pose (the sword is summoned and planted, then thrust out at the burst), then he burns with dark-cored blue fire over his whole body and sword for 6 s. During that window every attack also throws a sonic boom: an upright crescent of blue fire over 4 m tall that flies dead straight along the line he faces, skimming the ground and throwing up dust, embers and a flame wake (the X finisher throws two, fanned slightly). Hold an arrow key while attacking to aim. If an enemy is in front (within 45 m and 40°), the boom locks on and flies straight into it. Booms burst on walls and buildings. The fire on his head is kept thin so his face stays visible. V can be used again 12 s after ignition (6 s active, then a 6 s cooldown, shown by the V icon). Only the Male Warrior has the skill. Booms report hits through `Aethelos.Combat` (`register({position, radius, onHit})`), ready for enemies. The code is in `assets/world/sonic-skill.js`, and `node tests/hero-skill.cjs` checks it.
 
 `node tests/hero-game.cjs` starts the game through `startGame()` and checks the warrior with real key events.
 

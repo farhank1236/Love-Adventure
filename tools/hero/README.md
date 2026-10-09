@@ -25,3 +25,8 @@ v4 (current game model, `HERO_V4`):
 - Checks: `clearance.py` (blade vs body), `ground.py` (floor contact), `jumps.py` (per-frame joint pops), `skel.py` and `sheet.py` (stick-figure and textured contact sheets), `glbread.py` (reader for quantized and sparse GLBs).
 
 `video3.py` renders preview reels with a numpy rasterizer. `blender_build_hero_v3.py` is the self-contained Blender build script.
+
+v6 (current game model, `HERO_V6`, build `v6-horse`):
+- `fun5.py`: Summon and Dismiss redone. The sword is drawn with the right hand out of a pocket portal that opens at the left hip; the `Sword_Portal` track (position, facing and open amount as scale) drives the game's portal effect and the clipping plane. `IdleBall` (240 frames) is the 30 s idle: a ball drops out of a small portal above him, keepy-uppy, a header back into a second portal. The ball path, both portals and the speech cues are exported in `extras.idleBall`.
+- `ride5.py`: `Mount` (left foot into the stirrup, step up, swing the right leg over the cantle, settle), `Dismount`, `RideIdle`, `RideWalk` (phase-locked to the horse's 1.0 s walk) and `RideGallop` (half-seat, two gallop strides). The hero is parented to the horse's `Saddle` bone while riding; `extras.ride` holds the frame offsets. The cape collides with the horse (`horse_colliders`).
+- `build6.py` makes `clips_v6.pkl`; `export_glb6.py OUT.glb clips_v6.pkl` writes the game GLB; `rsheet.py` renders hero + horse contact sheets.

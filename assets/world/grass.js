@@ -6,9 +6,10 @@
 (() => {
   const A = window.Aethelos ||= {};
   const QUAL = {
-    high: { near: [0.17, 15], far: [0.45, 40], flowers: [1.0, 36] },
-    medium: { near: [0.23, 12], far: [0.56, 34], flowers: [1.3, 28] },
-    low: { near: [0.34, 9], far: null, flowers: [1.8, 18] }
+    // denser meadows: tighter clumps, more blades per clump, a deeper far ring (blades per clump: near, far)
+    high: { near: [0.14, 16], far: [0.38, 50], flowers: [0.85, 38], blades: [4, 5] },
+    medium: { near: [0.19, 13], far: [0.48, 38], flowers: [1.1, 30], blades: [4, 5] },
+    low: { near: [0.27, 10], far: [0.7, 22], flowers: [1.6, 18], blades: [4, 4] }
   };
   function bladeGeometry(THREE, blades, segs) {
     const pos = [], b = [], idx = [];
@@ -61,7 +62,7 @@
       density = 0.0; dat = vec4(0.0); float fl = 0.0;
       if (keep > 0.0) { dat = dataAt(p); density = dat.y * maskAt(p); if (dat.w > dat.x - 0.05) density = 0.0; fl = dat.z; dat.z = wheatAt(p); if (dat.z > 0.3) density = 1.0; else dat.z = -fl; }
       float h3 = h12(key + 41.7);
-      return vec4(p, h3, step(h3, density * 1.1) * keep);
+      return vec4(p, h3, step(h3, density * 1.55) * keep);
     }`;
   function makeMaterial(THREE, uniforms, kind) {
     const m = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, roughness: kind === 'flower' ? 0.6 : 0.75, metalness: 0 });
@@ -84,14 +85,14 @@
           if (keepF < 0.5) gPos = vec3(cl.x, -9999.0, cl.y);
           vec3 objectNormal = normalize(gNrm);` : /* glsl */`
           float dens; vec4 dat; vec4 cl = clump(dens, dat); vec3 gPos, gNrm; vT = aB.y;
-          float a0 = cl.z * 6.2831853 + aB.z * 2.094, rr = h12(cl.xy + aB.z * 3.7);
+          float a0 = cl.z * 6.2831853 + aB.z * 2.39996, rr = h12(cl.xy + aB.z * 3.7);
           vec2 off = vec2(cos(a0 * 1.7), sin(a0 * 1.7)) * 0.07 * (0.3 + rr);
           vec3 root = vec3(cl.x + off.x, dat.x - 0.03, cl.y + off.y);
           float pch = vn2(cl.xy * 0.35) * 0.6 + vn2(cl.xy * 0.07) * 0.4;
           float wheat = step(0.3, dat.z);
           float hgt = (0.16 + 0.2 * rr + 0.3 * pch * pch) * (0.55 + 0.45 * smoothstep(0.0, 0.6, dens)) * min(1.0, cl.w * 1.5);
           if (wheat > 0.5) hgt = (0.82 + 0.25 * rr) * min(1.0, cl.w * 1.5);
-          float wid = (0.016 + 0.012 * h12(cl.xy * 1.9 + aB.z)) * sqrt(uSpacing / 0.17);
+          float wid = (0.018 + 0.013 * h12(cl.xy * 1.9 + aB.z)) * sqrt(uSpacing / 0.14);
           vec3 face = vec3(cos(a0), 0.0, sin(a0)), side = vec3(-face.z, 0.0, face.x);
           // wind: slow gusts rolling across the meadow + quick flutter; the hero pushes blades aside
           float gust = vn2(cl.xy * 0.045 - uWind.xz * uTime * 0.35) ;
@@ -175,8 +176,8 @@
         const mesh = new THREE.Mesh(geo, makeMaterial(THREE, u, kind)); mesh.frustumCulled = false; mesh.receiveShadow = true; mesh.castShadow = false; mesh.name = 'Grass_' + kind + '_' + spacing;
         group.add(mesh); rings.push({ mesh, u, spacing });
       };
-      const [ns, nr] = cfg.near; ring(ns, nr, 0, 'blade', 3, 4);
-      if (cfg.far) { const [fs, fr] = cfg.far; ring(fs, fr, nr * 0.85, 'blade', 4, 3); rings[0].u.uFadeOut.value = nr * 0.7; }
+      const [ns, nr] = cfg.near, [nb, fb] = cfg.blades || [3, 4]; ring(ns, nr, 0, 'blade', nb, 4);
+      if (cfg.far) { const [fs, fr] = cfg.far; ring(fs, fr, nr * 0.85, 'blade', fb, 3); rings[0].u.uFadeOut.value = nr * 0.7; }
       else rings[0].u.uFadeOut.value = nr * 0.7;
       const [flS, flR] = cfg.flowers; ring(flS, flR, 0, 'flower');
     }

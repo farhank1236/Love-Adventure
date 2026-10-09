@@ -167,6 +167,7 @@
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.NoToneMapping;
+    renderer.localClippingEnabled = true;                 // portals hide what is still inside the pocket dimension
     let quality = pickQuality(renderer);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality === 'high' ? 1.25 : 1));
     const scene = new THREE.Scene();
@@ -175,10 +176,10 @@
     const texturesReady = A.Mat.load(THREE, renderer, { size: quality === 'low' ? 512 : 1024 }).catch(e => { console.warn('Aethelos textures:', e); return false; });
     const player = new THREE.Group(); player.name = 'Player Root'; scene.add(player);
     const heroMount = new THREE.Group(); player.add(heroMount);
-    const world = {};
+    const world = { dynamic: {} };                       // dynamic: moving blockers (the horse) as circle lists
     const state = { keys: Object.create(null), camYaw: L.SPAWN.yaw, camPitch: 0.30, camZoom: 1, camDistance: 6, cameraTarget: new THREE.Vector3(), cameraVelocity: new THREE.Vector3(),
       velocity: new THREE.Vector3(), grounded: true, jumpVelocity: 0, jumpLatch: false, pointerDown: false, lastPointerX: 0, lastPointerY: 0, currentSpeed: 0,
-      heroClip: 'Idle', heroTime: 0, rig: null, heroRig: null, attackTimer: 0, region: null, regionTimer: 0, onDeck: false };
+      heroClip: 'Idle', heroTime: 0, rig: null, heroRig: null, attackTimer: 0, region: null, regionTimer: 0, onDeck: false, idleT: 0 };
 
     // ------------------------------------------------ world build
     function setupLighting() {
@@ -228,6 +229,9 @@
         rig.root.traverse(o => { if (o.isMesh) o.castShadow = !o.material.transparent && o.name !== 'HeroSword'; });   // the 500k-tri sword skips the shadow pass
         state.heroRig = rig; heroMount.add(rig.root);
         if (A.createSonicSkill) { world.skill = A.createSonicSkill({ THREE, scene, rig, player, world, camera, root: canvas.parentElement, showToast }); world.skill.setAim(() => inputDir()); }
+        if (A.createHeroExtras) world.extras = A.createHeroExtras({ THREE, scene, rig, camera, root: canvas.parentElement });
+        if (A.createHorse) world.horse = A.createHorse({ THREE, scene, world, player, camera, showToast, heroMount, hero: () => state.heroRig,
+          say: k => world.extras && world.extras.say(k), onMount: on => { state.idleT = 0; if (!on) world.extras && setTimeout(() => world.extras.say('dismounted'), 250); } });
       } else {
         const rig = await HeroSystem.createRig(THREE, hero); await rig.textureReady;
         rig.root.scale.setScalar(1.75); rig.root.rotation.y = Math.PI; rig.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
@@ -246,6 +250,7 @@
       if (d && d.top <= y + 1.4 && d.top > h) { h = d.top; deck = d; }
       return { h, deck };
     }
+    world.groundAt = groundAt;
     function blockedAt(x, z, fromY) {
       const g = groundAt(x, z, fromY);
       if (!g.deck) {
@@ -260,7 +265,9 @@
       if (blockedAt(nx, nz, y)) {                         // slide along whichever axis is still open
         if (!blockedAt(p.x + dx, p.z, y)) { nz = p.z; } else if (!blockedAt(p.x, p.z + dz, y)) { nx = p.x; } else { nx = p.x; nz = p.z; }
       }
-      const [rx, rz] = world.collide.resolve(nx, nz, 0.42, y);
+      let [rx, rz] = world.collide.resolve(nx, nz, 0.42, y);
+      for (const k in world.dynamic) for (const c of world.dynamic[k] || []) {            // the horse standing around
+        const ex = rx - c.x, ez = rz - c.z, d = Math.hypot(ex, ez), m = c.r + 0.42; if (d < m && d > 1e-5) { rx = c.x + ex / d * m; rz = c.z + ez / d * m; } }
       if (!blockedAt(rx, rz, y)) { nx = rx; nz = rz; } else { nx = p.x; nz = p.z; }
       const lim = L.SIZE / 2 - 25; p.x = Math.max(-lim, Math.min(lim, nx)); p.z = Math.max(-lim, Math.min(lim, nz));
     }
@@ -284,8 +291,30 @@
     }
     function turnTo(dir, rate) { const t = Math.atan2(dir.x, dir.z); player.rotation.y += Math.atan2(Math.sin(t - player.rotation.y), Math.cos(t - player.rotation.y)) * rate; }
 
+    function updateRiding(dt, ctl, horse) {
+      state.velocity.set(0, 0, 0); state.grounded = true; state.jumpVelocity = 0; state.currentSpeed = horse.speed; state.idleT = 0;
+      ctl.update(dt, { moving: false, running: false, airborne: false, speed: 0 });
+      world.skill && world.skill.update(dt); world.extras && world.extras.update(dt);
+      const st = horse.state.state;
+      stateLabel && (stateLabel.textContent = st === 'mounting' ? 'Mounting' : st === 'dismounting' || horse.state.slowToDismount ? 'Dismounting'
+        : horse.speed > 4.5 ? 'Galloping' : horse.speed > 0.15 ? 'Riding' : 'On horseback');
+    }
     function updateWarriorV4(dt) {
-      const k = state.keys, ctl = state.heroRig.controller, dir = ctl.powering ? null : inputDir(), moving = !!dir, running = !!(k.KeyX || k.ShiftLeft || k.ShiftRight);   // the power-up pose roots him in place
+      const k = state.keys, ctl = state.heroRig.controller, horse = world.horse, running = !!(k.KeyX || k.ShiftLeft || k.ShiftRight);
+      if (horse) {
+        horse.update(dt, { dir: inputDir(), run: running });
+        if (horse.riding) { updateRiding(dt, ctl, horse); return; }
+        if (horse.approaching) {
+          if (inputDir() || ctl.attacking || ctl.dodging) horse.cancel();          // the player took over: stop walking to the horse
+          else {
+            const mv = horse.heroMoving; state.velocity.set(0, 0, 0); state.currentSpeed = mv ? 1.7 : 0; state.idleT = 0;
+            ctl.update(dt, { moving: mv, running: false, airborne: false, speed: state.currentSpeed });
+            world.skill && world.skill.update(dt); world.extras && world.extras.update(dt);
+            stateLabel && (stateLabel.textContent = 'Going to the horse'); return;
+          }
+        }
+      }
+      const dir = ctl.powering ? null : inputDir(), moving = !!dir;   // the power-up pose roots him in place
       if (ctl.dodging) { const v = ctl.dodgeSpeed(); state.velocity.set(Math.sin(player.rotation.y) * v, 0, Math.cos(player.rotation.y) * v); }
       else if (moving) {
         const target = ctl.speedFor(true, running) * (ctl.attacking ? 0.15 : 1);
@@ -300,11 +329,17 @@
       const moved = Math.hypot(player.position.x - before.x, player.position.z - before.z) / Math.max(dt, 1e-4);
       state.currentSpeed = Math.min(Math.hypot(state.velocity.x, state.velocity.z), moved + 0.05);
       if (moving && moved < 0.3 && !ctl.dodging) { state.velocity.x *= 0.5; state.velocity.z *= 0.5; }   // pressing into a wall: stop the run cycle
+      // 30 s without doing anything: the pocket-dimension ball comes out (any move / action ends it)
+      const S0 = ctl.state;
+      if (moving && S0.mode === 'idlefun') ctl.cancelIdleFun();
+      if (!moving && S0.mode === 'free' && !S0.swordOut && state.grounded && !state.editing) { state.idleT += dt; if (state.idleT >= 30) { state.idleT = 0; ctl.idleFun(); } }
+      else if (S0.mode !== 'idlefun') state.idleT = 0;
       ctl.update(dt, { moving: moving && moved > 0.25, running, airborne: !state.grounded, speed: state.currentSpeed });
       world.skill && world.skill.update(dt);                 // after the mixer: the skill overrides the sword aura
+      world.extras && world.extras.update(dt);               // sword portal, idle ball, speech bubble
       const S = ctl.state;
       stateLabel && (stateLabel.textContent = S.mode === 'dodge' ? 'Dodge roll' : S.mode === 'attack' ? (S.attackKind === 'up' ? 'Rising stab' : S.attackKind === 'down' ? 'Low slash' : 'Attack ' + (S.combo + 1))
-        : S.mode === 'summon' ? 'Summoning sword' : S.mode === 'dismiss' ? 'Sword vanishing' : !state.grounded ? 'Jumping' : moving ? (running ? 'Running' : 'Walking') : S.swordOut ? 'Guard' : 'Idle');
+        : S.mode === 'summon' ? 'Summoning sword' : S.mode === 'dismiss' ? 'Sword vanishing' : S.mode === 'idlefun' ? 'Playing' : !state.grounded ? 'Jumping' : moving ? (running ? 'Running' : 'Walking') : S.swordOut ? 'Guard' : 'Idle');
     }
     function updateWarriorV14(dt) {                       // Female Warrior (V14 clips, sampled)
       const k = state.keys, dir = inputDir(), moving = !!dir, sprint = !!(k.KeyX || k.ShiftLeft || k.ShiftRight);
@@ -337,15 +372,16 @@
         state.camZoom = Math.max(0.55, Math.min(1.9, state.camZoom * Math.exp(-push * 1.1 * dt)));
         state.camPitch = Math.max(0.06, Math.min(0.95, state.camPitch - push * 0.45 * dt));
       }
-      const fast = state.currentSpeed > (state.heroRig ? 4.2 : 7);
-      state.camDistance += ((fast ? 6.8 : 5.8) * state.camZoom - state.camDistance) * 0.08;
+      const fast = state.currentSpeed > (state.heroRig ? 4.2 : 7), riding = !!(world.horse && world.horse.riding);
+      const want = riding ? (state.currentSpeed > 6 ? 10.5 : 8.6) : fast ? 6.8 : 5.8;
+      state.camDistance += (want * state.camZoom - state.camDistance) * 0.08;
       const horizontal = Math.cos(state.camPitch) * state.camDistance;
       const desired = player.position.clone().add(new THREE.Vector3(-Math.sin(state.camYaw) * horizontal, Math.sin(state.camPitch) * state.camDistance + 0.9, -Math.cos(state.camYaw) * horizontal));
       const floor = world.terrain.heightAt(desired.x, desired.z) + 0.6; if (desired.y < floor) desired.y = floor;
-      state.cameraVelocity.lerp(desired, 0.14); camera.position.copy(state.cameraVelocity);
+      state.cameraVelocity.lerp(desired, riding ? 0.22 : 0.14); camera.position.copy(state.cameraVelocity);
       const shake = world.skill ? world.skill.shake : 0;
       if (shake > 0.002) camera.position.add(new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).multiplyScalar(shake * 0.35));
-      state.cameraTarget.lerp(player.position.clone().add(new THREE.Vector3(0, state.heroRig ? 1.45 : 1.3, 0)), 0.2);
+      state.cameraTarget.lerp(player.position.clone().add(new THREE.Vector3(0, riding ? 2.45 : state.heroRig ? 1.45 : 1.3, 0)), 0.2);
       camera.lookAt(state.cameraTarget);
     }
     // ------------------------------------------------ location banner
@@ -383,13 +419,16 @@
       world.post.render(scene, camera);
     }
     const GAME_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+    const HERO_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyF', 'KeyC', 'KeyZ', 'KeyX', 'KeyV', 'KeyH', 'ShiftLeft', 'ShiftRight']);
     const onKeyDown = e => {
       if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return;           // typing in the editor panel
       if (e.code === 'KeyE' && !e.repeat && world.editor) { world.editor.toggle(); return; }
-      if (e.code === 'KeyV' && !e.repeat && !state.editing) { if (world.skill) world.skill.activate(); else showToast('Azure Tempest is the Male Warrior\'s skill'); return; }
+      if (e.code === 'KeyV' && !e.repeat && !state.editing) { state.idleT = 0; state.heroRig?.controller.cancelIdleFun(); if (world.horse && world.horse.riding) { showToast('Dismount first (H) to use Azure Tempest'); return; } if (world.skill) world.skill.activate(); else showToast('Azure Tempest is the Male Warrior\'s skill'); return; }
       if (e.code === 'KeyT') { world.sky && world.sky.fastForward(true); if (!e.repeat) showToast('Time passes quickly…'); return; }
       if (e.code === 'KeyG' && !e.repeat) { const order = ['low', 'medium', 'high']; setQuality(order[(order.indexOf(quality) + 1) % 3]); return; }
       if (state.editing) return;
+      if (HERO_KEYS.has(e.code)) { state.idleT = 0; state.heroRig?.controller.cancelIdleFun(); }
+      if (e.code === 'KeyH') { if (!e.repeat) { if (world.horse) world.horse.pressH(); else showToast('The war horse rides with the Male Warrior'); } return; }
       if (GAME_KEYS.has(e.code) && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) e.preventDefault();
       state.keys[e.code] = true; if (e.repeat) return;
       const ctl = state.heroRig?.controller;
@@ -435,7 +474,7 @@
     function step(dt) {
       timeU.value += dt;
       if (state.editing && world.editor) {                 // gameplay paused: hero idles, editor drives the camera
-        state.heroRig?.controller.update(dt, { moving: false, running: false, airborne: false, speed: 0 }); world.skill && world.skill.update(dt);
+        state.heroRig?.controller.update(dt, { moving: false, running: false, airborne: false, speed: 0 }); world.skill && world.skill.update(dt); world.extras && world.extras.update(dt);
         world.editor.update(dt);
       } else { updateMovement(dt); updateCamera(dt); updateRegion(dt); }
       world.layer.update(dt, camera.position.x, camera.position.z);
@@ -444,7 +483,7 @@
       updateLamps(dt);
       if (world.clockEl) { const t = world.sky.clockText(); if (world.clockEl.textContent !== t) world.clockEl.textContent = t; }
     }
-    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get rig() { return state.heroRig || state.rig; },
+    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get horse() { return world.horse; }, get extras() { return world.extras; }, get rig() { return state.heroRig || state.rig; },
       tick: dt => step(dt), render: () => renderFrame(), setHour: h => world.sky.setHour(h), setQuality: q => setQuality(q), get quality() { return quality; }, texturesReady,
       teleport(x, z, yaw = player.rotation.y) { player.position.set(x, groundAt(x, z, 999).h, z); player.rotation.y = yaw; state.camYaw = yaw; state.cameraVelocity.copy(player.position).add(new THREE.Vector3(-Math.sin(yaw) * 5, 3, -Math.cos(yaw) * 5)); state.cameraTarget.copy(player.position); state.region = null; state.regionTimer = 0; } };
     window.Phase1Debug = debug; window.KingdomDebug = debug;
@@ -465,8 +504,9 @@
           rebuildCollision: () => { world.collide = new CollisionWorld(world.objects); world.grass && world.grass.rebuildMask(); },
           resumeCamera: () => { state.cameraVelocity.copy(camera.position); updateCamera(); } });
         loading && loading.classList.add('hidden'); showToast(world.fromSave ? 'Saved kingdom loaded' : 'Welcome to Aethelos'); tick();
+        if (world.horse) setTimeout(() => running && world.horse.load().catch(e => console.warn('Horse:', e)), 2500);   // stream the horse in the background
       },
-      stop() { running = false; unbindInput(); world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.layer && world.layer.dispose();
+      stop() { running = false; unbindInput(); world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.horse && world.horse.dispose(); world.extras && world.extras.dispose(); world.layer && world.layer.dispose();
         world.grass && world.grass.dispose(); world.water && world.water.dispose(); world.post && world.post.dispose(); world.sky && world.sky.dispose(); world.clockEl && world.clockEl.remove(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
       toggleEditor() { world.editor && world.editor.toggle(); },
       resetCamera() { state.camYaw = player.rotation.y; state.camPitch = 0.30; state.camZoom = 1; showToast('Camera reset'); }

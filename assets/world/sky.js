@@ -101,7 +101,7 @@
           vec3 sp = ci + 0.5 + (vec3(h13(ci + 3.1), h13(ci + 7.7), h13(ci + 1.3)) - 0.5) * 0.7;
           float star = smoothstep(0.42, 0.0, length(c - sp)) * step(0.985, hs) * (0.4 + 2.5 * pow(h13(ci + 9.0), 6.0));
           star *= 0.75 + 0.25 * sin(uTime * (3.0 + 6.0 * h13(ci + 2.0)) + hs * 60.0);
-          float band = exp(-pow(dot(sd, normalize(vec3(0.4, 0.3, 0.86))) * 4.0, 2.0)) * (0.4 + 0.6 * vn3(sd * 6.0)) * vn3(sd * 18.0 + 4.0);
+          float bq = dot(sd, normalize(vec3(0.4, 0.3, 0.86))) * 4.0; float band = exp(-bq * bq) * (0.4 + 0.6 * vn3(sd * 6.0)) * vn3(sd * 18.0 + 4.0);
           vec3 sc = mix(vec3(0.75, 0.85, 1.0), vec3(1.0, 0.85, 0.7), h13(ci + 5.0)) * star * 0.09 + vec3(0.55, 0.6, 0.8) * band * 0.012;
           col += sc * uNightK * (1.0 - occ) * smoothstep(0.0, 0.2, d.y);
           // sun discs with limb darkening
