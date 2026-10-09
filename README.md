@@ -1,58 +1,59 @@
 # Æthelos / Love Adventure
 
-The game has two playable heroes: **Male Warrior** and **Female Warrior**, both using the verified V14 3D bodies, rigs, and full-body sword animations. Selection previews, gameplay, both stages, restart, and Continue share `assets/viewer/hero-config.js`. Old saves migrate to `maleWarrior` or `femaleWarrior` while preserving stage, health, and ultimate charge.
+A Three.js 3D open-world prototype with one playable hero: the caped **Warrior** with a summonable long sword.
 
-Open `index.html`, choose New Game, select a 3D warrior, then Begin Adventure. Both approved models finish loading before spawning. A loading failure keeps selection usable and shows an error; retry uses the same approved asset. There is no playable sprite or alternate-model fallback. Keep the entire `assets` directory beside the pages.
+Serve the checkout and open the game:
 
-Arrow keys move, Space attacks, Shift jumps, R runs, Ctrl sprints, and Q uses the charged ultimate. Controls can be remapped in Settings. Each press triggers one cut; five male presses or six female presses queue the full combo. A one-second input gap resets it. Attacking while jumping works in both stages. Movement preserves V14 hip/torso rotation, shoulder-led cuts, planted feet, knee flexion, grip synchronization, and red sword/body effects.
+```sh
+python -m http.server 8000 --bind 127.0.0.1
+# open http://127.0.0.1:8000
+```
 
-Normal enemy hits reduce the existing health bar, cause brief full-body recoil and temporary immunity, and keep the hero at the fight. Falling out of Stage 1 alone recovers at the checkpoint while applying damage. Zero health opens Game Over. Restart restores health, animation state, and the timer.
+Keep the whole `assets` directory beside `index.html`. The hero model loads from eight script chunks (`assets/models/hero-01.js` … `hero-08.js`), so the page also works from a static host with no extra loaders or CDNs.
 
-For local development, serve the checkout with `python -m http.server 8000 --bind 127.0.0.1` and open `http://127.0.0.1:8000`. Browser saves stay in that browser and origin. The character preview and game share the bundled Three.js runtime, rig sampler, hero definitions, and model loader.
+## Controls
+
+| Key | Action |
+|---|---|
+| WASD / arrows | move (relative to the camera) |
+| Shift | run |
+| Space | jump |
+| F | attack — the first press summons the sword from the pocket dimension; repeated presses chain the 5-hit combo |
+| Mouse drag | rotate camera |
+| E | world editor |
+
+## Hero behaviour
+
+- **Sword stored** (no fighting): `Idle`, `Walk` (normal walk), `Run`, jumps. The sword is hidden in the pocket dimension.
+- **F pressed**: `Summon` plays — a blue portal opens at the right hand and the sword grows out of it — then Attack 1. While moving, only the upper body plays the summon, so the legs keep walking or running.
+- **Sword out**: `SwordIdle` (guard), `CombatWalk` (ready stance), `BattleRun`. Each F press plays the next cut: Attack1 forehand diagonal, Attack2 wide backhand sweep, Attack3 overhead chop, Attack4 backhand diagonal, Attack5 X finisher. A gap of more than 1 s restarts the combo.
+- **5 s without attacking**: `Dismiss` — the sword spins into the portal and vanishes. This plays on the upper body only if the hero is moving.
+- Swings use a stiff wrist (the angle comes from the arm and body), and the sword rolls in the fist so an edge leads. Wide, extended arms; the left arm counterbalances. A blue aura and ghost trail follow fast swings. The cape and robe are baked spring simulations.
+- Movement speed is matched to the animations (walk 1.7 m/s, combat walk 1.25, run 5.4, battle run 5.0), so the feet don't slide.
+
+`assets/viewer/hero-rig.js` contains the GLB loader (skin, morph-target fists, textured sword, additive FX meshes) and the state machine. It uses `THREE.AnimationMixer` with upper/lower-body layers and cross-fades.
 
 ## Verification
 
-Browser checks require Playwright with Chromium (or an installed Chrome/Edge through `BROWSER_EXECUTABLE`). With the local server running:
-
 ```sh
-node tests/hero-selection.cjs
-node tests/hero-damage.cjs
-node tests/warrior-combat.cjs
-node tests/male-warrior.cjs
-node tests/warrior-body.cjs
-node tests/character-preview.cjs
+python -m http.server 8000 --bind 127.0.0.1 &
+node tests/hero-game.cjs          # needs Playwright + Chromium (BROWSER_EXECUTABLE to override)
 node tests/enemy-animation.cjs
-node tests/warrior-rig.cjs
-python tests/warrior-model-integrity.py
-python tests/female-model-integrity.py
-python tests/male-model-integrity.py
-python tests/male-foot-alignment.py
+node tests/enemy-rig.cjs
 ```
 
-`GAME_URL` overrides the local address. Selection checks cover both visible 3D previews and gameplay, save migration, both stages, restart, and failed loading followed by retry. Damage checks exercise actual enemy collisions, immunity, in-place recoil, sword attachment, fall recovery, and defeat. Rig/body checks protect limb lengths, sword direction, foot planting, body proportions, geometry, textures, and animation continuity.
+`tests/hero-game.cjs` steps the real game loop at a fixed 30 Hz, so it is deterministic even on a software GPU. It checks the model and all 18 clips, sword visibility in every state, summon while walking, the full combo, combat walk / battle run, the 5 s auto-dismiss, and jumping, and writes screenshots to `/tmp/hero-qa`.
 
-See `docs/hero-asset-provenance.md` for the asset history and SHA-256 comparisons. The V14 downloadable GLBs exactly match the runtime model chunks. Enemy assets and attack patterns are preserved. The obsolete V13 warrior packages, incorrect compact male replacement, playable sprite portraits, and illustration combat fallback have been removed.
+## Hero asset pipeline
 
-## Model authoring
+`tools/hero/` contains the Python pipeline that authored the animations and exported the game model. It needs NumPy, SciPy and Pillow, but not Blender. The source files are not in the repository: `hero-rigged-2.blend` (rigged hero, 65 bones), the sword GLB, and the old warrior reference. See `tools/hero/README.md`.
 
-`tools/rebuild-female-warrior.py` reproducibly bakes the full-body combo, locomotion and jump tracks, and retains repaired garment and leg bindings in the eight model parts while preserving body geometry and textures. Run `python3 tools/rebuild-female-warrior.py --export /tmp/female-warrior-v14.glb` to regenerate the bundled animation and produce an editable GLB for Blender.
+`tools/hero/blender_build_hero_v3.py` builds the same animation set inside Blender. Open `hero-rigged-2.blend` and run it from the Scripting tab. It produces `hero-sword-v3.blend` with the helper bones, FX meshes, finger shape keys and all actions.
 
-Inspect the female warrior in `character-preview.html`: choose guard, walking, running, jumping, the full combo or an individual cut, then rotate, zoom, pause or scrub the animation. This page uses the bundled model parts and has no CDN dependencies.
-
-`tools/rebuild-male-warrior.py` retargets the approved movement recipe to the original male arm axes and leg proportions. It preserves his body geometry and textures while repairing leg skin weights, and solves supporting foot plants in his bind proportions. Run `python3 tools/rebuild-male-warrior.py --export /tmp/hero-warrior-v14.glb` to rebuild and export. Both warriors use their own attack-count metadata with the shared run/sprint, jump, red effects and interruption systems.
-
-Use the character buttons in the preview to switch warriors, or open `character-preview.html?gender=male` to inspect the hero directly.
-
-V14 restores broad shoulder-led swings, flexes the elbow in anticipation and extends it through each cut, distributes turns through hips/spine/chest, counterbalances with the free arm and tracks the attack with the head. Running leans the pelvis and torso forward, swings both arms, lifts the thighs and bends the shins through higher swing-foot trajectories. Foot plants follow distance traveled. Running attacks preserve brief entry momentum. Run/sprint use longer strides and shorter ground-contact phases so legs do not flutter at game speed. Running and attacks face the travel direction; drawing uses the same scale as root travel. The corrected boot sole is rigidly bound to the foot, with a smooth shin transition.
-
-The sword remains rigidly parented at the palm; hand geometry and the handle are preserved. The male left boot is also turned forward in its existing geometry, with a smooth shin transition and corrected normals. Four additional finger-curl/thumb controls add subtle grip and free-hand movement. Fingers are grouped controls rather than individually rigged phalanges. The male detail controls inherit his retargeted hand basis so they cannot counter-rotate against the grip.
-
-`tools/warrior_repairs.py` retains reviewed skin/joint repairs. `tools/warrior-hand-rig.py` supplies the detail hand bindings. `tests/warrior-model-baseline.json` protects body/handle vertices, normals, UVs, topology and textures; the previous 10% guard-relative blade extension remains unchanged.
-
-Export a packed editable project with `blender -b --python tools/export-warrior-rigs.py -- /tmp/female-warrior-v14.glb /tmp/female-warrior-v14.blend`. Female exports have 16 actions / 36 deform bones; male exports have 15 actions / 31 deform bones. Projects add four optional foot IK and knee-pole controls with no stretching. `ik_blend=0` preserves game FK keys; `1` enables authoring IK.
+## Enemies
 
 The supplied Plum-Clad-Winged-Sorceress GLB was an unrigged static model. `tools/rig-aunt.py INPUT.glb assets/models/aunt.glb` normalizes its source object transform and adds a 16-bone rig, smoothed skin bindings and baked Hover/EyeCast actions. This helper requires NumPy and SciPy. The original surface/UVs/texture are retained. `assets/viewer/enemy-rig.js` animates wing shoulders/tips, torso, head, arms and dress; the hair follows the head, and attaches glowing eyes and a face light. `assets/viewer/enemy-game.js` uses projected eye positions as laser emitters, preserves the 90-tick interval and original projectile speeds, and draws extruded BLAH! lettering for the uncle.
 
 The Winged-Grey-Haired-Soundwave-Cas.glb upload exceeds the chat executor's 32 MiB transfer limit, so it could not be imported. The uncle therefore keeps his existing illustrated appearance with casting recoil/rings and 3D word projectiles. His uploaded body, wing rig and flight remain pending a smaller GLB or compressed ZIP. This is not a claim that both supplied enemy models are integrated.
 
-Use `enemy-preview.html` to inspect the uploaded aunt. See `warrior-downloads.html` for renderer footage and packed Blender/GLB packages, and `docs/warrior-v14-validation.md` for verification and limits. Skinning is linear: deep poses may compress armor or stretch cloth. Extra clavicle/mid-spine and independent toe/individual finger controls are not provided. Software Chromium and Blender were checked; hardware GPUs were not tested.
+Use `enemy-preview.html` to inspect the aunt.
