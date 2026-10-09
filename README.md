@@ -89,6 +89,18 @@ The user's armored horse (`assets/models/horse-01.js` … `horse-04.js`, revisio
 
 All sound is synthesised live with Web Audio (`assets/world/audio.js`, no sound files): neighs, snorts, hooves on the beat of the gait (knocks on roads, thuds on grass), the saddle creak, sword swings, the blade drawn from and returned to the portal, portals opening and closing, the power-up and ignition, the blue fire crackle, sonic booms and impacts, footsteps, jumps, landings and rolls, the ball kicks, plus wind, birdsong by day and crickets at night. M mutes it.
 
+### Phones and tablets
+
+On a touch phone or tablet (iPhone, Android, iPad), the 3D world switches to touch controls (`assets/world/touch.js`). The title screen and menus are unchanged.
+
+- **Landscape:** the first tap asks for fullscreen and locks the screen to landscape where the browser allows it (Android Chrome). Where it can't (iPhone Safari, or the game inside an embedded page) and the phone is held upright, the game screen turns 90° so it still plays in landscape.
+- **Left thumb:** a floating joystick. Push it to the edge to run.
+- **Right thumb:** Attack (hold the stick down for the low slash), Jump (also makes the horse jump), Roll, Run (latches on and off), Horse (tap three times to summon or send it back, once to mount or dismount), and the V ring for Azure Tempest.
+- **Top bar:** fast time (hold), graphics quality, sound and fullscreen.
+- **Camera:** drag anywhere else to turn it; pinch to zoom.
+
+`?touch=1` forces the touch layout on a desktop and `?touch=0` turns it off. `node tests/touch-mobile.cjs` checks it on an emulated iPhone, in portrait and landscape.
+
 ### Azure Tempest (V)
 
 V plays a full power-up pose (the sword is summoned and planted, then thrust out at the burst), then he burns with dark-cored blue fire over his whole body and sword for 6 s. During that window every attack also throws a sonic boom: a crescent of blue fire over 4 m tall that flies dead straight along the line he faces. Combo hits 1 and 3 throw it tilted right, 2 and 4 tilted left, and the finisher throws both at once as an X. Each boom skims the ground, throwing up dust, embers and a flame wake. Hold an arrow key while attacking to aim. If an enemy is in front (within 45 m and 40°), the boom locks on and flies straight into it. Booms burst on walls and buildings. The blue fire is a thin glow over his whole body, so his face and armour stay visible. V can be used again 12 s after ignition (6 s active, then a 6 s cooldown, shown by the V icon). Only the Male Warrior has the skill. Booms report hits through `Aethelos.Combat` (`register({position, radius, onHit})`), ready for enemies. The code is in `assets/world/sonic-skill.js`, and `node tests/hero-skill.cjs` checks it.

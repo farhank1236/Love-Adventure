@@ -321,7 +321,8 @@
       }
     }
     function inputDir() {
-      const k = state.keys, ix = Number(!!k.ArrowRight) - Number(!!k.ArrowLeft), iz = Number(!!k.ArrowDown) - Number(!!k.ArrowUp);   // arrows move the hero; WASD is the camera
+      const k = state.keys, t = state.touchMove; let ix = Number(!!k.ArrowRight) - Number(!!k.ArrowLeft), iz = Number(!!k.ArrowDown) - Number(!!k.ArrowUp);   // arrows move the hero; WASD is the camera
+      if (!ix && !iz && t && Math.hypot(t.x, t.y) > 0.18) { ix = t.x; iz = t.y; }                                                    // phone joystick
       if (!ix && !iz) return null;
       const sin = Math.sin(state.camYaw), cos = Math.cos(state.camYaw), l = Math.hypot(ix, iz);
       // camera looks along (sin yaw, cos yaw); screen-right is (-cos yaw, sin yaw)
@@ -346,7 +347,7 @@
       else if (a.pooled) { world.lightPool.give(a.pooled); a.pooled = null; }
     }
     function updateWarriorV4(dt) {
-      const k = state.keys, ctl = state.heroRig.controller, horse = world.horse, running = !!(k.KeyX || k.ShiftLeft || k.ShiftRight);
+      const k = state.keys, ctl = state.heroRig.controller, horse = world.horse, running = !!(k.KeyX || k.ShiftLeft || k.ShiftRight || state.touchRun || state.touchRunToggle);
       if (horse) {
         horse.update(dt, { dir: inputDir(), run: running });
         if (horse.riding) { updateRiding(dt, ctl, horse); return; }
@@ -393,7 +394,7 @@
         : S.mode === 'summon' ? 'Summoning sword' : S.mode === 'dismiss' ? 'Sword vanishing' : S.mode === 'idlefun' ? 'Playing' : !state.grounded ? 'Jumping' : moving ? (running ? 'Running' : 'Walking') : S.swordOut ? 'Guard' : 'Idle');
     }
     function updateWarriorV14(dt) {                       // Female Warrior (V14 clips, sampled)
-      const k = state.keys, dir = inputDir(), moving = !!dir, sprint = !!(k.KeyX || k.ShiftLeft || k.ShiftRight);
+      const k = state.keys, dir = inputDir(), moving = !!dir, sprint = !!(k.KeyX || k.ShiftLeft || k.ShiftRight || state.touchRun || state.touchRunToggle);
       const target = moving ? (sprint ? 9 : 4.5) : 0;
       if (moving) { state.velocity.x += (dir.x * target - state.velocity.x) * 0.18; state.velocity.z += (dir.z * target - state.velocity.z) * 0.18; turnTo(dir, 0.22); }
       else { state.velocity.x *= 0.78; state.velocity.z *= 0.78; }
@@ -458,7 +459,7 @@
 
     // ------------------------------------------------ input
     const dbSize = new THREE.Vector2();
-    function resize() { const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.getDrawingBufferSize(dbSize); world.post && world.post.setSize(dbSize.x, dbSize.y); }
+    function resize() { const box = canvas.parentElement, w = (box && box.clientWidth) || window.innerWidth, h = (box && box.clientHeight) || window.innerHeight; /* the phone layout may turn the game screen */ renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.getDrawingBufferSize(dbSize); world.post && world.post.setSize(dbSize.x, dbSize.y); }
     function setQuality(q) {
       quality = q; try { localStorage.setItem(GFX_KEY, q); } catch (_) {}
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q === 'high' ? 1.25 : 1)); resize();
@@ -496,9 +497,15 @@
     };
     const onKeyUp = e => { state.keys[e.code] = false; if (e.code === 'KeyT') world.sky && world.sky.fastForward(false); };
     const onBlur = () => { for (const k in state.keys) state.keys[k] = false; };
+    const touches = new Map();                         // finger id -> last position (camera drag / pinch on the canvas)
+    const pinchDist = () => { const p = [...touches.values()]; return p.length < 2 ? 0 : Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y); };
     const onPointerDown = e => {
       sfx && sfx.unlock();
       if (state.editing) return;
+      if (e.pointerType === 'touch') {
+        touches.set(e.pointerId, { x: e.clientX, y: e.clientY }); state.pinch = touches.size >= 2 ? pinchDist() : 0;
+        try { canvas.setPointerCapture?.(e.pointerId); } catch (_) {} return;
+      }
       state.pointerDown = true; state.lastPointerX = e.clientX; state.lastPointerY = e.clientY;
       if (e.pointerType === 'mouse' && document.pointerLockElement !== canvas) { try { const p = canvas.requestPointerLock?.(); if (p && p.catch) p.catch(() => {}); } catch (_) {} }
       else canvas.setPointerCapture?.(e.pointerId);
@@ -506,11 +513,20 @@
     const onPointerMove = e => {
       if (state.editing) return;
       const locked = document.pointerLockElement === canvas; let dx, dy;
-      if (e.pointerType === 'mouse' || locked) { if (!locked && e.target !== canvas) return; dx = e.movementX || 0; dy = e.movementY || 0; }
+      if (e.pointerType === 'touch') {
+        const t = touches.get(e.pointerId); if (!t) return;
+        dx = e.clientX - t.x; dy = e.clientY - t.y; t.x = e.clientX; t.y = e.clientY;
+        if (touches.size >= 2) {                         // two fingers: pinch to zoom, no turning
+          const d = pinchDist(); if (state.pinch > 0 && d > 0) state.camZoom = Math.max(0.55, Math.min(1.9, state.camZoom * state.pinch / d)); state.pinch = d; return;
+        }
+        if (world.touch && world.touch.rotated) [dx, dy] = [dy, -dx];   // the game screen is turned 90°
+        dx *= 1.25; dy *= 1.25;
+      }
+      else if (e.pointerType === 'mouse' || locked) { if (!locked && e.target !== canvas) return; dx = e.movementX || 0; dy = e.movementY || 0; }
       else { if (!state.pointerDown) return; dx = e.clientX - state.lastPointerX; dy = e.clientY - state.lastPointerY; state.lastPointerX = e.clientX; state.lastPointerY = e.clientY; }
       state.camYaw -= dx * 0.0045; state.camPitch = Math.max(0.06, Math.min(0.95, state.camPitch + dy * 0.003));
     };
-    const onPointerUp = () => { state.pointerDown = false; };
+    const onPointerUp = e => { if (e && e.pointerType === 'touch') { touches.delete(e.pointerId); state.pinch = touches.size >= 2 ? pinchDist() : 0; return; } state.pointerDown = false; };
     const onWheel = e => { if (state.editing) return; e.preventDefault(); state.camZoom = Math.max(0.55, Math.min(1.9, state.camZoom * Math.exp(e.deltaY * 0.001))); };
     function bindInput() {
       addEventListener('resize', resize); addEventListener('keydown', onKeyDown); addEventListener('keyup', onKeyUp); addEventListener('blur', onBlur);
@@ -538,7 +554,7 @@
       sfx && sfx.ambient(dt, { day: A.Mat.U.uDay.value, night: MU.uNight.value });
       if (world.clockEl) { const t = world.sky.clockText(); if (world.clockEl.textContent !== t) world.clockEl.textContent = t; }
     }
-    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get horse() { return world.horse; }, get extras() { return world.extras; }, get npcs() { return world.npcs; }, get audio() { return sfx; }, get rig() { return state.heroRig || state.rig; },
+    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get horse() { return world.horse; }, get extras() { return world.extras; }, get npcs() { return world.npcs; }, get touch() { return world.touch; }, get audio() { return sfx; }, get rig() { return state.heroRig || state.rig; },
       tick: dt => step(dt), render: () => renderFrame(), setHour: h => world.sky.setHour(h), setQuality: q => setQuality(q), get quality() { return quality; }, texturesReady,
       teleport(x, z, yaw = player.rotation.y) { player.position.set(x, groundAt(x, z, 999).h, z); player.rotation.y = yaw; state.camYaw = yaw; state.cameraVelocity.copy(player.position).add(new THREE.Vector3(-Math.sin(yaw) * 5, 3, -Math.cos(yaw) * 5)); state.cameraTarget.copy(player.position); state.region = null; state.regionTimer = 0; } };
     window.Phase1Debug = debug; window.KingdomDebug = debug;
@@ -550,7 +566,9 @@
     const nextFrame = () => new Promise(r => setTimeout(r, 0));
     return {
       async start() {
-        loading && loading.classList.remove('hidden'); setupLighting(); resize(); bindInput();
+        loading && loading.classList.remove('hidden'); setupLighting();
+        if (A.createTouchControls) world.touch = A.createTouchControls({ root: canvas.parentElement, state, showToast, onRotate: () => resize() });   // phones: landscape + on-screen controls
+        resize(); bindInput();
         const hint = document.getElementById('keyHintLine'); if (hint) hint.style.display = 'none';      // no controls text over the 3D world
         await nextFrame(); buildWorld(); await nextFrame();
         await loadHero(); spawn(); updateCamera(); updateRegion(0);
@@ -563,7 +581,7 @@
         loading && loading.classList.add('hidden'); showToast(world.fromSave ? 'Saved kingdom loaded' : 'Welcome to Aethelos'); tick();
         if (world.horse) setTimeout(() => running && world.horse.load().catch(e => console.warn('Horse:', e)), 2500);   // stream the horse in the background
       },
-      stop() { running = false; unbindInput(); sfx && sfx.dispose(); world.npcs && world.npcs.dispose(); const hint = document.getElementById('keyHintLine'); if (hint) hint.style.display = ''; world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.horse && world.horse.dispose(); world.extras && world.extras.dispose(); world.layer && world.layer.dispose();
+      stop() { running = false; unbindInput(); world.touch && world.touch.dispose(); world.touch = null; sfx && sfx.dispose(); world.npcs && world.npcs.dispose(); const hint = document.getElementById('keyHintLine'); if (hint) hint.style.display = ''; world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.horse && world.horse.dispose(); world.extras && world.extras.dispose(); world.layer && world.layer.dispose();
         world.grass && world.grass.dispose(); world.water && world.water.dispose(); world.post && world.post.dispose(); world.sky && world.sky.dispose(); world.clockEl && world.clockEl.remove(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
       toggleEditor() { world.editor && world.editor.toggle(); },
       resetCamera() { state.camYaw = player.rotation.y; state.camPitch = 0.30; state.camZoom = 1; showToast('Camera reset'); }
