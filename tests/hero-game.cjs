@@ -50,6 +50,32 @@ const OUT = process.env.QA_DIR || '/tmp/hero-qa';
   }, { sec, hold, press });
   const shot = async n => { await page.evaluate(() => Phase1Debug.render()); await page.screenshot({ path: `${OUT}/${n}.png` }); };
   const fails = []; const expect = (c, m, p) => { if (!c) fails.push(m + ' ' + JSON.stringify(p)); };
+  // arrows are camera-relative: Up = away from the camera, Right = screen right (checked at two camera angles)
+  for (const yaw of [0, 1.1]) {
+    for (const [key, want] of [['ArrowUp', 'fwd'], ['ArrowDown', 'back'], ['ArrowRight', 'right'], ['ArrowLeft', 'left']]) {
+      const r = await page.evaluate(({ key, yaw }) => {
+        const D = Phase1Debug, ev = (t, c) => dispatchEvent(new KeyboardEvent(t, { code: c }));
+        D.state.camYaw = yaw; for (let i = 0; i < 20; i++) D.tick(1 / 30);
+        const p0 = D.player.position.clone(); ev('keydown', key); for (let i = 0; i < 15; i++) D.tick(1 / 30); ev('keyup', key);
+        for (let i = 0; i < 20; i++) D.tick(1 / 30);
+        const d = D.player.position.clone().sub(p0), cam = D.camera.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
+        const right = new THREE.Vector3().crossVectors(cam, new THREE.Vector3(0, 1, 0)).normalize();
+        return { f: +d.dot(cam).toFixed(2), r: +d.dot(right).toFixed(2) };
+      }, { key, yaw });
+      const ok = want === 'fwd' ? r.f > .3 && Math.abs(r.r) < .15 : want === 'back' ? r.f < -.3 && Math.abs(r.r) < .15 : want === 'right' ? r.r > .3 && Math.abs(r.f) < .15 : r.r < -.3 && Math.abs(r.f) < .15;
+      expect(ok, `${key} moves ${want} relative to the camera (yaw ${yaw})`, r);
+    }
+  }
+  // mouse look: plain mouse movement over the world (no button) turns the camera; camera sits close
+  const cam = await page.evaluate(() => {
+    const D = Phase1Debug, c = document.getElementById('phase1Canvas'), y0 = D.state.camYaw, p0 = D.state.camPitch;
+    c.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', movementX: 120, movementY: -40, bubbles: true }));
+    const out = { dyaw: +(D.state.camYaw - y0).toFixed(3), dpitch: +(D.state.camPitch - p0).toFixed(3), buttons: 0 };
+    D.state.camYaw = 0; D.state.camPitch = .3; for (let i = 0; i < 60; i++) D.tick(1 / 30);
+    out.dist = +D.camera.position.distanceTo(D.player.position).toFixed(2); return out;
+  });
+  expect(cam.dyaw < -.3 && cam.dpitch < 0, 'mouse movement without clicking turns the camera', cam);
+  expect(cam.dist > 4 && cam.dist < 7.5, 'camera is close to the warrior', cam);
   let p = await run(1.0); expect(!p.swordOut && p.swordScale < .05, 'sword stored at start', p); await shot('01-idle-stored');
   p = await run(0.5, [], ['Space']); expect(p.mode === 'summon' || p.swordOut, 'Space summons the sword (does not jump)', p); expect(p.maxY === 0, 'Space does not jump', p);
   p = await run(2.0); expect(p.swordOut, 'sword out after summon + Attack1', p); await shot('02-attack1');

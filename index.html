@@ -2312,8 +2312,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
           </div>
         </div>
         <div id="phase1Toast">Ready</div>
-        <div class="phase1-center">Arrows move | X run | Z jump | Space attack (↑+Space stab up, ↓+Space low slash) | C dodge roll | Mouse drag rotate</div>
-        <div class="phase1-controls phase1-panel"><b>Controls:</b> Arrow keys (or WASD) move relative to the camera. Hold X (or Shift) to run. Z jumps. Space attacks: the first press summons the sword from the pocket dimension and presses chain a 5-hit combo; ↑ + Space (or Space then ↑) is a rising vertical stab and ↓ + Space a low horizontal slash. C is a forward dodge roll. The sword vanishes after 5 s without attacking. Hold and drag mouse/touch to rotate the camera.</div>
+        <div class="phase1-center">Arrows move | X run | Z jump | Space attack (↑+Space stab up, ↓+Space low slash) | C dodge roll | Mouse turns camera · wheel zooms</div>
+        <div class="phase1-controls phase1-panel"><b>Controls:</b> Arrow keys (or WASD) move relative to the camera. Hold X (or Shift) to run. Z jumps. Space attacks: the first press summons the sword from the pocket dimension and presses chain a 5-hit combo; ↑ + Space (or Space then ↑) is a rising vertical stab and ↓ + Space a low horizontal slash. C is a forward dodge roll. The sword vanishes after 5 s without attacking. Move the mouse to turn the camera (click the world once to lock the mouse for unlimited turning, Esc releases); mouse wheel zooms; on touch, drag.</div>
         <div class="phase1-actions phase1-panel">
           <button type="button" id="phase1BackToMenu">Main Menu</button>
           <button type="button" id="phase1ResetCamera">Reset Camera</button>
@@ -2424,7 +2424,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
     const state = {
       keys: Object.create(null),
       camYaw: 0,
-      camPitch: 0.42,
+      camPitch: 0.30,
+      camZoom: 1,
       camDistance: 12,
       cameraTarget: new THREE.Vector3(),
       cameraVelocity: new THREE.Vector3(),
@@ -2632,7 +2633,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       } else if (moving) {
         input.normalize();
         const sin = Math.sin(state.camYaw), cos = Math.cos(state.camYaw);
-        const dir = new THREE.Vector3(input.x * cos + input.z * sin, 0, input.z * cos - input.x * sin).normalize();
+        // camera looks along (sin yaw, cos yaw); screen-right is (-cos yaw, sin yaw). Up/W = away from camera, Right/D = screen right.
+        const dir = new THREE.Vector3(-(input.x * cos + input.z * sin), 0, -(input.z * cos - input.x * sin)).normalize();
         const target = ctl.speedFor(true, running) * (ctl.attacking ? 0.15 : 1);
         state.velocity.x = THREE.MathUtils.lerp(state.velocity.x, dir.x * target, 0.18);
         state.velocity.z = THREE.MathUtils.lerp(state.velocity.z, dir.z * target, 0.18);
@@ -2680,7 +2682,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       if (moving) {
         input.normalize();
         const sin = Math.sin(state.camYaw), cos = Math.cos(state.camYaw);
-        const dir = new THREE.Vector3(input.x * cos + input.z * sin, 0, input.z * cos - input.x * sin).normalize();
+        // camera looks along (sin yaw, cos yaw); screen-right is (-cos yaw, sin yaw). Up/W = away from camera, Right/D = screen right.
+        const dir = new THREE.Vector3(-(input.x * cos + input.z * sin), 0, -(input.z * cos - input.x * sin)).normalize();
         state.velocity.x = THREE.MathUtils.lerp(state.velocity.x, dir.x * state.currentSpeed, 0.2);
         state.velocity.z = THREE.MathUtils.lerp(state.velocity.z, dir.z * state.currentSpeed, 0.2);
         const targetYaw = Math.atan2(dir.x, dir.z);
@@ -2710,18 +2713,19 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       stateLabel.textContent = !state.grounded ? 'Jumping' : state.attackTimer > 0 ? 'Attack Preview' : moving ? sprinting ? 'Running' : 'Walking' : 'Idle';
     }
     function updateCamera() {
-      const dist = state.currentSpeed > 9 ? 13.5 : 11.5;
-      const height = state.currentSpeed > 9 ? 6.15 : 6.85;
+      // close over-the-shoulder distance; pulls back a little while running; mouse wheel zooms
+      const fast = state.currentSpeed > (state.heroRig ? 4.2 : 9);
+      const dist = (fast ? 6.8 : 5.8) * state.camZoom;
       state.camDistance = THREE.MathUtils.lerp(state.camDistance, dist, 0.08);
       const horizontal = Math.cos(state.camPitch) * state.camDistance;
       const desired = player.position.clone().add(new THREE.Vector3(
         -Math.sin(state.camYaw) * horizontal,
-        Math.sin(state.camPitch) * state.camDistance + height * 0.32,
+        Math.sin(state.camPitch) * state.camDistance + 0.9,
         -Math.cos(state.camYaw) * horizontal
       ));
       state.cameraVelocity.lerp(desired, 0.12);
       camera.position.copy(state.cameraVelocity);
-      const look = player.position.clone().add(new THREE.Vector3(0, state.heroRig ? 1.5 : 2.35, 0));
+      const look = player.position.clone().add(new THREE.Vector3(0, state.heroRig ? 1.45 : 1.3, 0));
       state.cameraTarget.lerp(look, 0.18);
       camera.lookAt(state.cameraTarget);
     }
@@ -2756,15 +2760,28 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       state.pointerDown = true;
       state.lastPointerX = event.clientX;
       state.lastPointerY = event.clientY;
-      canvas.setPointerCapture?.(event.pointerId);
+      if (event.pointerType === 'mouse' && document.pointerLockElement !== canvas) {
+        try { const p = canvas.requestPointerLock?.(); if (p && p.catch) p.catch(() => {}); } catch (_) {}
+      } else canvas.setPointerCapture?.(event.pointerId);
     };
+    // Mouse: just moving the mouse over the world turns the camera (no button needed). Touch: drag.
     const onPointerMove = event => {
-      if (!state.pointerDown) return;
-      const dx = event.clientX - state.lastPointerX, dy = event.clientY - state.lastPointerY;
-      state.lastPointerX = event.clientX;
-      state.lastPointerY = event.clientY;
-      state.camYaw -= dx * 0.006;
-      state.camPitch = THREE.MathUtils.clamp(state.camPitch + dy * 0.004, 0.15, 0.86);
+      const locked = document.pointerLockElement === canvas;
+      let dx, dy;
+      if (event.pointerType === 'mouse' || locked) {
+        if (!locked && event.target !== canvas) return;          // over HUD panels/buttons: leave the camera alone
+        dx = event.movementX || 0; dy = event.movementY || 0;
+      } else {
+        if (!state.pointerDown) return;
+        dx = event.clientX - state.lastPointerX; dy = event.clientY - state.lastPointerY;
+        state.lastPointerX = event.clientX; state.lastPointerY = event.clientY;
+      }
+      state.camYaw -= dx * 0.0045;
+      state.camPitch = THREE.MathUtils.clamp(state.camPitch + dy * 0.003, 0.06, 0.95);
+    };
+    const onWheel = event => {
+      event.preventDefault();
+      state.camZoom = THREE.MathUtils.clamp(state.camZoom * Math.exp(event.deltaY * 0.001), 0.55, 1.9);
     };
     const onPointerUp = () => { state.pointerDown = false; };
     function bindInput() {
@@ -2772,6 +2789,7 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       window.addEventListener('keydown', onKeyDown);
       window.addEventListener('keyup', onKeyUp);
       canvas.addEventListener('pointerdown', onPointerDown);
+      canvas.addEventListener('wheel', onWheel, { passive: false });
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', onPointerUp);
       window.addEventListener('pointercancel', onPointerUp);
@@ -2781,6 +2799,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('wheel', onWheel);
+      if (document.pointerLockElement === canvas) document.exitPointerLock?.();
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
     }
@@ -2817,7 +2837,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       },
       resetCamera() {
         state.camYaw = player.rotation.y;
-        state.camPitch = 0.42;
+        state.camPitch = 0.30;
+        state.camZoom = 1;
         showToast('Camera reset');
       }
     };
