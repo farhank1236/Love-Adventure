@@ -61,6 +61,16 @@ const URL = process.env.GAME_URL || 'http://127.0.0.1:8000/index.html', OUT = pr
   const l2 = await page.evaluate(() => { const c = document.getElementById('phase1Canvas'); return { rotated: KingdomDebug.touch.rotated, cw: c.clientWidth, ch: c.clientHeight }; });
   expect(!l2.rotated && l2.cw === 844 && l2.ch === 390, 'landscape phone fills the screen', l2);
   await page.evaluate(() => KingdomDebug.render()); await page.screenshot({ path: `${OUT}/touch-landscape.png`, timeout: 240000 });
+  const vp = await page.evaluate(() => document.querySelector('meta[name=viewport]').content);
+  expect(/viewport-fit=cover/.test(vp) && /maximum-scale=1/.test(vp), 'game fills the notch area and cannot zoom', { vp });
+  const blocked = await page.evaluate(() => { const e = new Event('gesturestart', { cancelable: true, bubbles: true }); document.getElementById('tAttack').dispatchEvent(e); return e.defaultPrevented; });
+  expect(blocked, 'pinch-zoom of the page is blocked', {});
+  // a phone with a notch on the left: the controls keep clear of it
+  await page.evaluate(() => { const w = document.getElementById('phase1World'); w.style.setProperty('--sl', '59px'); w.style.setProperty('--sr', '59px'); w.style.setProperty('--sb', '21px'); });
+  const clear = await page.evaluate(() => ({ joy: document.getElementById('touchJoy').getBoundingClientRect().left, atk: innerWidth - document.getElementById('tAttack').getBoundingClientRect().right,
+    title: document.querySelector('#phase1Hud .phase1-top').getBoundingClientRect().left }));
+  expect(clear.joy >= 59 && clear.atk >= 59 && clear.title >= 59, 'controls clear the notch', clear);
+  await page.evaluate(() => KingdomDebug.render()); await page.screenshot({ path: `${OUT}/touch-notch.png`, timeout: 240000 });
   console.log(JSON.stringify({ fails, errors: errors.slice(0, 5) }, null, 1));
   await browser.close();
   if (fails.length || errors.length) process.exit(1);

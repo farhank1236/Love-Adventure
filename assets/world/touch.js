@@ -30,17 +30,32 @@
   const svg = k => `<svg viewBox="0 0 64 64" aria-hidden="true">${ICON[k]}</svg>`;
   function createTouchControls({ root, state, showToast, onRotate }) {
     if (!isTouchDevice()) return { enabled: false, rotated: false, dispose() {} };
-    document.body.classList.add('touch-ui');
+    document.body.classList.add('touch-ui'); document.documentElement.classList.add('touch-lock');
+    // fill the whole phone screen (under the notch / Dynamic Island) and never let the page zoom: iOS zooms on quick double taps
+    const vp = document.querySelector('meta[name=viewport]'), vpWas = vp && vp.getAttribute('content');
+    if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+    const stop = e => { if (e.cancelable) e.preventDefault(); };
+    let lastEnd = 0;
+    const onTouchEnd = e => { const now = e.timeStamp || Date.now(); if ((now - lastEnd < 400 && !e.target.closest?.('button')) || e.target.closest?.('#touchUI')) stop(e); lastEnd = now; };
+    const onTouchStart = e => { if (e.touches.length > 1 || e.target.closest?.('#touchUI')) stop(e); };
+    const onTouchMove = e => { if (e.touches.length > 1 || e.scale && e.scale !== 1) stop(e); };
+    const noZoom = [['gesturestart', stop], ['gesturechange', stop], ['gestureend', stop], ['dblclick', stop], ['touchstart', onTouchStart], ['touchmove', onTouchMove], ['touchend', onTouchEnd]];
+    noZoom.forEach(([n, f]) => document.addEventListener(n, f, { passive: false }));
+    const unzoom = () => { if (window.visualViewport && visualViewport.scale > 1.01 && vp) { const c = vp.getAttribute('content'); vp.setAttribute('content', c.endsWith(' ') ? c.trim() : c + ' '); } };   // re-applying the meta snaps a stray zoom back
     if (!document.getElementById('touchCss')) { const st = document.createElement('style'); st.id = 'touchCss'; st.textContent = `
+      html.touch-lock, html.touch-lock body { overflow: hidden !important; overscroll-behavior: none; touch-action: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; height: 100%; }
+      body.touch-ui #phase1World { --sl: env(safe-area-inset-left, 0px); --sr: env(safe-area-inset-right, 0px); --st: env(safe-area-inset-top, 0px); --sb: env(safe-area-inset-bottom, 0px); }
+      body.touch-ui #phase1World.touch-rotated { --sl: env(safe-area-inset-top, 0px); --sr: env(safe-area-inset-bottom, 0px); --st: env(safe-area-inset-right, 0px); --sb: env(safe-area-inset-left, 0px); }
+      body.touch-ui #phase1Hud .phase1-top { left: calc(10px + var(--sl)); right: calc(10px + var(--sr)); top: calc(8px + var(--st)); }
       body.touch-ui #phase1World { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
       #phase1World.touch-rotated { inset: auto; top: 0; transform-origin: 0 0; transform: rotate(90deg); }
       body.touch-ui #phase1Hud .phase1-top .phase1-panel p, body.touch-ui #phase1Hud .phase1-status { display: none !important; }
       body.touch-ui #phase1Hud .phase1-top .phase1-panel { padding: 6px 12px; }
       body.touch-ui #phase1Hud .phase1-top .phase1-panel h1 { font-size: 15px; margin: 0; }
       body.touch-ui #phase1Editor { display: none !important; }
-      body.touch-ui #phase1Hud .phase1-actions { position: absolute; top: max(8px, env(safe-area-inset-top)); left: 50%; right: auto; bottom: auto; transform: translateX(-50%); padding: 4px; display: flex; gap: 6px; }
+      body.touch-ui #phase1Hud .phase1-actions { position: absolute; top: calc(8px + var(--st)); left: 50%; right: auto; bottom: auto; transform: translateX(-50%); padding: 4px; display: flex; gap: 6px; }
       body.touch-ui #phase1Hud .phase1-actions button { font-size: 12px; padding: 6px 10px; }
-      body.touch-ui #kClock { top: 8px !important; right: 236px !important; }
+      body.touch-ui #kClock { top: calc(12px + var(--st)) !important; left: calc(138px + var(--sl)) !important; right: auto !important; }
       #touchUI { position: absolute; inset: 0; z-index: 40; pointer-events: none; font-family: 'Fredoka', 'Nunito', system-ui, sans-serif; }
       #touchUI .tb { position: absolute; pointer-events: auto; display: grid; place-items: center; border-radius: 50%; color: #eaf4ff;
         background: radial-gradient(circle at 35% 30%, rgba(60, 96, 150, .55), rgba(10, 20, 38, .62)); border: 2px solid rgba(190, 220, 255, .38);
@@ -50,7 +65,7 @@
       #touchUI .tb.sm { width: 42px; height: 42px; border-radius: 12px; }
       #touchUI .tb small { position: absolute; bottom: -15px; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: rgba(235, 245, 255, .85); text-shadow: 0 1px 2px #000; }
       #touchUI .tb.latched { border-color: #9fd0ff; box-shadow: 0 0 12px rgba(120, 190, 255, .8); }
-      #touchJoy { position: absolute; pointer-events: auto; left: 0; bottom: 0; width: 46%; height: 64%; touch-action: none; }
+      #touchJoy { position: absolute; pointer-events: auto; left: var(--sl); bottom: 0; width: 46%; height: 64%; touch-action: none; }
       #touchJoyBase { position: absolute; width: 132px; height: 132px; margin: -66px 0 0 -66px; border-radius: 50%; border: 2px solid rgba(200, 225, 255, .35);
         background: radial-gradient(circle, rgba(20, 40, 70, .18), rgba(10, 20, 38, .42)); transition: opacity .2s; }
       #touchJoyKnob { position: absolute; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(170, 205, 255, .9), rgba(50, 90, 150, .85));
@@ -60,13 +75,13 @@
       #touchRotateHint { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); padding: 10px 16px; border-radius: 12px; background: rgba(8, 16, 30, .78); color: #eaf4ff;
         font: 600 14px/1.3 system-ui, sans-serif; pointer-events: none; opacity: 0; transition: opacity .4s; z-index: 41; text-align: center; }
       #touchRotateHint.show { opacity: 1; }
-      body.touch-ui #skillV { position: absolute !important; pointer-events: auto !important; right: calc(176px + env(safe-area-inset-right)) !important; bottom: 128px !important; width: 62px !important; height: 62px !important; }
+      body.touch-ui #skillV { position: absolute !important; pointer-events: auto !important; right: calc(176px + var(--sr)) !important; bottom: 128px !important; width: 62px !important; height: 62px !important; }
     `; document.head.appendChild(st); }
     const ui = document.createElement('div'); ui.id = 'touchUI'; root.appendChild(ui);
     const key = (code, down) => dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code, key: code, bubbles: true }));
     const tap = code => { key(code, true); setTimeout(() => key(code, false), 60); };
     // ---------------------------------------------------------------- buttons
-    const R = 'env(safe-area-inset-right)', Bm = 'env(safe-area-inset-bottom)';
+    const R = 'var(--sr)', Bm = 'var(--sb)';
     function button(id, icon, label, css, { size = 64, onDown, onUp, small = false } = {}) {
       const b = document.createElement('div'); b.className = 'tb' + (small ? ' sm' : ''); b.id = id; b.innerHTML = svg(icon) + (label ? `<small>${label}</small>` : '');
       if (!small) { b.style.width = b.style.height = size + 'px'; }
@@ -89,7 +104,7 @@
       v.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); tap('KeyV'); }); return true; };
     const skillTimer = setInterval(() => { if (hookSkill()) clearInterval(skillTimer); }, 500);
     // top bar
-    const TOP = 'max(8px, env(safe-area-inset-top))';
+    const TOP = 'calc(8px + var(--st))';
     button('tTime', 'time', '', { top: TOP, right: `calc(178px + ${R})` }, { small: true, onDown: () => key('KeyT', true), onUp: () => key('KeyT', false) });
     button('tGfx', 'gfx', '', { top: TOP, right: `calc(126px + ${R})` }, { small: true, onDown: () => tap('KeyG') });
     const sndB = button('tSnd', 'sound', '', { top: TOP, right: `calc(74px + ${R})` }, { small: true, onDown: () => { tap('KeyM'); setTimeout(syncSound, 120); } });
@@ -125,7 +140,7 @@
       if (want !== rotated) { rotated = want; root.classList.toggle('touch-rotated', rotated); }
       if (rotated) { Object.assign(root.style, { width: innerHeight + 'px', height: innerWidth + 'px', left: innerWidth + 'px' }); }
       else { root.style.width = root.style.height = root.style.left = ''; }
-      home(); onRotate && onRotate(rotated);
+      unzoom(); home(); onRotate && onRotate(rotated);
     }
     async function goLandscape(toggle = false) {
       const el = document.documentElement;
@@ -139,13 +154,14 @@
     }
     const first = () => { goLandscape(); };
     root.addEventListener('pointerdown', first, { once: true, capture: true });
-    addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(layout, 250));
+    addEventListener('resize', layout); window.visualViewport && visualViewport.addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(layout, 250));
     layout();
     if (innerHeight > innerWidth) { hint.classList.add('show'); setTimeout(() => hint.classList.remove('show'), 4000); }
     showToast && showToast('Touch controls on');
     return {
       enabled: true, get rotated() { return rotated; },
-      dispose() { clearInterval(skillTimer); ui.remove(); document.body.classList.remove('touch-ui'); root.classList.remove('touch-rotated'); root.style.width = root.style.height = root.style.left = '';
+      dispose() { clearInterval(skillTimer); noZoom.forEach(([n, f]) => document.removeEventListener(n, f, { passive: false })); document.documentElement.classList.remove('touch-lock');
+        if (vp && vpWas) vp.setAttribute('content', vpWas); window.visualViewport && visualViewport.removeEventListener('resize', layout); ui.remove(); document.body.classList.remove('touch-ui'); root.classList.remove('touch-rotated'); root.style.width = root.style.height = root.style.left = '';
         removeEventListener('resize', layout); state.touchMove = null; }
     };
   }
