@@ -50,6 +50,9 @@
       gr.addColorStop(0, 'rgba(255,60,40,1)'); gr.addColorStop(0.35, 'rgba(255,20,10,.55)'); gr.addColorStop(1, 'rgba(255,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
     const auraMat = new THREE.SpriteMaterial({ map: glowTex, color: 0xff3020, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 });
+    const starMat = new THREE.SpriteMaterial({ map: (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d'); g.translate(16, 16); g.fillStyle = '#ffe36a'; g.strokeStyle = '#8a5a00'; g.lineWidth = 2;
+      g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 6 : 14; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); g.fill(); g.stroke();
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })(), transparent: true, depthWrite: false });
     const ringGeo = new THREE.RingGeometry(0.62, 0.8, 40); ringGeo.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
     // feathers: one Points cloud, recycled
@@ -76,6 +79,71 @@
         const g = ground(fPos[i * 3], fPos[i * 3 + 2]) + 0.03; if (fPos[i * 3 + 1] < g) { fPos[i * 3 + 1] = g; fVel[i * 3] = fVel[i * 3 + 2] = 0; }
         if (fLife[i] <= 0) fPos[i * 3 + 1] = -999; }
       if (any) fGeo.attributes.position.needsUpdate = true;
+    }
+
+    // ---------------------------------------------------------------- HUD: popups, red feathers, warnings for attacks from off-screen
+    const root = ctx.root;
+    if (root && !document.getElementById('birdHudCss')) { const st = document.createElement('style'); st.id = 'birdHudCss'; st.textContent = `
+      #battlePop { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%) scale(.6); z-index: 33; pointer-events: none; opacity: 0;
+        font: 800 34px/1 'Fredoka', 'Nunito', system-ui, sans-serif; letter-spacing: .06em; color: #fff3d0; text-shadow: 0 0 14px rgba(255, 120, 40, .9), 0 2px 3px #000; transition: opacity .25s, transform .25s; }
+      #battlePop.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      #battlePop.counter { color: #ffffff; text-shadow: 0 0 18px #6fd0ff, 0 0 4px #2a8cff, 0 2px 3px #000; font-size: 40px; }
+      #featherCount { position: absolute; left: 18px; bottom: 46px; z-index: 31; display: flex; align-items: center; gap: 6px; pointer-events: none;
+        font: 700 13px 'Fredoka', 'Nunito', system-ui, sans-serif; color: #ffe2c8; text-shadow: 0 1px 2px #000; transition: transform .2s; }
+      #featherCount.bump { transform: scale(1.25); }
+      #featherCount svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+      body.touch-ui #featherCount { left: calc(12px + var(--sl, 0px)); top: calc(76px + var(--st, 0px)); bottom: auto; }
+      .birdWarn { position: absolute; width: 0; height: 0; z-index: 32; pointer-events: none; display: none; }
+      .birdWarn i { position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 40, 20, .85), rgba(255, 40, 20, 0) 70%); animation: bwPulse .35s ease-in-out infinite alternate; }
+      .birdWarn b { position: absolute; left: 6px; top: -9px; width: 0; height: 0; border-left: 16px solid #ff3a22; border-top: 9px solid transparent; border-bottom: 9px solid transparent; filter: drop-shadow(0 0 4px #ff2a10); }
+      @keyframes bwPulse { to { transform: scale(1.35); } }`; document.head.appendChild(st); }
+    const popEl = root ? Object.assign(document.createElement('div'), { id: 'battlePop' }) : null; popEl && root.appendChild(popEl);
+    function pop(text, kind) { if (!popEl) return; popEl.textContent = text; popEl.className = kind; void popEl.offsetWidth; popEl.classList.add('show'); clearTimeout(pop.t); pop.t = setTimeout(() => popEl.classList.remove('show'), kind === 'counter' ? 900 : 650); }
+    const FEATHER_KEY = 'aethelos.redFeathers.v1';
+    let featherTotal = 0; try { featherTotal = +localStorage.getItem(FEATHER_KEY) || 0; } catch (_) {}
+    const fcEl = root ? document.createElement('div') : null;
+    if (fcEl) { fcEl.id = 'featherCount'; fcEl.innerHTML = '<svg viewBox="0 0 32 32"><path d="M26 3C14 5 7 13 6 24l-2 5 2 1 3-5c9-1 16-8 17-22z" fill="#e8402a" stroke="#ffd9b0" stroke-width="1.4"/><path d="M8 26C12 18 17 11 24 6" stroke="#7a1608" stroke-width="1.4" fill="none"/></svg><span></span>';
+      root.appendChild(fcEl); const draw = () => { fcEl.querySelector('span').textContent = featherTotal; fcEl.style.display = featherTotal ? 'flex' : 'none'; }; draw(); fcEl.draw = draw; }
+    // dropped feathers: a slowly spinning glowing feather, picked up by walking over it (kept for future quests / crafting)
+    const pickTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+      const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(255,210,120,.9)'); gr.addColorStop(1, 'rgba(255,90,20,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+      g.translate(32, 32); g.rotate(0.7); g.fillStyle = '#e8402a'; g.beginPath(); g.ellipse(0, 0, 7, 20, 0, 0, Math.PI * 2); g.fill(); g.strokeStyle = '#ffe1b0'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, 20); g.lineTo(0, -18); g.stroke();
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+    const pickups = [];
+    function dropFeather(at) {
+      if (Math.random() > 0.6 || pickups.length > 30) return;                         // most birds drop one
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: pickTex, transparent: true, depthWrite: false }));
+      sp.scale.setScalar(0.6); const g = ground(at.x, at.z); sp.position.set(at.x + rand(-0.4, 0.4), g + 0.55, at.z + rand(-0.4, 0.4)); scene.add(sp);
+      pickups.push({ sp, t: 0, base: g + 0.55, delay: 0.8 });
+    }
+    function updatePickups(dt) {
+      const hp = heroPos();
+      for (let i = pickups.length - 1; i >= 0; i--) {
+        const P = pickups[i]; P.t += dt; P.sp.position.y = P.base + Math.sin(P.t * 2.5) * 0.08; P.sp.material.rotation = Math.sin(P.t * 1.7) * 0.4;
+        const life = 45; P.sp.material.opacity = P.t > life - 5 ? Math.max(0, (life - P.t) / 5) : 1;
+        const take = P.t > P.delay && Math.hypot(hp.x - P.sp.position.x, hp.z - P.sp.position.z) < 1.6 && Math.abs(hp.y + 0.5 - P.sp.position.y) < 2;
+        if (take || P.t > life) {
+          if (take) { featherTotal++; try { localStorage.setItem(FEATHER_KEY, String(featherTotal)); } catch (_) {} sfx && sfx('pickup', { at: P.sp.position.clone() });
+            if (fcEl) { fcEl.draw(); fcEl.classList.add('bump'); setTimeout(() => fcEl.classList.remove('bump'), 200); } }
+          scene.remove(P.sp); P.sp.material.dispose(); pickups.splice(i, 1);
+        }
+      }
+    }
+    const warns = root ? [0, 1, 2, 3].map(() => { const w = document.createElement('div'); w.className = 'birdWarn'; w.innerHTML = '<i></i><b></b>'; root.appendChild(w); return w; }) : [];
+    const pv = new THREE.Vector3();
+    function updateWarnings() {
+      if (!root) return; let k = 0; const W = root.clientWidth, H = root.clientHeight;
+      for (const b of birds) {
+        if (k >= warns.length) break;
+        if (!(b.state === 'dash' || (b.state === 'lock' && b.lock && b.lock.aimed))) continue;
+        pv.copy(b.pos).project(camera); const behind = pv.z > 1; let x = pv.x, y = pv.y;
+        if (!behind && Math.abs(x) < 0.9 && Math.abs(y) < 0.85) continue;            // on screen: the aura says it all
+        if (behind) { x = -x; y = -y; }
+        const a = Math.atan2(y, x), m = Math.max(Math.abs(Math.cos(a)) / 0.88, Math.abs(Math.sin(a)) / 0.8);
+        const w = warns[k++]; w.style.display = 'block'; w.style.left = ((Math.cos(a) / m) * 0.5 + 0.5) * W + 'px'; w.style.top = ((-Math.sin(a) / m) * 0.5 + 0.5) * H + 'px';
+        w.style.transform = `rotate(${-a}rad)`;
+      }
+      for (; k < warns.length; k++) warns[k].style.display = 'none';
     }
 
     // ---------------------------------------------------------------- flocks and birds
@@ -128,6 +196,8 @@
       const r = A.RedBird.makeBird(THREE, asset); r.root.visible = false; scene.add(r.root);
       const aura = new THREE.Sprite(auraMat.clone()); aura.scale.setScalar(1.9); aura.position.set(0, 0.33, 0); r.root.add(aura); r.aura = aura;
       const ring = new THREE.Mesh(ringGeo, ringMat.clone()); ring.visible = false; scene.add(ring); r.ring = ring;
+      const stars = new THREE.Group(); for (let i = 0; i < 3; i++) { const sp = new THREE.Sprite(starMat); sp.scale.setScalar(0.16); const a = i / 3 * Math.PI * 2; sp.position.set(Math.cos(a) * 0.22, 0, Math.sin(a) * 0.22); stars.add(sp); }
+      stars.visible = false; scene.add(stars); r.stars = stars;
       b.rig = r; return r;
     }
     async function load() {
@@ -138,13 +208,16 @@
 
     // ---------------------------------------------------------------- hero helpers
     const heroFeet = new THREE.Vector3();
-    function heroPos() { const r = ctx.hero && ctx.hero(); if (r && r.root) { r.root.getWorldPosition(heroFeet); return heroFeet; } return heroFeet.copy(player.position); }
+    function heroPos() { const r = ctx.hero && ctx.hero(); if (r && r.root) { r.root.updateWorldMatrix(true, false); r.root.getWorldPosition(heroFeet); return heroFeet; } return heroFeet.copy(player.position); }
     const heroDead = () => !!(ctx.health && ctx.health.dead);
     const heroInvulnerable = () => { const c = ctx.controller && ctx.controller(); return !!(c && c.dodging) || heroDead(); };
 
     // ---------------------------------------------------------------- deaths
+    let streak = 0, streakT = 0;
     function kill(b, dir, src) {
-      if (!b.alive || b.state === 'dead') return;
+      if (!b.alive || b.state === 'dead') return false;
+      const counter = src === 'sword' && (b.state === 'dash' || (b.state === 'lock' && b.lock && b.lock.aimed));
+      const wasStunned = b.state === 'stunned' || b.state === 'getup';
       const F = b.F; b.state = 'dead'; b.deadT = 0; b.aura = 0; b.lock = b.dash = null; b.combat.dead = true; kills++;
       F.attackers = F.attackers.filter(x => x !== b);
       const d = dir ? v1.copy(dir).setY(0).normalize() : v1.set(Math.sin(b.yaw), 0, Math.cos(b.yaw)).negate();
@@ -153,7 +226,23 @@
       if (b.rig) b.rig.ring.visible = false;
       puff(v2.copy(b.pos), src === 'crash' ? 14 : 22, src === 'crash' ? 1.8 : 3);
       sfx && sfx(src === 'crash' ? 'birdCrash' : 'birdHit', { at: b.pos.clone() });
+      dropFeather(b.pos);
+      streak = streakT > 0 ? streak + 1 : 1; streakT = 4;
+      if (counter) { pop('COUNTER!', 'counter'); sfx && sfx('counter', { at: b.pos.clone() }); }
+      else if (streak >= 2) pop('x' + streak, 'streak');
+      ctx.onKill && ctx.onKill({ counter, stunned: wasStunned, src, streak, at: b.pos.clone() });
       provoke(F);                                      // the whole group turns on him
+      return true;
+    }
+    // missed dash: it hits the ground hard and lies dazed, then gets up and flies back (finish it off meanwhile)
+    const STUN = 3.4;
+    function stun(b, dir) {
+      const F = b.F; F.attackers = F.attackers.filter(x => x !== b);
+      b.state = 'stunned'; b.t = 0; b.aura = 0; b.lock = b.dash = null; b.limp = 0;
+      b.vel.set(dir.x * 3.2, 2.4, dir.z * 3.2); b.spinV.set(rand(-8, 8), rand(-4, 4), rand(-8, 8));
+      if (b.rig) b.rig.ring.visible = false;
+      puff(v2.copy(b.pos), 12, 1.6); sfx && sfx('birdCrash', { at: b.pos.clone() });
+      setTimeout(() => sfx && b.state === 'stunned' && sfx('dizzy', { at: b.pos.clone() }), 500);
     }
     function provoke(F) {
       if (F.mode === 'hunt' || heroDead()) return;
@@ -173,11 +262,27 @@
       for (const b of birds) {
         if (!b.alive || b.state === 'dead' || b.state === 'gone') continue;
         const dx = b.pos.x - hp.x, dz = b.pos.z - hp.z, dist = Math.hypot(dx, dz), dy = b.pos.y - hp.y;
-        if (dist > reach + (b.state === 'dash' ? 0.6 : 0) || dy < -0.6 || dy > top) continue;
-        if (dist > 1.1 && (dx * fx + dz * fz) / dist < Math.cos(75 * Math.PI / 180)) continue;
+        const dashing = b.state === 'dash';
+        if (dist > reach + (dashing ? 0.7 : 0) || dy < -0.6 || dy > top + (dashing ? 0.4 : 0)) continue;
+        if (dist > 1.1 && (dx * fx + dz * fz) / dist < Math.cos((dashing ? 88 : 75) * Math.PI / 180)) continue;
         kill(b, v1.set(dx, 0, dz), 'sword'); n++;
       }
       return n;
+    }
+
+    /* the bird the sword should swing at: a diving one first (counter), then dazed / ground ones and low fliers in reach,
+       preferring what is in front of him. Returns the bird or null. */
+    function aimTarget(from, yaw, range = 6.5) {
+      const fx = Math.sin(yaw), fz = Math.cos(yaw); let best = null, bs = Infinity;
+      for (const b of birds) {
+        if (!b.alive || b.state === 'dead' || b.state === 'gone') continue;
+        const dx = b.pos.x - from.x, dz = b.pos.z - from.z, d = Math.hypot(dx, dz), dy = b.pos.y - from.y;
+        const dashing = b.state === 'dash' || (b.state === 'lock' && b.lock && b.lock.aimed);
+        if (d > (dashing ? 11 : range) || dy > (dashing ? 6 : 3.2) || dy < -1.5) continue;
+        const cos = d > 0.01 ? (dx * fx + dz * fz) / d : 1, score = d * (1.6 - 0.6 * cos) * (dashing ? 0.35 : b.state === 'stunned' ? 0.7 : 1);
+        if (score < bs) { bs = score; best = b; }
+      }
+      return best;
     }
 
     // ---------------------------------------------------------------- flock brain
@@ -279,7 +384,7 @@
         }
         const g = ground(b.pos.x, b.pos.z), travelled = b.pos.distanceTo(D.start);
         const wall = world.collide && travelled > 1 && world.collide.resolve(b.pos.x, b.pos.z, 0.25, b.pos.y - 0.3, 0.6)[2];
-        if (b.pos.y <= g + 0.3 || wall) { b.pos.y = Math.max(b.pos.y, g + 0.3); if (b.rig) b.rig.ring.visible = false; kill(b, D.dir, 'crash'); return; }   // missed: it slams into the ground
+        if (b.pos.y <= g + 0.3 || wall) { b.pos.y = Math.max(b.pos.y, g + 0.3); if (b.rig) b.rig.ring.visible = false; stun(b, D.dir); return; }   // missed: it slams into the ground
         if (travelled > D.len + 14) { b.state = 'recover'; b.t = 0; b.vel.set(D.dir.x * 6, 6, D.dir.z * 6); b.aura = 0; if (b.rig) b.rig.ring.visible = false; }
       }
     }
@@ -301,6 +406,15 @@
         if (b.deadT > 3.2) { if (b.rig && b.rig.root.visible) puff(v1.copy(b.pos).setY(b.pos.y + 0.2), 10, 1.2); b.state = 'gone'; b.alive = false; b.respawnAt = gameHours() + RESPAWN_H; if (b.rig) b.rig.root.visible = false; }
         return;
       }
+      if (b.state === 'stunned') {                       // tumbles, settles on its side, dazed (stars), then gets up
+        b.t += dt; const g = ground(b.pos.x, b.pos.z) + 0.17;
+        if (b.pos.y > g + 0.01 || b.vel.y > 0) { b.vel.y -= 16 * dt; b.pos.addScaledVector(b.vel, dt);
+          if (b.pos.y <= g) { b.pos.y = g; if (Math.abs(b.vel.y) > 3) { b.vel.y *= -0.3; b.vel.x *= 0.5; b.vel.z *= 0.5; } else b.vel.set(0, 0, 0); } }
+        b.limp = Math.min(0.75, b.limp + dt * 3);
+        if (b.t > STUN) { b.state = 'getup'; b.t = 0; b.limp = 0; b.pos.y = ground(b.pos.x, b.pos.z); b.vel.set(0, 0, 0); sfx && near && sfx('squawk', { at: b.pos.clone(), arg: 0.6 }); }
+        return;
+      }
+      if (b.state === 'getup') { b.t += dt; if (b.t > 0.75) startTakeoff(b); return; }
       if (b.state === 'lock' || b.state === 'dash') { updateAttack(b, dt); if (b.state === 'lock' || b.state === 'dash') { faceAlong(b, dt, b.state === 'lock'); return; } }
       if (b.state === 'recover') {                       // bounced off: climb back to the flock
         b.t += dt; b.vel.y -= 4 * dt; b.pos.addScaledVector(b.vel, dt); b.vel.multiplyScalar(1 - 0.8 * dt);
@@ -367,6 +481,8 @@
         const pk = b.hop ? 0 : Math.max(0, Math.sin(b.t * 6.5 + b.i)) ** 3 * (Math.sin(b.t * 0.7 + b.i * 1.3) > 0 ? 1 : 0);
         T = { pitch: 0, amp: b.hop && b.hop.scared ? 1 : 0, fold: b.hop && b.hop.scared ? 0.35 : 1, tuck: 0, lean: 0.18, peck: pk, headYaw: b.hop ? 0 : (b.lookTo || 0) * (1 - pk), tail: 0, jaw: 0, rate: 5 };
       } else if (st === 'dead') T = { pitch: 1.4, amp: 0, fold: 0.45, tuck: 0.4, limp: b.limp, tail: 0.6, jaw: 0.6 };
+      else if (st === 'stunned') T = { pitch: 1.4, amp: 0.25 * Math.max(0, Math.sin(b.t * 7)), fold: 0.5, tuck: 0.4, limp: b.limp, tail: 0.6, jaw: 0.5, headYaw: Math.sin(b.t * 9) * 0.4, rate: 9 };
+      else if (st === 'getup') T = { pitch: 0, amp: b.t > 0.35 ? 0.7 : 0, fold: b.t > 0.35 ? 0.3 : 1, tuck: 0, lean: 0.1, headYaw: Math.sin(b.t * 26) * 0.55, tail: 0.5, rate: 7 };
       else if (st === 'dash') T = { pitch: 1.5, amp: 0, fold: 0.15, sweep: 1, tuck: 1, tail: -0.5, jaw: 0.25 };
       else if (st === 'lock') T = b.lock && b.lock.aimed ? { pitch: 0.55, amp: 1, fold: 0, tuck: 0.7, tail: 1, jaw: 0.4 + 0.6 * Math.max(0, Math.sin(b.t * 9)), rate: 6.5 }
         : { pitch: 1.3, amp: 1, fold: 0, tuck: 1, tail: 0.2, rate: 5 };
@@ -379,28 +495,31 @@
       b.pitch += ((T.pitch ?? 1.2) - b.pitch) * k; b.amp += ((T.amp ?? 1) - b.amp) * k; b.fold += ((T.fold ?? 0) - b.fold) * k; b.sweep += ((T.sweep || 0) - b.sweep) * Math.min(1, dt * 10);
       b.tuck += ((T.tuck ?? 1) - b.tuck) * k; b.peck += ((T.peck || 0) - b.peck) * Math.min(1, dt * 14); b.jaw += ((T.jaw || 0) - b.jaw) * Math.min(1, dt * 10);
       b.tail += ((T.tail || 0) - b.tail) * k; b.headYaw += ((T.headYaw || 0) - b.headYaw) * Math.min(1, dt * 5); b.lean += ((T.lean ?? 0.15) - b.lean) * k;
-      if (st !== 'dead') b.limp = 0;
+      if (st !== 'dead' && st !== 'stunned') b.limp = 0;
       b.rate += ((T.rate || 4) - b.rate) * k; b.phase = (b.phase + dt * b.rate * (0.4 + 0.6 * Math.min(1, b.amp * 1.5))) % 1;
       // wingbeat sound for birds close by
       if (dCam < 14 && b.amp > 0.5) { const ph = b.phase; if (b.lastPh !== undefined && ph < b.lastPh && Math.random() < 0.5) sfx && sfx('flap', { at: b.pos.clone(), arg: 0.5 + b.amp * 0.4 }); b.lastPh = ph; }
       // orientation: yaw + (dash/dead) dive and tumble
-      if (st === 'dead' && b.vel.lengthSq() > 0.01) r.root.rotation.set(r.root.rotation.x + b.spinV.x * dt, b.yaw += b.spinV.y * dt * 0.3, r.root.rotation.z + b.spinV.z * dt);
-      else if (st === 'dead') { r.root.rotation.x += (0 - r.root.rotation.x) * k; r.root.rotation.z += (1.45 - r.root.rotation.z) * k; r.root.rotation.y = b.yaw; }   // lies on its side
+      const down = st === 'dead' || st === 'stunned';
+      if (down && b.vel.lengthSq() > 0.01) r.root.rotation.set(r.root.rotation.x + b.spinV.x * dt, b.yaw += b.spinV.y * dt * 0.3, r.root.rotation.z + b.spinV.z * dt);
+      else if (down) { r.root.rotation.x += (0 - r.root.rotation.x) * k; r.root.rotation.z += (1.45 - r.root.rotation.z) * k; r.root.rotation.y = b.yaw; }   // lies on its side
       else { const dive = st === 'dash' ? Math.atan2(-b.vel.y, Math.hypot(b.vel.x, b.vel.z)) : 0; r.root.rotation.set(0, 0, 0); r.root.rotation.y = b.yaw; r.root.rotateX(dive); }
       // place it: on the ground the feet are the pivot, otherwise the body centre (0.33 m up the model)
-      if (st === 'ground') r.root.position.copy(b.pos);
+      if (st === 'ground' || st === 'getup') r.root.position.copy(b.pos);
       else r.root.position.copy(b.pos).sub(v1.set(0, 0.33, 0).applyQuaternion(r.root.quaternion));
       if (st === 'dead' && b.deadT > 2.6) r.root.scale.setScalar(Math.max(0.01, 1 - (b.deadT - 2.6) / 0.6));
       // pose (far birds are re-posed less often)
       const every = dCam < 45 ? 1 : dCam < 90 ? 2 : 4;
       if ((frame + b.i) % every === 0) {
-        r.pose({ pitch: b.pitch, roll: st === 'ground' || st === 'dead' ? 0 : Math.max(-0.7, Math.min(0.7, b.roll)), flap: b.phase, amp: b.amp, fold: b.fold, sweep: b.sweep, tuck: b.tuck,
-          lean: st === 'ground' ? b.lean : 0, peck: b.peck, jaw: b.jaw, headYaw: b.headYaw, tail: b.tail, tailLift: st === 'ground' ? 0.1 : 0, limp: b.limp });
+        r.pose({ pitch: b.pitch, roll: st === 'ground' || down || st === 'getup' ? 0 : Math.max(-0.7, Math.min(0.7, b.roll)), flap: b.phase, amp: b.amp, fold: b.fold, sweep: b.sweep, tuck: b.tuck,
+          lean: st === 'ground' || st === 'getup' ? b.lean : 0, peck: b.peck, jaw: b.jaw, headYaw: b.headYaw, tail: b.tail, tailLift: st === 'ground' ? 0.1 : 0, limp: b.limp });
       }
       // the red aura when it is about to strike
       const a = b.aura; r.aura.visible = a > 0.02; if (a > 0.02) { const pulse = 0.75 + 0.25 * Math.sin(performance.now() / 70); r.aura.material.opacity = a * 0.85 * pulse; r.aura.scale.setScalar(1.6 + 0.5 * a); }
       r.material.emissive.setRGB(0.55 * a, 0.02 * a, 0);
       r.mesh.castShadow = dCam < 38;
+      r.stars.visible = st === 'stunned' && b.t > 0.35;
+      if (r.stars.visible) { r.stars.position.copy(b.pos).y += 0.42; r.stars.rotation.y += dt * 5; r.stars.children.forEach((c, i) => c.position.y = Math.sin(b.t * 6 + i * 2.1) * 0.04); }
       // sonic boom target only when low enough for the boom to reach
       b.combat.dead = !(b.alive && st !== 'dead' && st !== 'gone' && b.pos.y - ground(b.pos.x, b.pos.z) < 4.5);
     }
@@ -419,6 +538,7 @@
           for (const b of F.birds) {
             if (b.state === 'dead') { b.state = 'gone'; b.alive = false; b.respawnAt = gameHours() + RESPAWN_H; continue; }
             if (!b.alive || b.state === 'gone' || b.state === 'ground') continue;
+            if (b.rig) b.rig.stars.visible = false;
             if (F.mode === 'grounded' || F.mode === 'land') toGround(b, true); else { orbitPos(F, b, b.pos); b.state = 'fly'; b.lock = b.dash = null; b.aura = 0; }
           }
           if (F.mode === 'grounded' && F.roost === false && F.site.kind === 'air' && !isNight()) F.mode = 'roam';
@@ -426,14 +546,17 @@
         }
         if (asset) for (const b of F.birds) { updateBird(b, dt, d < 30); drawBird(b, dt, b.pos.distanceTo(cam)); }
       }
-      updateFeathers(dt);
+      updateFeathers(dt); updatePickups(dt); updateWarnings(); streakT -= dt;
     }
     function dispose() {
       for (const b of birds) { b.unreg && b.unreg(); if (b.rig) { scene.remove(b.rig.root); scene.remove(b.rig.ring); b.rig.material.dispose(); b.rig.aura.material.dispose(); b.rig.ring.material.dispose(); } }
+      for (const b of birds) if (b.rig) scene.remove(b.rig.stars);
+      for (const P of pickups) { scene.remove(P.sp); P.sp.material.dispose(); } pickTex.dispose(); starMat.map.dispose(); starMat.dispose();
+      popEl && popEl.remove(); fcEl && fcEl.remove(); warns.forEach(w => w.remove());
       scene.remove(feathers); fGeo.dispose(); fMat.dispose(); featherTex.dispose(); glowTex.dispose(); ringGeo.dispose();
     }
     return {
-      load, update, dispose, swordHit, flocks, birds, SITES, get killCount() { return kills; }, get ready() { return !!asset; },
+      load, update, dispose, swordHit, aimTarget, flocks, birds, SITES, get feathers() { return featherTotal; }, get pickups() { return pickups; }, get killCount() { return kills; }, get ready() { return !!asset; },
       provoke, kill: (b, src = 'debug') => kill(b, null, src),
       resetHunts() { for (const F of flocks) if (F.mode === 'hunt') { F.attackers.forEach(endAttack); F.attackers = []; F.mode = 'return'; } },
       respawnAll() { for (const b of birds) if (!b.alive || b.state === 'gone') b.respawnAt = 0; }

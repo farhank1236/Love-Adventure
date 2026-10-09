@@ -104,6 +104,9 @@
       dash(o, t0) { hiss(o, t0, 'bandpass', 500, 1.2, 0.08, 0.5, 0.45, 2600); hiss(o, t0 + 0.05, 'highpass', 3500, 0.8, 0.05, 0.12, 0.35); },
       birdHit(o, t0) { S.squawk(o, t0, 1.3); thump(o, t0, 220, 90, 0.08, 0.6); hiss(o, t0, 'bandpass', 1500, 1, 0.003, 0.5, 0.18); },          // struck: squawk + feathers
       birdCrash(o, t0) { thump(o, t0, 130, 45, 0.18, 0.9); hiss(o, t0, 'lowpass', 1600, 0.8, 0.004, 0.6, 0.25); S.squawk(o, t0 + 0.02, 0.7); },
+      counter(o, t0) { ring(o, t0, 1320, [[1, 1, 1], [1.5, 0.7, 0.8], [2.01, 0.5, 0.6], [3.03, 0.3, 0.4]], 0.9, 0.3); hiss(o, t0, 'highpass', 3500, 0.8, 0.003, 0.5, 0.12); thump(o, t0, 180, 60, 0.2, 0.7); },
+      pickup(o, t0) { for (const [f, dt] of [[880, 0], [1320, 0.08], [1760, 0.16]]) { const s = osc('sine', f, t0 + dt, 0.3), g = ctx.createGain(); env(g, t0 + dt, 0.005, 0.12, 0.28); s.connect(g); g.connect(o); } },
+      dizzy(o, t0) { for (let i = 0; i < 4; i++) { const t = t0 + i * 0.16, s = osc('sine', 2400, t, 0.12), g = ctx.createGain(); s.frequency.setValueAtTime(2000 + (i % 2) * 700, t); s.frequency.exponentialRampToValueAtTime(3000 - (i % 2) * 700, t + 0.1); env(g, t, 0.01, 0.05, 0.1); s.connect(g); g.connect(o); } },
       hurt(o, t0) { thump(o, t0, 140, 55, 0.16, 0.8); hiss(o, t0, 'bandpass', 900, 1.4, 0.004, 0.45, 0.16); hiss(o, t0 + 0.02, 'highpass', 3000, 1, 0.003, 0.25, 0.08); },
       cricket(o, t0) { for (let i = 0; i < 3; i++) { const t = t0 + i * 0.06, s = osc('sine', 4300, t, 0.04), g = ctx.createGain(); env(g, t, 0.004, 0.03, 0.03); s.connect(g); g.connect(o); } }
     };

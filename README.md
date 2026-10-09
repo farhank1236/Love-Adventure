@@ -109,7 +109,11 @@ The weakest enemy: one hit kills them. They live in flocks of 6–18 across the 
   - They roam their patch of sky 8–13 m up. When they see the hero (within 40 m) they circle above him and attack in pairs.
   - The two birds take positions on his left and right and hover. A red aura grows on them, they screech, and a red ring marks the locked spot. Then both dash in a straight line, the second a beat after the first.
   - A hit costs 10% of the hero's health; the bird bounces off and rejoins the flock.
-  - If he rolls through the dash (or simply isn't there any more), the bird can't pull out: it crashes into the ground and dies.
+  - If he rolls through the dash (or simply isn't there any more), the bird can't pull out. It crashes into the ground and lies dazed for about 3.4 s, with spinning stars over its head, then gets up and flies back to the flock. While it is dazed, one sword hit or a sonic boom finishes it.
+  - **Counter:** a sword hit timed on a diving bird kills it before it lands its blow, so the hero takes no damage. "COUNTER!" appears, time slows down for a moment and he gets 3% health back. A plain sword kill has a short hit-stop. Kills in quick succession show a streak (x2, x3, …).
+  - **Attacks aim themselves:** pressing attack turns the hero toward the nearest enemy in reach, with a diving bird first, then dazed ones, then those on the ground or flying low. He keeps tracking it through the swing.
+  - **Warnings:** a red arrow at the screen edge shows a bird that is locking on or diving from off-screen.
+  - **Red Feathers:** most birds drop one when they die. It glows on the ground for 45 s and is picked up by walking over it. The count is kept in the browser (next to the health bar), ready for quests or crafting later.
 - **Ground flocks**
   - They peck at the grass in their meadow, look around and hop, and ignore the hero. They only hop aside if he walks right up, or gallops past on the horse.
   - Strike one of them, with the sword or a sonic boom, and the whole group takes off and hunts him. Afterwards they settle back on their meadow.

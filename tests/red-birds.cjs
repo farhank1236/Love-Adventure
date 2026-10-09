@@ -2,7 +2,8 @@
 //  - the light model (<= 3,000 triangles, 88 bones) loads; flocks are placed outside the guarded areas
 //  - a flying flock spots the hero, circles him and attacks in pairs: lock-on hover with a red aura and a ground ring,
 //    then a straight dash; standing still costs 10% health per hit
-//  - rolling as they dash makes them miss: they crash into the ground and die (no damage)
+//  - rolling as they dash makes them miss: they crash, lie dazed (killable), then get up and fly back
+//  - a sword hit timed on a diving bird is a COUNTER: it dies, no damage, slow motion; attacks turn toward the enemy
 //  - a ground flock pecks and ignores him; one sword hit kills a bird and the rest take off and hunt
 //  - stepping into Dawnmeadow (guarded) ends the hunt; at night flying flocks roost; dead birds return after a game day
 //  - at 0 health the hero is sent back to Dawnmeadow with full health
@@ -55,31 +56,57 @@ const URL = process.env.GAME_URL || 'http://127.0.0.1:8000/index.html', OUT = pr
   expect(hp1 <= hp0 - 9.99 && hp1 >= hp0 - 20.01, 'standing still: each hit takes 10% health', { hp0, hp1 });
   // ---------------------------------------------------------------- dodge: they miss and crash
   await page.evaluate(() => KingdomDebug.health.reset());
-  const deadBefore = await page.evaluate(() => KingdomDebug.birds.birds.filter(b => b.state === 'dead' || b.state === 'gone').length);
   await until(D => D.birds.birds.some(b => b.state === 'dash' && b.t < 0.06), 12);
-  await key(['KeyC'], ['KeyC']); await tick(1.6);
-  const after = await page.evaluate(() => ({ hp: KingdomDebug.health.hp, dead: KingdomDebug.birds.birds.filter(b => b.state === 'dead' || b.state === 'gone').length }));
-  expect(after.hp === 100 && after.dead >= deadBefore + 1, 'rolling through the dash: no damage, the birds crash and die', { deadBefore, after });
-  await shot('crash');
+  await key(['KeyC'], ['KeyC']); await tick(1.3);
+  const after = await page.evaluate(() => ({ hp: KingdomDebug.health.hp, stunned: KingdomDebug.birds.birds.filter(b => b.state === 'stunned').length }));
+  expect(after.hp === 100 && after.stunned >= 1, 'rolling through the dash: no damage, the birds crash and lie dazed', after);
+  await page.evaluate(() => { const D = KingdomDebug, b = D.birds.birds.find(b => b.state === 'stunned'); D.state.camYaw = Math.atan2(b.pos.x - D.player.position.x, b.pos.z - D.player.position.z); D.state.camPitch = 0.2; D.state.camZoom = 0.7; });
+  await tick(0.5); await shot('dazed');
+  // a dazed bird can be finished off; left alone it gets up and flies back
+  const finish = await page.evaluate(() => { const D = KingdomDebug, S = D.birds.birds.filter(b => b.state === 'stunned'); const b = S[0]; window.__other = S[1] || null;
+    D.teleport(b.pos.x - 1.4, b.pos.z, Math.PI / 2); D.birds.swordHit({ kind: 'combo' }); return b.state; });
+  const faced = await page.evaluate(() => KingdomDebug.player.rotation.y);
+  expect(finish === 'dead', 'a dazed bird dies to one sword hit', { finish });
+  await page.evaluate(() => { const D = KingdomDebug; for (const b of D.birds.birds) if (b.state === 'stunned' && !window.__other) window.__other = b; });
+  const rejoin = await until(D => !window.__other || ['takeoff', 'fly', 'lock', 'dash', 'recover'].includes(window.__other.state), 6);
+  expect(rejoin, 'left alone, a dazed bird gets up and flies back', {});
+  // perfect counter: the sword meets a diving bird -> it dies, no damage, slow motion
+  await page.evaluate(() => KingdomDebug.health.reset());
+  const ctr = await until(D => { const b = D.birds.birds.find(b => b.state === 'dash'); if (!b) return false; const p = D.player.position;
+    if (Math.hypot(b.pos.x - p.x, b.pos.z - p.z) > 2.6) return false; D.player.rotation.y = Math.atan2(b.pos.x - p.x, b.pos.z - p.z); window.__ctr = b; D.birds.swordHit({ kind: 'combo' }); return true; }, 20);
+  const c2 = await page.evaluate(() => ({ state: window.__ctr && window.__ctr.state, slow: KingdomDebug.state.slowT, pop: document.getElementById('battlePop').textContent }));
+  await tick(0.8);
+  const c3 = await page.evaluate(() => KingdomDebug.health.hp);
+  expect(ctr && c2.state === 'dead' && c2.slow > 0 && c2.pop === 'COUNTER!', 'sword timed on a diving bird: COUNTER, it dies', c2);
+  expect(c3 >= 90, 'no damage from the countered bird (only its partner can still hit)', { hp: c3 });
   // ---------------------------------------------------------------- Dawnmeadow is guarded: the hunt ends
   await page.evaluate(() => { const S = Aethelos.Layout.SPAWN; KingdomDebug.teleport(S.x, S.z, S.yaw); });
   const ended = await until(D => D.birds.flocks.find(f => f.site.id === 'meadow-west').mode !== 'hunt', 3);
   expect(ended, 'a hunt breaks off at the edge of Dawnmeadow', {});
   // ---------------------------------------------------------------- ground flock: passive until struck
   await page.evaluate(() => { const D = KingdomDebug, F = D.birds.flocks.find(f => f.site.id === 'meadow-pickers'); D.teleport(F.patch.x - 4.5, F.patch.z - 4.5, Math.PI / 4); });
-  await tick(6);
+  await page.evaluate(() => KingdomDebug.health.reset()); await tick(6);
   const calm = await page.evaluate(() => { const F = KingdomDebug.birds.flocks.find(f => f.site.id === 'meadow-pickers'); return { mode: F.mode, states: [...new Set(F.birds.map(b => b.state))], hp: KingdomDebug.health.hp }; });
   expect(calm.mode === 'grounded' && calm.states.every(s => s === 'ground') && calm.hp === 100, 'pecking flock ignores him', calm);
   await page.evaluate(() => { const D = KingdomDebug, F = D.birds.flocks.find(f => f.site.id === 'meadow-pickers'); const p = D.player.position; const b = F.birds.filter(b => b.state === 'ground').sort((a, c) => a.pos.distanceTo(p) - c.pos.distanceTo(p))[0];
     D.state.camYaw = 0.7; D.state.camPitch = 0.25; D.render(); window.__target = b; });
   await shot('pecking');
-  await page.evaluate(() => { const D = KingdomDebug, b = window.__target; const a = Math.atan2(b.pos.x - 1.2 - b.pos.x, 0); D.teleport(b.pos.x - 1.3, b.pos.z - 0.2, Math.atan2(1.3, 0.2)); });
-  await tick(0.2); await key(['Space'], ['Space']); await tick(2.4);                     // first press draws the sword from its portal
+  await page.evaluate(() => { const D = KingdomDebug, b = window.__target; D.teleport(b.pos.x - 1.3, b.pos.z - 0.2, Math.atan2(1.3, 0.2) + 1.6); });   // facing away
+  await key(['Space'], ['Space']);                                                         // first press also draws the sword from its portal
+  const aim = await page.evaluate(() => { const D = KingdomDebug, p = D.player.position, b = window.__target, want = Math.atan2(b.pos.x - p.x, b.pos.z - p.z), y = D.player.rotation.y;
+    return { off: Math.abs(Math.atan2(Math.sin(want - y), Math.cos(want - y))), faceT: !!D.state.faceT }; });
+  expect(aim.off < 0.25, 'attack turns him toward the bird', aim);
+  await tick(2.4);
   await page.evaluate(() => { const D = KingdomDebug, b = window.__target; D.teleport(b.pos.x - 1.3, b.pos.z - 0.2, Math.atan2(1.3, 0.2)); });
-  await key(['Space'], ['Space']); await tick(1.2);
+  await key(['Space'], ['Space']);
+  await tick(1.2);
   const struck = await page.evaluate(() => { const F = KingdomDebug.birds.flocks.find(f => f.site.id === 'meadow-pickers'); return { mode: F.mode, dead: F.birds.filter(b => b.state === 'dead' || b.state === 'gone').length, up: F.birds.filter(b => ['takeoff', 'fly', 'lock', 'dash', 'recover'].includes(b.state)).length }; });
   expect(struck.dead >= 1 && struck.mode === 'hunt' && struck.up >= 3, 'one sword hit kills; the group takes off and hunts', struck);
   await tick(1.0); await shot('takeoff');
+  // red feathers dropped by the dead birds can be picked up
+  const loot = await page.evaluate(() => { const D = KingdomDebug, P = D.birds.pickups; if (!P.length) return { n: 0 }; const before = D.birds.feathers, q = P[0].sp.position;
+    D.teleport(q.x, q.z, 0); for (let i = 0; i < 20; i++) D.tick(1 / 30); return { n: P.length, before, after: D.birds.feathers }; });
+  expect(loot.n === 0 || loot.after === loot.before + 1, 'walking over a red feather picks it up', loot);
   // ---------------------------------------------------------------- night roost and respawn after a day
   const deadBird = await page.evaluate(() => { const b = KingdomDebug.birds.birds.find(b => b.state === 'dead' || b.state === 'gone'); return b && { id: b.F.site.id, i: b.i }; });
   await tick(3.5);

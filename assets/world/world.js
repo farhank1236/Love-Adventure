@@ -368,6 +368,8 @@
         const target = ctl.speedFor(true, running) * (ctl.attacking ? 0.15 : 1);
         state.velocity.x += (dir.x * target - state.velocity.x) * 0.18; state.velocity.z += (dir.z * target - state.velocity.z) * 0.18; turnTo(dir, 0.22);
       } else { state.velocity.x *= 0.78; state.velocity.z *= 0.78; }
+      if (state.faceT && (state.faceT.t -= dt) > 0 && state.faceT.b.alive && state.faceT.b.state !== 'dead' && !moving) {
+        const bp = state.faceT.b.pos; turnTo(new THREE.Vector3(bp.x - player.position.x, 0, bp.z - player.position.z).normalize(), 0.45); }
       const wantsJump = !!k.KeyZ;
       if (wantsJump && !state.jumpLatch && state.grounded && !ctl.busy) { state.jumpVelocity = 6.8; state.grounded = false; playAt('jump'); }
       state.jumpLatch = wantsJump;
@@ -490,13 +492,19 @@
       const ctl = state.heroRig?.controller;
       if (ctl) {
         const k = state.keys, dir = (k.ArrowDown && !k.ArrowUp) ? 'down' : undefined;          // Down+attack = low slash (no up attack)
-        if (e.code === 'Space' || e.code === 'KeyF') ctl.attack(dir);
+        if (e.code === 'Space' || e.code === 'KeyF') { faceEnemy(); ctl.attack(dir); }
         else if (e.code === 'ArrowDown') ctl.direction('down');
         else if (e.code === 'KeyC' && state.grounded && ctl.dodge()) { showToast('Dodge roll'); playAt('roll'); }
         return;
       }
-      if (e.code === 'Space' || e.code === 'KeyF') { state.attackTimer = 0.95; setTimeout(() => world.birds && world.birds.swordHit({ kind: 'combo' }), 280); }
+      if (e.code === 'Space' || e.code === 'KeyF') { faceEnemy(); state.attackTimer = 0.95; setTimeout(() => world.birds && world.birds.swordHit({ kind: 'combo' }), 280); }
     };
+    // attacks turn him toward the nearest enemy in reach (a diving bird first), and keep tracking it through the swing
+    function faceEnemy() {
+      if (!world.birds || (world.horse && world.horse.riding)) return;
+      const b = world.birds.aimTarget(player.position, player.rotation.y); if (!b) { state.faceT = null; return; }
+      player.rotation.y = Math.atan2(b.pos.x - player.position.x, b.pos.z - player.position.z); state.faceT = { b, t: 0.6 };
+    }
     const onKeyUp = e => { state.keys[e.code] = false; if (e.code === 'KeyT') world.sky && world.sky.fastForward(false); };
     const onBlur = () => { for (const k in state.keys) state.keys[k] = false; };
     const touches = new Map();                         // finger id -> last position (camera drag / pinch on the canvas)
@@ -565,6 +573,7 @@
 
     // ------------------------------------------------ loop
     function step(dt) {
+      if (state.slowT > 0) { state.slowT -= dt; dt *= state.slowK || 0.3; }             // counter slow motion / hit-stop
       timeU.value += dt;
       if (state.editing && world.editor) {                 // gameplay paused: hero idles, editor drives the camera
         state.heroRig?.controller.update(dt, { moving: false, running: false, airborne: false, speed: 0 }); world.skill && world.skill.update(dt); world.extras && world.extras.update(dt);
@@ -600,7 +609,9 @@
         if (A.createHeroHealth) world.health = A.createHeroHealth({ root: canvas.parentElement, sfx: fx, onDefeat: heroDefeated });
         if (A.createRedBirds) { world.birds = A.createRedBirds({ THREE, scene, world, player, camera, sfx: fx, showToast, health: world.health,
           hero: () => state.heroRig || state.rig, controller: () => state.heroRig && state.heroRig.controller,
-          horseFast: () => !!(world.horse && world.horse.riding && world.horse.speed > 6), onHeroHit: heroHit });
+          horseFast: () => !!(world.horse && world.horse.riding && world.horse.speed > 6), onHeroHit: heroHit, root: canvas.parentElement,
+          onKill: k => { if (k.counter) { state.slowT = 0.5; state.slowK = 0.3; world.health && world.health.heal(world.health.max * 0.03); state.hurtShake = 0.35; }   // perfect counter: slow motion + a little health
+                         else if (k.src === 'sword') { state.slowT = 0.07; state.slowK = 0.12; } } });                                                  // hit-stop on a sword kill
           world.birds.load().catch(e => console.warn('Red birds:', e)); }
         if (A.createTownsfolk) { say('Waking the townsfolk…'); world.npcs = A.createTownsfolk({ THREE, scene, world, player, camera, root: canvas.parentElement }); }
         say('Painting stone, soil and bark…'); await texturesReady;
