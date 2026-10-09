@@ -106,6 +106,7 @@
       }
       if (!best) return;
       const y = best.level; if (p.y < y + 0.2) return;
+      camera.getWorldDirection(tmpV); if (tmpV.y > 0.35) return;                  // looking up at the sky: no water in view
       ensureRT(Math.max(2, Math.round(size.x * 0.5)), Math.max(2, Math.round(size.y * 0.5)));
       const rc = refl.cam; rc.copy(camera); rc.position.set(p.x, 2 * y - p.y, p.z);
       camera.getWorldDirection(tmpV); lookAt.copy(p).add(tmpV); lookAt.y = 2 * y - lookAt.y; rc.up.set(0, -1, 0).applyQuaternion(camera.quaternion).reflect(normal).negate(); rc.lookAt(lookAt);
@@ -119,9 +120,10 @@
       rc.projectionMatrixInverse.copy(rc.projectionMatrix).invert();
       refl.matrix.copy(bias).multiply(rc.projectionMatrix).multiply(rc.matrixWorldInverse);
       const vis = hide.map(o => o.visible); hide.forEach(o => { o.visible = false; });
+      const small = (scene.getObjectByName('WorldObjects')?.children || []).filter(m => m.visible && m.userData && m.userData.cull < 300); small.forEach(m => { m.visible = false; });   // the mirror skips small props
       const su = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false;
       const prev = renderer.getRenderTarget(); renderer.setRenderTarget(refl.rt); renderer.clear(); renderer.render(scene, rc); renderer.setRenderTarget(prev);
-      renderer.shadowMap.autoUpdate = su; hide.forEach((o, i) => { o.visible = vis[i]; });
+      renderer.shadowMap.autoUpdate = su; hide.forEach((o, i) => { o.visible = vis[i]; }); small.forEach(m => { m.visible = true; });
       U.uReflOn.value = 1; U.uReflY.value = y;
     }
     return { material, U, beforeRender, setQuality(q) { refl.on = q === 'high'; }, dispose() { material.dispose(); U.uWaves.value.dispose(); refl.rt && refl.rt.dispose(); } };
