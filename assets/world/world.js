@@ -227,6 +227,10 @@
       if (hero.gender === 'male' && window.HeroRig) {
         const rig = await HeroRig.loadHero(THREE);
         rig.root.traverse(o => { if (o.isMesh) o.castShadow = !o.material.transparent && o.name !== 'HeroSword'; });   // the 500k-tri sword skips the shadow pass
+        if (A.clusterDecimate && rig.body) {        // the 500k-triangle body draws no shadow itself: a light twin (same bones) casts it
+          const twin = new THREE.SkinnedMesh(A.clusterDecimate(THREE, rig.body.geometry, 110), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
+          twin.name = 'HeroShadowTwin'; twin.bind(rig.body.skeleton, rig.body.bindMatrix); twin.frustumCulled = false; twin.castShadow = true; rig.body.parent.add(twin); rig.body.castShadow = false;
+        }
         state.heroRig = rig; heroMount.add(rig.root);
         if (A.createSonicSkill) { world.skill = A.createSonicSkill({ THREE, scene, rig, player, world, camera, root: canvas.parentElement, showToast }); world.skill.setAim(() => inputDir()); }
         if (A.createHeroExtras) world.extras = A.createHeroExtras({ THREE, scene, rig, camera, root: canvas.parentElement });
@@ -415,7 +419,8 @@
       showToast('Graphics: ' + q[0].toUpperCase() + q.slice(1));
     }
     function renderFrame() {
-      world.water.beforeRender(camera, [world.grass.group, world.waterGroup], dbSize.clone().multiplyScalar(world.post.scale));
+      const hide = [world.grass.group, world.waterGroup]; if (world.horse && world.horse.fullGroup) hide.push(world.horse.fullGroup);   // the 500k-triangle horse stays out of the mirror
+      world.water.beforeRender(camera, hide, dbSize.clone().multiplyScalar(world.post.scale));
       world.post.render(scene, camera);
     }
     const GAME_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);

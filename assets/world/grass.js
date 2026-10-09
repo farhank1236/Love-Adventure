@@ -7,9 +7,9 @@
   const A = window.Aethelos ||= {};
   const QUAL = {
     // denser meadows: tighter clumps, more blades per clump, a deeper far ring (blades per clump: near, far)
-    high: { near: [0.14, 16], far: [0.38, 50], flowers: [0.85, 38], blades: [4, 5] },
-    medium: { near: [0.19, 13], far: [0.48, 38], flowers: [1.1, 30], blades: [4, 5] },
-    low: { near: [0.27, 10], far: [0.7, 22], flowers: [1.6, 18], blades: [4, 4] }
+    high: { near: [0.145, 16], far: [0.40, 48], flowers: [0.85, 38], blades: [4, 4] },
+    medium: { near: [0.19, 13], far: [0.50, 36], flowers: [1.1, 30], blades: [4, 4] },
+    low: { near: [0.27, 10], far: null, flowers: [1.6, 18], blades: [4, 4] }
   };
   function bladeGeometry(THREE, blades, segs) {
     const pos = [], b = [], idx = [];
@@ -169,24 +169,28 @@
       rings = [];
       const cfg = QUAL[q] || QUAL.high;
       const ring = (spacing, radius, fadeIn, kind, blades, segs) => {
-        const G = Math.ceil(radius * 2 / spacing) + 1;
+        // the grid only needs to cover what the camera can see: it is pushed forward along the view and is 1.5 R wide, not 2 R
+        const G = Math.ceil(radius * 2 * HALF / spacing) + 1;
         const geo = kind === 'flower' ? flowerGeometry(THREE) : bladeGeometry(THREE, blades, segs); geo.instanceCount = G * G;
         const u = { uData: { value: data }, uMask: { value: mask }, uN: { value: data.userData.n }, uCell: { value: data.userData.cell }, uHalf: { value: half }, uMaskRes: { value: res },
           uCenter: { value: new THREE.Vector2() }, uSpacing: { value: spacing }, uG: { value: G }, uRadius: { value: radius }, uFadeIn: { value: fadeIn }, uFadeOut: { value: radius * 0.75 } };
         const mesh = new THREE.Mesh(geo, makeMaterial(THREE, u, kind)); mesh.frustumCulled = false; mesh.receiveShadow = true; mesh.castShadow = false; mesh.name = 'Grass_' + kind + '_' + spacing;
-        group.add(mesh); rings.push({ mesh, u, spacing });
+        group.add(mesh); rings.push({ mesh, u, spacing, radius });
       };
       const [ns, nr] = cfg.near, [nb, fb] = cfg.blades || [3, 4]; ring(ns, nr, 0, 'blade', nb, 4);
       if (cfg.far) { const [fs, fr] = cfg.far; ring(fs, fr, nr * 0.85, 'blade', fb, 3); rings[0].u.uFadeOut.value = nr * 0.7; }
       else rings[0].u.uFadeOut.value = nr * 0.7;
       const [flS, flR] = cfg.flowers; ring(flS, flR, 0, 'flower');
     }
+    const HALF = 0.75, fwd = new THREE.Vector3();
     rebuildMask(); build(quality);
     return {
       group, mask,
       update(camera, player) {
         A.Mat.U.uPlayer.value.copy(player);
-        for (const r of rings) r.u.uCenter.value.set(Math.round(camera.position.x / r.spacing) * r.spacing, Math.round(camera.position.z / r.spacing) * r.spacing);
+        camera.getWorldDirection(fwd); const hl = Math.hypot(fwd.x, fwd.z), k = hl > 1e-3 ? Math.min(1, hl * 2.5) / hl : 0;
+        for (const r of rings) { const off = r.radius * (1 - HALF) * k, cx = camera.position.x + fwd.x * off, cz = camera.position.z + fwd.z * off;
+          r.u.uCenter.value.set(Math.round(cx / r.spacing) * r.spacing, Math.round(cz / r.spacing) * r.spacing); }
       },
       rebuildMask, setQuality: build,
       dispose() { for (const r of rings) { r.mesh.geometry.dispose(); r.mesh.material.dispose(); } scene.remove(group); mask.dispose(); }

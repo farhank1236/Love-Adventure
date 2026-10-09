@@ -6,7 +6,7 @@
    Everything is procedural (shaders + particles), no textures needed. */
 (() => {
   const A = window.Aethelos ||= {};
-  const ACTIVE = 6, CYCLE = 12, BOOM_SPEED = 32, BOOM_RANGE = 42, MAX_LIGHTS = 3;
+  const ACTIVE = 6, CYCLE = 12, BOOM_SPEED = 32, BOOM_RANGE = 42, MAX_LIGHTS = 2;
 
   // ---------------------------------------------------------------- combat hook (enemies register here later)
   A.Combat ||= {
@@ -75,6 +75,9 @@
       return {
         emit(x, y, z, vx, vy, vz, life, s, kind = 0) { const p = P[next]; next = (next + 1) % n; Object.assign(p, { x, y, z, vx, vy, vz, life, max: life, s, kind }); },
         update(dt, colorFn) {
+          // nothing alive: skip the loop and the buffer upload entirely (after one frame that cleared them)
+          let alive = false; for (let i = 0; i < n; i++) if (P[i].life > 0) { alive = true; break; }
+          if (!alive && this.idle) return; this.idle = !alive;
           for (let i = 0; i < n; i++) {
             const p = P[i];
             if (p.life <= 0) { pos[i * 3 + 1] = -9999; col[i * 4 + 3] = 0; continue; }
@@ -291,8 +294,7 @@
       const target = S.state === 'active' ? 1 : 0; S.fade += (target - S.fade) * Math.min(1, dt * (target ? 6 : 3)); intensity.value = S.fade;
       const on = S.fade > 0.01; for (const m of shells) m.visible = on; sleeve.visible = on && grip.scale.y > 0.5;
       if (on && auraBone) { const k = 1 + 0.45 * S.fade; auraBone.scale.x = Math.max(auraBone.scale.x, k); auraBone.scale.y = Math.max(auraBone.scale.y, k); auraBone.scale.z = Math.max(auraBone.scale.z, 1); }   // x edge, y flat, z blade
-      // sword tip history (for the swing plane)
-      player.updateMatrixWorld(true); S.tipHist.push(swordTip(new THREE.Vector3())); if (S.tipHist.length > 6) S.tipHist.shift();
+
       // body embers + dark wisps
       if (on) {
         const rate = 260 * S.fade * dt;

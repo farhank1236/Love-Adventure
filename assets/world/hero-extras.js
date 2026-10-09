@@ -42,7 +42,7 @@
     // ---------------------------------------------------------------- sword portal (left hip)
     for (const n of ['Portal_Ring', 'Portal_Swirl', 'Portal_Core']) if (rig.fxMeshes[n]) rig.fxMeshes[n].visible = false;
     const spBone = rig.byName.Sword_Portal, holder = new THREE.Group(); holder.name = 'SwordPortalHolder';
-    const sp = A.createPortalFX(THREE, scene, { radius: 0.25, aspect: 1.75, sparks: 60, lampPower: 7 });
+    const sp = A.createPortalFX(THREE, scene, { radius: 0.25, aspect: 1.75, sparks: 60, light: false });   // no extra light: every light costs every pixel
     sp.group.rotation.x = -Math.PI / 2;                     // portal faces the bone's -Z (towards the right hand), tall along +Y
     holder.add(sp.group); (spBone ? spBone.parent : rig.root).add(holder);
     const swordPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6);
@@ -90,7 +90,9 @@
       bubble.style.left = ((v1.x * 0.5 + 0.5) * w).toFixed(1) + 'px'; bubble.style.top = ((-v1.y * 0.5 + 0.5) * h).toFixed(1) + 'px';
     }
 
+    const grip = rig.byName.Sword_Grip;
     function update(dt) {
+      if (sword && grip) sword.visible = grip.scale.y > 0.02;          // the stored 500k-triangle sword is not drawn at all
       // sword portal: follow the clip's portal track, open amount = its scale
       if (spBone) {
         holder.position.copy(spBone.position); holder.quaternion.copy(spBone.quaternion);
