@@ -38,3 +38,10 @@ v7 clips (same model, `HERO_V6` revision):
   - **Gallop:** two-point seat with knee absorption, torso pitch and hands travelling along the neck.
   - **Idle:** breathing, weight shift, a look left and right, and a rein adjustment.
 - `build7.py` makes `clips_v7.pkl`; then `export_glb6.py OUT.glb clips_v7.pkl`, then `tools/lod` to reduce and chunk. `csheet.py` renders clip contact sheets.
+
+Leg fix (`HERO_V6`, cache `hero-v9`):
+- `straighten_legs.py IN.glb OUT.glb` post-processes the game GLB's clips. The v3–v7 clips carried the hips 4–12 cm too low, so the knees stayed bent about 45° even when standing still (a "kangaroo" stance). Per frame it raises the hips until the straighter leg reaches the clip's target bend, smoothed over time:
+  - about 6° standing, 10–12° walking, 24–26° running, 14° in attacks.
+  - It re-solves both legs with two-bone IK, so each foot keeps its world position and orientation exactly. The knee keeps its direction.
+  - Crouching clips are left alone: AttackLow, the jumps, the dodge roll and the riding clips.
+- It works on the already reduced GLB, so the mesh is untouched; only the animation tracks change. Chunk the result with `tools/lod/chunk.py OUT.glb hero 2`.
