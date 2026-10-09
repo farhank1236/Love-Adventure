@@ -1654,7 +1654,8 @@
                 heroPreloadTimer=null;
                 if(heroPreloadPromises[target]||!window.WarriorCombat?.load)return;
                 if(newGender===target)setHeroLoadStatus('Preparing '+(target==='female'?'Female':'Male')+' Warrior…');
-                heroPreloadPromises[target]=WarriorCombat.load(target)
+                // the Male Warrior plays as the v4 sword warrior (hero-rig.js): preload that model, not the V14 male
+                heroPreloadPromises[target]=(target==='male'&&window.HeroRig?HeroRig.loadHeroBytes():WarriorCombat.load(target))
                     .then(()=>{
                         if(newGender===target&&!$('characterScreen')?.classList.contains('hidden'))setHeroLoadStatus('Warrior ready');
                     })
