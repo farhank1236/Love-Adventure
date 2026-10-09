@@ -186,7 +186,7 @@
     const S = { swordOut: false, mode: 'free', modeAction: null, modeUpperOnly: false, timer: 0, combo: -1, queued: 0, queuedDir: null,
       lastAttackEnd: -9, now: 0, airborne: false, wasAirborne: false, landing: 0, pendingAttack: false, pendingDir: null,
       attackKind: '', attackStart: -9, dodgeT: 0, dodgeClip: '' };
-    const SWORD_TIMEOUT = 5, COMBO_GAP = 1.0, ATTACK_SPEED = 1.15, SUMMON_SPEED = 1.9, DISMISS_SPEED = 1.6, DIR_WINDOW = .16, DODGE_SPEED = 1.0;
+    const SWORD_TIMEOUT = 5, COMBO_GAP = 1.0, ATTACK_SPEED = 1.5, SUMMON_SPEED = 1.9, DISMISS_SPEED = 1.6, DIR_WINDOW = .16, DODGE_SPEED = 1.0;
     const DIR_CLIP = { up: 'AttackUp', down: 'AttackLow' };
     const curve = (X.dodge && X.dodge.curve) || [0];
     function startAttack(i) {
