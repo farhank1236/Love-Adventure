@@ -19,12 +19,31 @@ The game has two playable heroes: **Male Warrior** and **Female Warrior**, both 
 
 **Movement:** the hero walks on the terrain, crosses bridges, wades only in shallow water, and can't pass through buildings, walls, trees or rocks. A banner names each area as you enter it.
 
+**Look:** grounded fantasy, rendered in HDR.
+- **Materials:** 11 Poly Haven 4K material sets, packed to 1024 px for the web (`assets/world/tex/`, built by `tools/textures/build_textures.py`):
+  - **Ground:** meadow grass (rocky_terrain_02), farm soil, river pebbles on the banks and beds, mossy rock (aerial_rocks_02) on hillsides, slate (dark_rock) around Varkhold and the high slopes, pale marble cliffs near the peaks, then snow.
+  - **Roads:** cobble roads and the plaza use grassy_cobblestone (pale flagstones on the Royal Road); dirt tracks have cart ruts.
+  - **Buildings:** walls, towers and foundations use stone_wall_04. Doors and gates use the studded wooden_garage_door. Trunks use eucalyptus_bark (birch is pale). Iron uses rusty metal_plate_02. Columns and steps use marble.
+  - **Procedural surfaces:** roof tiles, plank grain, lime plaster with damp and stains, leaded windows, and grime near the ground.
+- **Sky and time:** a 24-hour clock (1 real minute = 1 game hour; **hold T** to fast-forward).
+  - Two suns and three moons rise in the west and set in the east. The moons have phases.
+  - The sky uses physically based scattering, so mornings, noon, sunsets and night look right. It has stars, a galaxy band, drifting clouds and cloud shadows.
+  - Valley mist comes at dawn. Lamps, lanterns, campfires and windows light up at night.
+- **Nature:** GPU grass and wild flowers sway in the wind and part around the hero. Wheat fields grow real stalks. Trees and bushes are made of leaf and needle cards, sway in the wind and cast leafy shadows.
+- **Water:** rivers have depth colour (clear shallows show the pebble bed) and flow downstream. They reflect the banks, trees and buildings, show sun and moon glints, and have foam along the banks.
+- **Post-processing:** SSAO contact shadows, height fog and aerial haze, bloom, a filmic curve, a colour grade, and night-time exposure.
+- **Graphics quality:** Low, Medium and High are picked automatically from the GPU. **Press G** to switch (saved per browser), or open the page with `?gfx=high`. Dynamic resolution drops to 60 % when frames are slow. Small props fade out with distance, and there are two grass rings.
+
 **Code:** the world is modular, in `assets/world/`:
 - `kingdom-layout.js`: regions, rivers, roads, height shaping.
-- `terrain.js`: heightfield with carved rivers and graded roads.
-- `models.js`: about 75 low-poly model types with colliders. A type can be replaced by a GLB later under the same id.
+- `terrain.js`: heightfield with carved rivers and graded roads, surface weights for the splat shader, and a data texture for grass and water.
+- `models.js`: about 75 model types with colliders and per-part materials. A type can be replaced by a GLB later under the same id.
 - `kingdom-objects.js`: the default object list. Every object has id, name, type, category, position, rotation, scale and metadata, ready for the editor and JSON save/load.
-- `world.js`: rendering (tiled instancing, shadows near the player), collision, player, camera.
+- `materials.js`: texture arrays plus the terrain, road and object shaders.
+- `sky.js`: day/night, suns, moons, clouds, lights and image-based lighting.
+- `grass.js`, `water.js`: grass and flowers, rivers.
+- `post.js`: the HDR pipeline.
+- `world.js`: rendering (tiled instancing, distance culling, shadows near the player), collision, player, camera.
 
 **World editor:** press **E** in the world, or use the **Editor (E)** button.
 - **Selecting and moving:** click an object to select it, drag it to move it along the ground, R / Shift+R rotates it 15°, + / − scales it, Del deletes it, Ctrl+D duplicates it, F focuses the camera on it.

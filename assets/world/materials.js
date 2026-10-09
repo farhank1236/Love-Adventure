@@ -274,7 +274,7 @@
           } else if (id < 1.5) {                                                      // dressed stone
             tri(7.0, 3.0, p, N, a, n, pn); col = a.rgb * (lumC / luma(LMEAN[7])) * mix(vec3(1.0), col / max(lumC, 1e-3), 0.25); rough = n.b;
           } else if (id < 2.5) {                                                      // marble (palace, statues, columns)
-            tri(6.0, 4.0, p, N, a, n, pn); col = a.rgb * (min(lumC, 0.6) / luma(LMEAN[6])) * mix(vec3(1.0), col / max(lumC, 1e-3), 0.35) * 0.85; rough = n.b * 0.8;
+            tri(6.0, 3.0, p, N, a, n, pn); pn = normalize(mix(N, pn, 0.45)); col *= 0.8 * (0.82 + 0.18 * luma(a.rgb) / luma(LMEAN[6])); rough = 0.45 + 0.3 * n.b;   // dressed limestone / marble: soft veining
           } else if (id < 3.5) {                                                      // lime plaster: marble grain at low contrast, stains, rising damp
             tri(6.0, 2.5, p, N, a, n, pn); pn = normalize(mix(N, pn, 0.3));
             float blot = fbm2(p.xy * 0.7 + p.z * 0.6 + 3.0), streak = vn2(vec2(p.x * 3.0 + p.z * 3.0, p.y * 0.35));

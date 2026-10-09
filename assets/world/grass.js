@@ -50,6 +50,7 @@
       float h = t.x + t.y <= 1.0 ? a.x + (b.x - a.x) * t.x + (c.x - a.x) * t.y : d.x + (c.x - d.x) * (1.0 - t.x) + (b.x - d.x) * (1.0 - t.y);
       vec4 r = mix(mix(a, b, t.x), mix(c, d, t.x), t.y); r.x = h; return r; }
     float maskAt(vec2 xz){ return texture2D(uMask, (xz + uHalf) / (uHalf * 2.0)).r; }
+    float wheatAt(vec2 xz){ return texture2D(uMask, (xz + uHalf) / (uHalf * 2.0)).g; }
     // returns the clump root (xz), with w = keep (0 = culled) and z = per-clump random
     vec4 clump(out float density, out vec4 dat){
       float id = float(gl_InstanceID); vec2 c = vec2(mod(id, uG), floor(id / uG));
@@ -57,8 +58,8 @@
       vec2 rnd = vec2(h12(key), h12(key + 17.3)); vec2 p = cell + (rnd - 0.5) * uSpacing;
       float r = distance(p, cameraPosition.xz);
       float keep = smoothstep(uFadeIn - 2.0, uFadeIn, r) * (1.0 - smoothstep(uFadeOut, uRadius, r));
-      density = 0.0; dat = vec4(0.0);
-      if (keep > 0.0) { dat = dataAt(p); density = dat.y * maskAt(p); if (dat.w > dat.x - 0.05) density = 0.0; }
+      density = 0.0; dat = vec4(0.0); float fl = 0.0;
+      if (keep > 0.0) { dat = dataAt(p); density = dat.y * maskAt(p); if (dat.w > dat.x - 0.05) density = 0.0; fl = dat.z; dat.z = wheatAt(p); if (dat.z > 0.3) density = 1.0; else dat.z = -fl; }
       float h3 = h12(key + 41.7);
       return vec4(p, h3, step(h3, density * 1.1) * keep);
     }`;
@@ -69,7 +70,7 @@
       sh.vertexShader = 'attribute vec4 aB; varying vec3 vGC; varying float vT;\n' + A.Mat.VCOMMON + PLACE + '\n' + sh.vertexShader
         .replace('#include <beginnormal_vertex>', kind === 'flower' ? /* glsl */`
           float dens; vec4 dat; vec4 cl = clump(dens, dat); vec3 gPos, gNrm; vT = aB.y;
-          float keepF = step(cl.z, dat.z * maskAt(cl.xy) * 1.2) * cl.w;
+          float keepF = step(cl.z, max(0.0, -dat.z) * maskAt(cl.xy) * 1.2) * cl.w;
           vec2 rr = vec2(h12(cl.xy * 3.1), h12(cl.xy * 5.7));
           float hgt = (0.22 + 0.28 * rr.x) * min(1.0, cl.w * 2.0);
           float gust = sin(uTime * 1.9 + dot(cl.xy, uWind.xz) * 0.3) * 0.5 + 0.5;
@@ -87,19 +88,23 @@
           vec2 off = vec2(cos(a0 * 1.7), sin(a0 * 1.7)) * 0.07 * (0.3 + rr);
           vec3 root = vec3(cl.x + off.x, dat.x - 0.03, cl.y + off.y);
           float pch = vn2(cl.xy * 0.35) * 0.6 + vn2(cl.xy * 0.07) * 0.4;
+          float wheat = step(0.3, dat.z);
           float hgt = (0.16 + 0.2 * rr + 0.3 * pch * pch) * (0.55 + 0.45 * smoothstep(0.0, 0.6, dens)) * min(1.0, cl.w * 1.5);
+          if (wheat > 0.5) hgt = (0.82 + 0.25 * rr) * min(1.0, cl.w * 1.5);
           float wid = (0.016 + 0.012 * h12(cl.xy * 1.9 + aB.z)) * sqrt(uSpacing / 0.17);
           vec3 face = vec3(cos(a0), 0.0, sin(a0)), side = vec3(-face.z, 0.0, face.x);
           // wind: slow gusts rolling across the meadow + quick flutter; the hero pushes blades aside
           float gust = vn2(cl.xy * 0.045 - uWind.xz * uTime * 0.35) ;
           float wave = sin(uTime * 2.2 + dot(cl.xy, uWind.xz) * 0.45 + rr * 3.0) * 0.5 + 0.5;
           float bendAmt = 0.25 + rr * 0.35 + (0.25 + 0.9 * gust) * (0.3 + 0.7 * wave) * 0.9;
+          if (wheat > 0.5) { bendAmt = 0.12 + 0.35 * gust * (0.4 + 0.6 * wave); wid = 0.009 + 0.004 * rr; }
           vec3 bendDir = normalize(face * 0.5 + vec3(uWind.x, 0.0, uWind.z) * (0.4 + gust));
           vec2 away = cl.xy - uPlayer.xz; float pd = length(away);
           if (pd < 1.2 && abs(dat.x - uPlayer.y) < 1.5) { float k = 1.0 - pd / 1.2; bendDir = normalize(mix(bendDir, vec3(away.x, 0.0, away.y) / max(pd, 1e-3), k)); bendAmt += 1.4 * k; }
           float t = aB.y; vec3 up = vec3(0.0, 1.0, 0.0);
           float bt = min(1.2, bendAmt) * t * t;                                     // quadratic bend, roughly length-preserving
-          gPos = root + up * hgt * t * (1.0 - 0.3 * bt) + bendDir * hgt * 0.55 * bt + side * aB.x * wid * (1.0 - t * 0.85);
+          float taper = wheat > 0.5 ? (t > 0.72 ? 2.4 * (1.0 - smoothstep(0.92, 1.0, t)) : 1.0) : (1.0 - t * 0.85);   // wheat: a fat ear on a thin stalk
+          gPos = root + up * hgt * t * (1.0 - 0.3 * bt) + bendDir * hgt * 0.55 * bt + side * aB.x * wid * taper;
           vec3 tng = normalize(up * (1.0 - 0.6 * bt) + bendDir * 1.1 * min(1.2, bendAmt) * t);
           gNrm = normalize(mix(cross(side, tng), up, 0.55));
           // colour: dark roots, lighter tips, dry straw patches, a little per-blade variation
@@ -110,6 +115,7 @@
           vec3 tipC = mix(lush, vec3(0.33, 0.29, 0.11), dry * 0.8) * (0.78 + 0.45 * rr);
           vec3 rootC = mix(vec3(0.02, 0.04, 0.012), vec3(0.05, 0.045, 0.02), dry);
           vGC = mix(rootC, tipC, smoothstep(0.0, 0.95, t));
+          if (wheat > 0.5) vGC = mix(vec3(0.2, 0.16, 0.06), mix(vec3(0.62, 0.47, 0.17), vec3(0.78, 0.6, 0.26), rr), smoothstep(0.0, 0.6, t)) * (t > 0.72 ? 0.85 : 1.0);
           if (cl.w <= 0.0) gPos = vec3(cl.x, -9999.0, cl.y);
           vec3 objectNormal = gNrm;`)
         .replace('#include <begin_vertex>', 'vec3 transformed = gPos;');
@@ -124,21 +130,22 @@
   }
   function createGrass({ THREE, scene, terrain, world, quality = 'high' }) {
     const data = terrain.dataTexture(THREE), half = terrain.half, res = Math.round(half * 2);
-    const maskData = new Uint8Array(res * res), mask = new THREE.DataTexture(maskData, res, res, THREE.RedFormat, THREE.UnsignedByteType);
+    const maskData = new Uint8Array(res * res * 2), mask = new THREE.DataTexture(maskData, res, res, THREE.RGFormat, THREE.UnsignedByteType);   // R: grass allowed, G: wheat field
     mask.magFilter = mask.minFilter = THREE.LinearFilter; mask.needsUpdate = true;
     const group = new THREE.Group(); group.name = 'Grass'; scene.add(group);
     let rings = [];
     function rebuildMask() {
-      maskData.fill(255);
-      const set0 = (x0, z0, x1, z1, test) => {
+      for (let i = 0; i < res * res; i++) { maskData[i * 2] = 255; maskData[i * 2 + 1] = 0; }
+      const set0 = (x0, z0, x1, z1, test, wheat = false) => {
         const i0 = Math.max(0, Math.floor(x0 + half)), i1 = Math.min(res - 1, Math.ceil(x1 + half)), j0 = Math.max(0, Math.floor(z0 + half)), j1 = Math.min(res - 1, Math.ceil(z1 + half));
-        for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const x = i - half + 0.5, z = j - half + 0.5, v = test(x, z); if (v < 1) maskData[j * res + i] = Math.min(maskData[j * res + i], Math.round(255 * Math.max(0, v))); }
+        for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const x = i - half + 0.5, z = j - half + 0.5, v = test(x, z); if (v < 1) { const k = (j * res + i) * 2;
+          maskData[k] = Math.min(maskData[k], Math.round(255 * Math.max(0, v))); if (wheat) maskData[k + 1] = Math.max(maskData[k + 1], Math.round(255 * Math.min(1, Math.max(0, -v * 1.5)))); } }
       };
       // roads (soft shoulders) and river channels
       for (let j = 0; j < res; j++) for (let i = 0; i < res; i++) {
         const x = i - half + 0.5, z = j - half + 0.5, rd = terrain.roadDist(x, z), rv = terrain.riverDist(x, z);
         let v = Math.min(1, Math.max(0, (rd - 0.2) / 1.6)); v = Math.min(v, Math.max(0, Math.min(1, (rv + 0.3) / 1.5)));
-        if (v < 1) maskData[j * res + i] = Math.round(255 * v);
+        if (v < 1) maskData[(j * res + i) * 2] = Math.round(255 * v);
       }
       // every collider footprint (houses, walls, rocks, trees …) plus the flat pieces (plazas, fields, flower beds, arenas)
       const seen = new Set();
@@ -152,7 +159,7 @@
         const f = FLAT[o.type]; if (!f) continue; const sc = Math.max(o.scale.x, o.scale.z);
         if (f[1] === 'c') { const r = f[0] * sc; set0(o.position.x - r, o.position.z - r, o.position.x + r, o.position.z + r, (x, z) => (Math.hypot(x - o.position.x, z - o.position.z) - r) / 0.8); }
         else { const c = Math.cos(o.rotation.y || 0), s = Math.sin(o.rotation.y || 0), hw = f[0][0] * o.scale.x, hd = f[0][1] * o.scale.z, r = Math.hypot(hw, hd) + 1;
-          set0(o.position.x - r, o.position.z - r, o.position.x + r, o.position.z + r, (x, z) => { const dx = x - o.position.x, dz = z - o.position.z, lx = Math.abs(dx * c - dz * s) - hw, lz = Math.abs(dx * s + dz * c) - hd; return Math.max(lx, lz) / 0.8; }); }
+          set0(o.position.x - r, o.position.z - r, o.position.x + r, o.position.z + r, (x, z) => { const dx = x - o.position.x, dz = z - o.position.z, lx = Math.abs(dx * c - dz * s) - hw, lz = Math.abs(dx * s + dz * c) - hd; return Math.max(lx, lz) / 0.8; }, o.type === 'field_wheat'); }
       }
       mask.needsUpdate = true;
     }

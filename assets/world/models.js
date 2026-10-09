@@ -17,7 +17,7 @@
   // which surface material each palette colour gets (Aethelos.Mat.M ids); per-primitive override with { mat: 'name' }
   const MATS = { PLAIN: 0, STONE: 1, MARBLE: 2, PLASTER: 3, WOOD: 4, DOOR: 5, BARK: 6, METAL: 7, ROCK: 8, SLATE: 9, SOIL: 10, ROOF: 11, LEAF: 12, GLASS: 13, STRAW: 14, COBBLE: 15, WATER: 16, GOLD: 17, CLOTH: 18, BIRCH: 19, LEAFCARD: 20 };
   const MAT_OF = new Map(Object.entries({
-    stone: 'STONE', stone2: 'STONE', lightstone: 'MARBLE', white: 'MARBLE', plaster: 'PLASTER', plaster2: 'PLASTER', plaster3: 'PLASTER',
+    stone: 'STONE', stone2: 'STONE', lightstone: 'MARBLE', white: 'PLASTER', plaster: 'PLASTER', plaster2: 'PLASTER', plaster3: 'PLASTER',
     timber: 'WOOD', wood: 'WOOD', darkwood: 'WOOD', red: 'WOOD', door: 'DOOR', trunk: 'BARK', birch: 'BIRCH', iron: 'METAL', gold: 'GOLD',
     rock: 'ROCK', rock2: 'SLATE', soil: 'SOIL', roofRed: 'ROOF', roofSlate: 'ROOF', roofBrown: 'ROOF', roofGreen: 'ROOF', roofDark: 'ROOF', royal: 'CLOTH',
     leaf: 'LEAF', leaf2: 'LEAF', pine: 'LEAF', moonpine: 'LEAF', veg: 'LEAF', glass: 'GLASS', hay: 'STRAW', wheat: 'STRAW', water: 'WATER',
@@ -317,7 +317,7 @@
   def('silo', 'Silo', 'Farms', b => { b.cyl(2.6, 2.6, 9, 12, [0, 0, 0], C.lightstone); for (let y = 1; y < 9; y += 2) b.cyl(2.65, 2.65, 0.15, 12, [0, y, 0], C.iron); b.add(new b.T.SphereGeometry(2.6, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), C.roofSlate, [0, 9, 0]); }, { col: [circ(2.7, 0, 0, 10)] });
   def('well', 'Well', 'Farms', b => { b.cyl(1.2, 1.3, 0.9, 10, [0, 0, 0], C.stone); b.cyl(0.95, 0.95, 0.05, 10, [0, 0.7, 0], C.water); for (const x of [-1, 1]) b.cyl(0.08, 0.1, 2.4, 5, [x, 0.9, 0], C.wood); b.gable(2.8, 2.2, 0.9, [0, 3.2, 0], C.roofBrown); b.cyl(0.08, 0.08, 2, 5, [0, 2.6, 0], C.wood, { rz: Math.PI / 2 }); b.cyl(0.22, 0.18, 0.35, 6, [0, 1.6, 0], C.wood); }, { col: [circ(1.35, 0, 0, 1)] });
   def('fence', 'Fence', 'Farms', b => { for (const x of [-2, 0, 2]) b.box(0.16, 1.2, 0.16, [x, 0, 0], C.wood); b.box(4.2, 0.12, 0.08, [0, 0.45, 0], C.wood); b.box(4.2, 0.12, 0.08, [0, 0.9, 0], C.wood); }, { col: [box(4.2, 0.3, 0, 0, 1.2)] });
-  def('field_wheat', 'Wheat field', 'Farms', b => { b.box(20, 0.15, 14, [0, -0.05, 0], C.soil); for (let i = 0; i < 9; i++) b.box(19, 0.8, 1, [0, 0.1, -6 + i * 1.5], C.wheat, { jitter: 0.15 }); }, { flat: true });
+  def('field_wheat', 'Wheat field', 'Farms', b => { b.box(20, 0.15, 14, [0, -0.05, 0], C.soil); for (let i = 0; i < 9; i++) b.box(19, 0.5, 1.1, [0, 0.05, -6 + i * 1.5], C.wheat, { jitter: 0.08 }); }, { flat: true });
   def('field_veg', 'Vegetable field', 'Farms', b => { b.box(20, 0.15, 14, [0, -0.05, 0], C.soil); for (let i = 0; i < 9; i++) for (let j = 0; j < 12; j++) b.ball(0.38, 0, [-8.8 + j * 1.6, 0.35, -6 + i * 1.5], j % 4 ? C.veg : C.leaf2, { jitter: 0.15 }); }, { flat: true });
   def('hay_bale', 'Hay bale', 'Farms', b => b.cyl(0.8, 0.8, 1.4, 10, [0, 0.8, -0.7], C.hay, { rx: Math.PI / 2 }), { col: [circ(0.9, 0, 0, 1.6)] });
   def('water_trough', 'Water trough', 'Farms', b => { b.box(2.4, 0.7, 0.9, [0, 0, 0], C.wood); b.box(2.2, 0.05, 0.7, [0, 0.62, 0], C.water); }, { col: [box(2.5, 1, 0, 0, 0.8)] });
