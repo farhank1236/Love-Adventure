@@ -1925,7 +1925,7 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 })();
 
 </script>
-<div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">Arrows move · X run · Z jump · Space attack · C dodge</div>
+<div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">Arrows move · WASD camera · X run · Z jump · Space attack · C dodge</div>
 <script>window.AethelosModelParts={male:[],female:[]};window.LoveAdventureModelParts=window.AethelosModelParts;</script>
 <script src="assets/viewer/three-runtime.js?v=heroes-v14-1"></script>
 <script src="assets/viewer/female-warrior-rig.js?v=heroes-v14-1"></script>
@@ -1934,7 +1934,7 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 <script src="assets/world/terrain.js?v=kingdom-2"></script>
 <script src="assets/world/models.js?v=kingdom-2"></script>
 <script src="assets/world/kingdom-objects.js?v=kingdom-2"></script>
-<script src="assets/world/world.js?v=kingdom-2"></script>
+<script src="assets/world/world.js?v=kingdom-3"></script>
 <script src="assets/world/editor.js?v=kingdom-2"></script>
 <script>
 let WARRIOR_MODEL='',FEMALE_WARRIOR_MODEL='';
@@ -2323,8 +2323,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
         </div>
         <div id="phase1Toast">Ready</div>
         <div id="phase1Banner" aria-live="polite"><b></b><span></span></div>
-        <div class="phase1-center">Arrows move | X run | Z jump | Space attack (↑+Space stab up, ↓+Space low slash) | C dodge roll | Mouse turns camera · wheel zooms</div>
-        <div class="phase1-controls phase1-panel"><b>Controls:</b> Arrow keys (or WASD) move relative to the camera. Hold X (or Shift) to run. Z jumps. Space attacks: the first press summons the sword from the pocket dimension and presses chain a 5-hit combo; ↑ + Space (or Space then ↑) is a rising vertical stab and ↓ + Space a low horizontal slash. C is a forward dodge roll. The sword vanishes after 5 s without attacking. Move the mouse to turn the camera (click the world once to lock the mouse for unlimited turning, Esc releases); mouse wheel zooms; on touch, drag.</div>
+        <div class="phase1-center">Arrows move | WASD / mouse camera | X run | Z jump | Space attack (↑+Space stab up, ↓+Space low slash) | C dodge | E editor</div>
+        <div class="phase1-controls phase1-panel"><b>Controls:</b> Arrow keys move relative to the camera. W/A/S/D control the camera: A and D swing it left and right, W moves it in closer and straight ahead, S pulls it back. Hold X (or Shift) to run. Z jumps. Space attacks: the first press summons the sword from the pocket dimension and presses chain a 5-hit combo; ↑ + Space (or Space then ↑) is a rising vertical stab and ↓ + Space a low horizontal slash. C is a forward dodge roll. The sword vanishes after 5 s without attacking. Move the mouse to turn the camera (click the world once to lock the mouse for unlimited turning, Esc releases); mouse wheel zooms; on touch, drag.</div>
         <div class="phase1-actions phase1-panel">
           <button type="button" id="phase1BackToMenu">Main Menu</button>
           <button type="button" id="phase1ResetCamera">Reset Camera</button>

@@ -266,7 +266,7 @@
       }
     }
     function inputDir() {
-      const k = state.keys, ix = Number(!!(k.KeyD || k.ArrowRight)) - Number(!!(k.KeyA || k.ArrowLeft)), iz = Number(!!(k.KeyS || k.ArrowDown)) - Number(!!(k.KeyW || k.ArrowUp));
+      const k = state.keys, ix = Number(!!k.ArrowRight) - Number(!!k.ArrowLeft), iz = Number(!!k.ArrowDown) - Number(!!k.ArrowUp);   // arrows move the hero; WASD is the camera
       if (!ix && !iz) return null;
       const sin = Math.sin(state.camYaw), cos = Math.cos(state.camYaw), l = Math.hypot(ix, iz);
       // camera looks along (sin yaw, cos yaw); screen-right is (-cos yaw, sin yaw)
@@ -319,6 +319,13 @@
 
     // ------------------------------------------------ camera
     function updateCamera(dt = 1 / 60) {
+      // WASD camera: A / D swing around the hero, W moves in closer and levels out (look straight ahead), S pulls back and up
+      const k = state.keys, turn = Number(!!k.KeyD) - Number(!!k.KeyA), push = Number(!!k.KeyW) - Number(!!k.KeyS);
+      if (turn) state.camYaw -= turn * 1.9 * dt;
+      if (push) {
+        state.camZoom = Math.max(0.55, Math.min(1.9, state.camZoom * Math.exp(-push * 1.1 * dt)));
+        state.camPitch = Math.max(0.06, Math.min(0.95, state.camPitch - push * 0.45 * dt));
+      }
       const fast = state.currentSpeed > (state.heroRig ? 4.2 : 7);
       state.camDistance += ((fast ? 6.8 : 5.8) * state.camZoom - state.camDistance) * 0.08;
       const horizontal = Math.cos(state.camPitch) * state.camDistance;

@@ -77,6 +77,19 @@ const OUT = process.env.QA_DIR || '/tmp/hero-qa';
   });
   expect(cam.dyaw < -.3 && cam.dpitch < 0, 'mouse movement without clicking turns the camera', cam);
   expect(cam.dist > 4 && cam.dist < 7.5, 'camera is close to the warrior', cam);
+  // WASD drives the camera (not the hero): A / D swing it around, W closer + straighter, S farther
+  const wasd = await page.evaluate(() => {
+    const D = Phase1Debug, ev = (t, c) => dispatchEvent(new KeyboardEvent(t, { code: c })), out = {};
+    for (const k of ['KeyA', 'KeyD', 'KeyW', 'KeyS']) {
+      D.state.camYaw = 0; D.state.camPitch = .3; D.state.camZoom = 1; for (let i = 0; i < 30; i++) D.tick(1 / 30);
+      const p0 = D.player.position.clone(); ev('keydown', k); for (let i = 0; i < 20; i++) D.tick(1 / 30); ev('keyup', k);
+      out[k] = { yaw: +D.state.camYaw.toFixed(2), zoom: +D.state.camZoom.toFixed(2), pitch: +D.state.camPitch.toFixed(2), heroMoved: +D.player.position.distanceTo(p0).toFixed(2) };
+    }
+    D.state.camYaw = 0; D.state.camPitch = .3; D.state.camZoom = 1; return out;
+  });
+  expect(wasd.KeyA.yaw > .5 && wasd.KeyD.yaw < -.5, 'A / D swing the camera left / right', wasd);
+  expect(wasd.KeyW.zoom < .8 && wasd.KeyW.pitch < .3 && wasd.KeyS.zoom > 1.2, 'W moves the camera in and straight, S pulls it back', wasd);
+  expect(Object.values(wasd).every(v => v.heroMoved < .05), 'WASD does not move the hero', wasd);
   let p = await run(1.0); expect(!p.swordOut && p.swordScale < .05, 'sword stored at start', p); await shot('01-idle-stored');
   p = await run(0.5, [], ['Space']); expect(p.mode === 'summon' || p.swordOut, 'Space summons the sword (does not jump)', p); expect(p.maxY < 0.05, 'Space does not jump', p);
   p = await run(2.0); expect(p.swordOut, 'sword out after summon + Attack1', p); await shot('02-attack1');

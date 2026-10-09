@@ -45,7 +45,8 @@ New Game → Begin Adventure opens the Phase 1 3D world. There, the **Male Warri
 
 | Key | Action |
 |---|---|
-| Arrow keys (or WASD) | move (relative to the camera) |
+| Arrow keys | move (relative to the camera) |
+| W / A / S / D (and the mouse) | camera: A / D swing it left and right around the hero, W moves it in closer and straight ahead, S pulls it back and up |
 | X (or Shift) | run |
 | Z | jump |
 | Space (or F) | attack: the first press summons the sword from the pocket dimension, and presses chain a 5-hit combo |
