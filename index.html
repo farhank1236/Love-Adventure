@@ -1930,11 +1930,12 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 <script src="assets/viewer/three-runtime.js?v=heroes-v14-1"></script>
 <script src="assets/viewer/female-warrior-rig.js?v=heroes-v14-1"></script>
 <script src="assets/viewer/hero-rig.js?v=hero-v4-2"></script>
-<script src="assets/world/kingdom-layout.js?v=kingdom-1"></script>
-<script src="assets/world/terrain.js?v=kingdom-1"></script>
-<script src="assets/world/models.js?v=kingdom-1"></script>
-<script src="assets/world/kingdom-objects.js?v=kingdom-1"></script>
-<script src="assets/world/world.js?v=kingdom-1"></script>
+<script src="assets/world/kingdom-layout.js?v=kingdom-2"></script>
+<script src="assets/world/terrain.js?v=kingdom-2"></script>
+<script src="assets/world/models.js?v=kingdom-2"></script>
+<script src="assets/world/kingdom-objects.js?v=kingdom-2"></script>
+<script src="assets/world/world.js?v=kingdom-2"></script>
+<script src="assets/world/editor.js?v=kingdom-2"></script>
 <script>
 let WARRIOR_MODEL='',FEMALE_WARRIOR_MODEL='';
 function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAsset(THREE,encoded,options);}
@@ -2327,6 +2328,7 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
         <div class="phase1-actions phase1-panel">
           <button type="button" id="phase1BackToMenu">Main Menu</button>
           <button type="button" id="phase1ResetCamera">Reset Camera</button>
+          <button type="button" id="phase1Editor" title="Edit the world (E)">Editor (E)</button>
         </div>
       </div>
     `;
@@ -2337,6 +2339,7 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       else if (typeof showMainMenu === 'function') showMainMenu();
     };
     $('phase1ResetCamera').onclick = () => app?.resetCamera();
+    $('phase1Editor').onclick = () => app?.toggleEditor?.();
     return root;
   }
 

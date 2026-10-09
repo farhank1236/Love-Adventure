@@ -34,18 +34,19 @@
         const k = o.type + '|' + Math.floor(o.position.x / this.tile) + ',' + Math.floor(o.position.z / this.tile);
         (groups.get(k) || groups.set(k, []).get(k)).push(o);
       }
-      const m = new T.Matrix4();
+      const m = new T.Matrix4(); this.where = new Map();
       for (const [k, list] of groups) {
         const type = k.split('|')[0], def = A.Models.TYPES[type], parts = A.Models.get(T, type);
         for (const [part, geo] of Object.entries(parts)) {
           const mesh = new T.InstancedMesh(geo, this.mat[part], list.length);
-          list.forEach((o, i) => mesh.setMatrixAt(i, this.matrixOf(o, m)));
+          list.forEach((o, i) => { mesh.setMatrixAt(i, this.matrixOf(o, m)); (this.where.get(o.id) || this.where.set(o.id, []).get(o.id)).push([mesh, i]); });
           mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere();
           mesh.receiveShadow = part === 'std'; mesh.castShadow = false; mesh.name = `${type}@${k.split('|')[1]}:${part}`;
           mesh.userData = { type, ids: list.map(o => o.id), part, flat: !!def.flat, center: mesh.boundingSphere.center.clone(), lamp: !!def.lamp };
           this.group.add(mesh); this.meshes.push(mesh);
         }
         if (type === 'windmill') for (const o of list) this.addSails(o);
+        for (const mesh of this.meshes.slice(-Object.keys(parts).length)) mesh.userData.tileKey = k;
       }
     }
     addSails(o) {
@@ -56,11 +57,27 @@
       for (let i = 0; i < 4; i++) { const arm = new T.Group(); arm.rotation.z = i * Math.PI / 2; const b = new T.Mesh(blade, mat); b.position.y = 4.2; const c = new T.Mesh(cloth, mat); c.position.set(0.95, 4.6, 0.08); arm.add(b, c); pivot.add(arm); }
       const root = new T.Group(); this.matrixOf(o, root.matrix); root.matrixAutoUpdate = false; pivot.position.set(0, 11.0, 3.5); root.add(pivot);
       pivot.traverse(n => { if (n.isMesh) n.castShadow = true; });
-      this.group.add(root); this.extras.push({ pivot, spin: 0.6 });
+      this.group.add(root); this.extras.push({ pivot, spin: 0.6, root, id: o.id });
     }
     update(dt, px, pz) {
       for (const e of this.extras) e.pivot.rotation.z += e.spin * dt;
       for (const m of this.meshes) { const c = m.userData.center; m.castShadow = m.userData.part === 'std' && !m.userData.flat && Math.hypot(c.x - px, c.z - pz) < 230; }
+    }
+    /* live move while dragging in the editor (no regrouping); call rebuild() when the edit is finished */
+    updateObject(o) {
+      const m = this.matrixOf(o);
+      for (const [mesh, i] of this.where.get(o.id) || []) { mesh.setMatrixAt(i, m); mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); }
+      for (const e of this.extras) if (e.id === o.id) e.root.matrix.copy(m);
+    }
+    rebuild(objects = this.objects) {
+      this.group.traverse(n => { if (n.isInstancedMesh) n.dispose(); });
+      this.group.clear(); this.meshes = []; this.extras = []; this.objects = objects; this.build();
+    }
+    /* world-space bounding box of one object (from its model's geometry) */
+    boundsOf(o, box = new this.T.Box3()) {
+      box.makeEmpty(); const parts = A.Models.get(this.T, o.type), m = this.matrixOf(o);
+      for (const g of Object.values(parts)) { if (!g.boundingBox) g.computeBoundingBox(); box.union(g.boundingBox.clone().applyMatrix4(m)); }
+      return box;
     }
     dispose() { this.group.traverse(n => { if (n.isInstancedMesh) n.dispose(); }); this.scene.remove(this.group); }
   }
@@ -183,7 +200,7 @@
       say('Shaping the kingdom: hills, rivers and Ironpeak…');
       const terrain = world.terrain = new A.Terrain(L);
       const groundMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0 });
-      scene.add(terrain.buildMeshes(THREE, groundMat));
+      world.terrainGroup = terrain.buildMeshes(THREE, groundMat); scene.add(world.terrainGroup);
       const roadMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide });
       scene.add(terrain.buildRoads(THREE, roadMat));
       scene.add(terrain.buildWater(THREE, waterMaterial(THREE, timeU)));
@@ -338,6 +355,9 @@
     function resize() { const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
     const GAME_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
     const onKeyDown = e => {
+      if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return;           // typing in the editor panel
+      if (e.code === 'KeyE' && !e.repeat && world.editor) { world.editor.toggle(); return; }
+      if (state.editing) return;
       if (GAME_KEYS.has(e.code) && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) e.preventDefault();
       state.keys[e.code] = true; if (e.repeat) return;
       const ctl = state.heroRig?.controller;
@@ -353,18 +373,20 @@
     const onKeyUp = e => { state.keys[e.code] = false; };
     const onBlur = () => { for (const k in state.keys) state.keys[k] = false; };
     const onPointerDown = e => {
+      if (state.editing) return;
       state.pointerDown = true; state.lastPointerX = e.clientX; state.lastPointerY = e.clientY;
       if (e.pointerType === 'mouse' && document.pointerLockElement !== canvas) { try { const p = canvas.requestPointerLock?.(); if (p && p.catch) p.catch(() => {}); } catch (_) {} }
       else canvas.setPointerCapture?.(e.pointerId);
     };
     const onPointerMove = e => {
+      if (state.editing) return;
       const locked = document.pointerLockElement === canvas; let dx, dy;
       if (e.pointerType === 'mouse' || locked) { if (!locked && e.target !== canvas) return; dx = e.movementX || 0; dy = e.movementY || 0; }
       else { if (!state.pointerDown) return; dx = e.clientX - state.lastPointerX; dy = e.clientY - state.lastPointerY; state.lastPointerX = e.clientX; state.lastPointerY = e.clientY; }
       state.camYaw -= dx * 0.0045; state.camPitch = Math.max(0.06, Math.min(0.95, state.camPitch + dy * 0.003));
     };
     const onPointerUp = () => { state.pointerDown = false; };
-    const onWheel = e => { e.preventDefault(); state.camZoom = Math.max(0.55, Math.min(1.9, state.camZoom * Math.exp(e.deltaY * 0.001))); };
+    const onWheel = e => { if (state.editing) return; e.preventDefault(); state.camZoom = Math.max(0.55, Math.min(1.9, state.camZoom * Math.exp(e.deltaY * 0.001))); };
     function bindInput() {
       addEventListener('resize', resize); addEventListener('keydown', onKeyDown); addEventListener('keyup', onKeyUp); addEventListener('blur', onBlur);
       canvas.addEventListener('pointerdown', onPointerDown); canvas.addEventListener('wheel', onWheel, { passive: false });
@@ -380,10 +402,13 @@
     // ------------------------------------------------ loop
     function step(dt) {
       timeU.value += dt;
-      updateMovement(dt); updateCamera(dt); updateRegion(dt);
+      if (state.editing && world.editor) {                 // gameplay paused: hero idles, editor drives the camera
+        state.heroRig?.controller.update(dt, { moving: false, running: false, airborne: false, speed: 0 });
+        world.editor.update(dt);
+      } else { updateMovement(dt); updateCamera(dt); updateRegion(dt); }
       world.layer.update(dt, player.position.x, player.position.z);
     }
-    const debug = { state, player, camera, world, renderer, paused: false, get rig() { return state.heroRig || state.rig; },
+    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get rig() { return state.heroRig || state.rig; },
       tick: dt => step(dt), render: () => renderer.render(scene, camera),
       teleport(x, z, yaw = player.rotation.y) { player.position.set(x, groundAt(x, z, 999).h, z); player.rotation.y = yaw; state.camYaw = yaw; state.cameraVelocity.copy(player.position).add(new THREE.Vector3(-Math.sin(yaw) * 5, 3, -Math.cos(yaw) * 5)); state.cameraTarget.copy(player.position); state.region = null; state.regionTimer = 0; } };
     window.Phase1Debug = debug; window.KingdomDebug = debug;
@@ -398,9 +423,13 @@
         loading && loading.classList.remove('hidden'); setupLighting(); resize(); bindInput();
         await nextFrame(); buildWorld(); await nextFrame();
         await loadHero(); spawn(); updateCamera(); updateRegion(0);
+        if (A.createEditor) world.editor = A.createEditor({ THREE, scene, camera, renderer, canvas, world, player, state, showToast, root: canvas.parentElement,
+          rebuildCollision: () => { world.collide = new CollisionWorld(world.objects); },
+          resumeCamera: () => { state.cameraVelocity.copy(camera.position); updateCamera(); } });
         loading && loading.classList.add('hidden'); showToast(world.fromSave ? 'Saved kingdom loaded' : 'Welcome to Aethelos'); tick();
       },
-      stop() { running = false; unbindInput(); world.layer && world.layer.dispose(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
+      stop() { running = false; unbindInput(); world.editor && world.editor.dispose(); world.layer && world.layer.dispose(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
+      toggleEditor() { world.editor && world.editor.toggle(); },
       resetCamera() { state.camYaw = player.rotation.y; state.camPitch = 0.30; state.camZoom = 1; showToast('Camera reset'); }
     };
   }

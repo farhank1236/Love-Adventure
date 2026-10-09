@@ -26,7 +26,18 @@ The game has two playable heroes: **Male Warrior** and **Female Warrior**, both 
 - `kingdom-objects.js`: the default object list. Every object has id, name, type, category, position, rotation, scale and metadata, ready for the editor and JSON save/load.
 - `world.js`: rendering (tiled instancing, shadows near the player), collision, player, camera.
 
-**Tests:** `node tests/kingdom-world.cjs` checks regions, landmarks, bridges, water, walls and banners for both warriors.
+**World editor:** press **E** in the world, or use the **Editor (E)** button.
+- **Selecting and moving:** click an object to select it, drag it to move it along the ground, R / Shift+R rotates it 15°, + / − scales it, Del deletes it, Ctrl+D duplicates it, F focuses the camera on it.
+- **Properties panel:** name, category, position, rotation, scale and metadata, plus snap-to-ground.
+- **Adding:** search or filter the catalogue on the left, click a type, then click the ground to place it (Shift+click places several, R rotates the preview, Esc stops).
+- **Undo:** Ctrl+Z and Ctrl+Y.
+- **Saving:** changes save automatically in this browser and come back on refresh. The toolbar also has Save, Load saved, Export JSON (falls back to copy-the-text where downloads are blocked), Import JSON (file or paste) and Reset map (click twice).
+- **Camera:** right-drag (or Alt+drag) orbits, the wheel zooms, WASD or the arrows fly, Q/Z go down/up, Shift is faster.
+- **Code:** `assets/world/editor.js`.
+
+**Tests:**
+- `node tests/kingdom-world.cjs` checks regions, landmarks, bridges, water, walls and banners for both warriors.
+- `node tests/kingdom-editor.cjs` drives the editor with real mouse and keyboard events: select, drag, rotate, scale, rename, delete and undo, place, export and import, persistence across reload, reset.
 
 ## Male Warrior: v4 caped sword warrior (3D world)
 
