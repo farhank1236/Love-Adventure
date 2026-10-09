@@ -194,7 +194,7 @@
     }
     // ---------------------------------------------------------------- portal summon
     function summon() {
-      if (!ctx.hero() || H.state === 'ridden' || H.state === 'mounting' || H.state === 'dismounting') return;
+      if (!ctx.hero() || H.state === 'ridden' || H.state === 'mounting' || H.state === 'dismounting') { H.autoMount = false; return; }
       if (H.calling) return; H.calling = true;
       showToast && showToast('Calling your horse…');
       const keepTelling = setInterval(() => showToast && showToast('Calling your horse…'), 1500);   // a slow phone may still be downloading it
@@ -228,7 +228,7 @@
         clipPlane.setFromNormalAndCoplanarPoint(toHero, H.portal.group.position);
         root.visible = false; H.state = 'summoning'; H.speed = 0; H.portalHold = true; ctx.sfx && ctx.sfx('portal', { at: H.portal.group.position, arg: 1.3 });
         H.emerge = { normal: toHero.clone(), center: H.portal.group.position.clone() };
-      }).catch(e => { clearInterval(keepTelling); H.calling = false; console.error(e); showToast && showToast('Your horse could not come (' + (e && e.message || 'download failed') + '). Try again.'); });
+      }).catch(e => { clearInterval(keepTelling); H.calling = false; H.autoMount = false; console.error(e); showToast && showToast('Your horse could not come (' + (e && e.message || 'download failed') + '). Try again.'); });
     }
     // ---------------------------------------------------------------- jump (Z while riding): arc, nose up then down, legs tucked
     const JUMP_BONES = { Forearm_L: -0.75, Forearm_R: -0.8, FCannon_L: 1.75, FCannon_R: 1.7, Humerus_L: 0.25, Humerus_R: 0.25,
@@ -274,26 +274,28 @@
     function pressH() {
       const now = performance.now() / 1000;
       H.presses = H.presses.filter(t => now - t < 3); H.presses.push(now);
+      if (H.state === 'absent' || !root.visible) {      // horse away: ONE press calls it and he rides as soon as it arrives; three presses = only call it
+        clearTimeout(H.pendingH); H.pendingH = null;
+        if (!H.calling && H.state !== 'summoning' && H.state !== 'leaving') { H.presses = [now]; H.autoMount = true; summon(); }
+        else if (H.presses.length >= 3) { H.presses = []; H.autoMount = false; }
+        return;
+      }
       if (H.presses.length >= 3) { H.presses = []; clearTimeout(H.pendingH); H.pendingH = null;
         if (H.state === 'absent' || !root.visible) summon();
         else if (H.state === 'ridden') { H.slowToDismount = true; H.leaveAfterDismount = true; }   // get off first, then it goes
         else leave();
         return; }
       clearTimeout(H.pendingH);
-      const away = H.state === 'absent' || !root.visible;
-      if (away) {                                // nothing to mount yet: every press counts towards the summon (slow taps on a phone too)
-        if (!H.calling) showToast && showToast(`Summoning… ${H.presses.length}/3`);
-        return;
-      }
       // a single press acts after a short pause (so H-H-H isn't read as mount + dismount)
       H.pendingH = setTimeout(() => { H.pendingH = null; if (H.presses.length) { H.presses = []; single(); } }, 650);
     }
+    function arrived() { if (H.autoMount) { H.autoMount = false; single(); } }     // called with one press: walk over and get on
     function single() {
       if (H.state === 'ridden') { H.slowToDismount = true; return; }
-      if (H.state === 'mounting' || H.state === 'dismounting' || H.state === 'summoning') return;
-      if (H.state === 'absent' || !root.visible) { showToast && showToast((A.isTouchDevice && A.isTouchDevice() ? 'Tap Summon three times quickly to call your horse' : 'Press H three times quickly to summon your horse')); return; }
+      if (H.state === 'mounting' || H.state === 'dismounting' || H.state === 'summoning' || H.state === 'leaving') return;
+      if (H.state === 'absent' || !root.visible) { showToast && showToast((A.isTouchDevice && A.isTouchDevice() ? 'Tap Summon to call your horse' : 'Press H to call your horse')); return; }
       const d = root.position.distanceTo(player.position);
-      if (d > 70) { showToast && showToast((A.isTouchDevice && A.isTouchDevice() ? 'Your horse is far away. Tap Summon three times to call it through a portal.' : 'Your horse is far away. Press H three times to call it through a portal.')); return; }
+      if (d > 70) { root.visible = false; H.state = 'absent'; H.speed = 0; H.autoMount = true; summon(); return; }   // too far to trot over: call it through a new portal
       if (d > 7) { H.state = 'coming'; showToast && showToast('Your horse is coming'); return; }
       startApproach();
     }
@@ -361,11 +363,11 @@
             H.speed = 0; H.state = 'rear'; play('Rear', 0.2, { once: true }); ctx.sfx && ctx.sfx('neigh', { at: root.position });
             say && say('arrived');
           }
-          if (out > 14) { H.speed = 0; H.state = 'idle'; clipPlane.constant = 1e6; H.portalHold = false; }
+          if (out > 14) { H.speed = 0; H.state = 'idle'; clipPlane.constant = 1e6; H.portalHold = false; arrived(); }
         }
         animate(dt);
       } else if (H.state === 'rear') {
-        const a = H.actions.Rear; if (!a || a.time >= a.getClip().duration - 0.05) { H.state = 'idle'; play('Idle', 0.4); }
+        const a = H.actions.Rear; if (!a || a.time >= a.getClip().duration - 0.05) { H.state = 'idle'; play('Idle', 0.4); arrived(); }
       } else if (H.state === 'leaving') {
         const L = H.leaving, to = v2.set(L.center.x - root.position.x, 0, L.center.z - root.position.z);
         let through = -v1.copy(root.position).sub(L.center).dot(L.normal);            // metres past the portal plane

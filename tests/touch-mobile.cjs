@@ -63,6 +63,15 @@ const URL = process.env.GAME_URL || 'http://127.0.0.1:8000/index.html', OUT = pr
   await ptr('#phase1Canvas', 'pointerdown', 300, 150, 12); await ptr('#phase1Canvas', 'pointerdown', 400, 150, 13); await ptr('#phase1Canvas', 'pointermove', 500, 150, 13);
   await ptr('#phase1Canvas', 'pointerup', 500, 150, 13); await ptr('#phase1Canvas', 'pointerup', 300, 150, 12);
   const z1 = await page.evaluate(() => KingdomDebug.state.camZoom); expect(z1 < z0 * 0.7, 'pinch out zooms in', { z0, z1 });
+  // ONE tap on Summon with the horse away: it comes through the portal and he gets on by himself
+  const tapSummon = async () => { const b = await page.evaluate(() => { const r = document.getElementById('tHorse').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }); await page.touchscreen.tap(b[0], b[1]); };
+  for (let i = 0; i < 3; i++) { await tapSummon(); await page.waitForTimeout(400); }
+  for (let i = 0; i < 30 && (await page.evaluate(() => KingdomDebug.horse.state.state)) !== 'absent'; i++) await run(0.5);
+  await page.evaluate(() => KingdomDebug.teleport(0, 368, Math.PI)); await run(0.3);
+  await tapSummon(); await page.waitForFunction(() => KingdomDebug.horse.state.state === 'summoning', null, { timeout: 120000 }).catch(() => {});
+  let ride = ''; for (let i = 0; i < 40 && ride !== 'ridden'; i++) { await run(0.5); ride = await page.evaluate(() => KingdomDebug.horse.state.state); }
+  expect(ride === 'ridden', 'one tap on Summon: horse comes and he sits on it', { ride });
+  await page.evaluate(() => KingdomDebug.render()); await page.screenshot({ path: `${OUT}/touch-ride.png`, timeout: 240000 });
   // landscape phone: no turning
   await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(500);
   const l2 = await page.evaluate(() => { const c = document.getElementById('phase1Canvas'); return { rotated: KingdomDebug.touch.rotated, cw: c.clientWidth, ch: c.clientHeight }; });
