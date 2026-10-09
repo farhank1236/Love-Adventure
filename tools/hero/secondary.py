@@ -73,7 +73,12 @@ def colliders(HR):
     for s in 'LR':
         cl.append((HR.world_head(f'Thigh.{s}'), HR.world_tail(f'Thigh.{s}'), 0.10))
         cl.append((HR.world_head(f'Shin.{s}'), HR.world_tail(f'Shin.{s}'), 0.075))
+    if getattr(HR, 'sword_vis', 0.0) > 0.5 and SWORD_COLLIDE:   # drawn blade pushes cloth aside
+        Rh = HR.world_rot('Hand.R'); Rs = Rh @ R_SWORD_IN_HAND @ rot((0, 1, 0), getattr(HR, 'sword_roll', 0.0))
+        g = HR.world_head('Hand.R') + Rh @ GRIP_IN_HAND
+        cl.append((g + Rs[:, 1] * 0.10, g + Rs[:, 1] * (SWORD_LEN - GRIP_FROM_POMMEL), 0.045))
     return cl
+SWORD_COLLIDE = True
 
 def robe_follow_factory(HR, chain_name):
     side = 'L' if '.L.' in chain_name else ('R' if '.R.' in chain_name else None)
@@ -319,10 +324,15 @@ class Group:
                 for i in range(1, len(s.x)):
                     d = s.x[i] - s.x[i - 1]; s.x[i] = s.x[i - 1] + d / np.linalg.norm(d) * s.len[i - 1]
                 _collide(s.x, s.v, cl, s.radius)
+                if GROUND is not None:                      # floor: cloth rests on the ground instead of passing through
+                    lo = s.x[:, 2] < GROUND; lo[0] = False
+                    if lo.any():
+                        s.x[lo, 2] = GROUND; s.v[lo, 2] = np.maximum(s.v[lo, 2], 0); s.v[lo, :2] *= 0.6
     def apply(self):
         for s in self.sims: s.apply()
 
 CAPE_HANG = (0.12, 0.28, 0.42, 0.50)
+GROUND = 0.11   # min height of cloth chain joints (cloth surface sits a few cm below the joint line)
 def simulate_secondary2(HR, cs, preroll=30, cape_hang=CAPE_HANG, stiff=70.0, damp=9.0, couple=0.6):
     cape = Group([ChainSim2(HR, ch, cape_hang, stiff, damp, radius=0.04) for ch in CAPE], couple)
     front = Group([ChainSim2(HR, ch, (0.1, 0.25, 0.35), 120.0, 12.0, follow=robe_follow_factory(HR, ch[0]), radius=0.03) for ch in ROBE[:3]], 0.35)

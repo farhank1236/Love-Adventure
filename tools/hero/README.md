@@ -17,4 +17,11 @@ Order:
    `verify_glb.py OUT.glb` re-skins the GLB and compares it with the reference poses.
 6. Chunk the GLB into 8 base64 parts: `window.AethelosModelParts.hero.push("…")` in `assets/models/hero-01.js` … `hero-08.js`.
 
+v4 (current game model, `HERO_V4`):
+- The hero UVs are flipped to glTF's top-down V. Before this, the texture landed upside down on every UV island, so the face and colours were lost. The sword is matte, matching its source material.
+- The geometry is full resolution with no decimation (clustering averaged UVs and smeared the texture). Size is kept down with `KHR_mesh_quantization`: int8 normals, uint16 UVs, uint8 joints and weights, and sparse fist morph targets. The model is 31 MB.
+- `locomotion4.py`: the run, authored for 5 m/s. `attacks4.py`: AttackLow and AttackUp. `dodge.py`: the roll, using the solver's blendable joint-space leg mode (`lfk_*` controls in `timeline.py`). `secondary.py` adds floor and drawn-blade collisions for the cloth.
+- `build4.py` makes `clips_v4.pkl`: the v3 clips byte-identical, plus the 6 new or changed clips. `export_glb4.py OUT.glb clips_v4.pkl` writes the game GLB.
+- Checks: `clearance.py` (blade vs body), `ground.py` (floor contact), `jumps.py` (per-frame joint pops), `skel.py` and `sheet.py` (stick-figure and textured contact sheets), `glbread.py` (reader for quantized and sparse GLBs).
+
 `video3.py` renders preview reels with a numpy rasterizer. `blender_build_hero_v3.py` is the self-contained Blender build script.

@@ -5,6 +5,9 @@ from solver import nrm
 VEC = ['hips_off', 'hips_rot', 'spine_rot', 'head_rot', 'grip', 'blade', 'edge', 'relbow', 'lhand', 'lelbow']
 SCAL = ['lhand_bend']
 OPT_SCAL = dict(sword_vis=1.0, portal=0.0, fistR=1.0, fistL=0.55, aura=0.0)
+# joint-space legs (dodge roll): weight + per-leg hip flexion / knee bend / abduction / ankle plantar-flexion (deg)
+OPT_SCAL.update(lfk_w=0.0, lfkR_hip=0.0, lfkR_knee=0.0, lfkR_abd=6.0, lfkR_ank=20.0,
+                lfkL_hip=0.0, lfkL_knee=0.0, lfkL_abd=6.0, lfkL_ank=20.0)
 FK_FIELDS = dict(dir=(0, 1, 0), elb=10.0, swiv=0.0, pro=0.0, dev=0.0, flex=0.0, roll=0.0)
 FOOT = ['ball', 'yaw', 'heel', 'lift', 'pitch', 'knee_out']
 FOOT_DEF = dict(ball=(0, 0), yaw=0, heel=0, lift=0, pitch=0, knee_out=8)

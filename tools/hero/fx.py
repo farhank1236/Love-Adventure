@@ -111,3 +111,26 @@ def fx_tracks(sword_frames, ctrl, blade_len, fps=30.0):
         P = np.eye(4); P[:3, :3] = R @ Ry * max(po, 1e-3); P[:3, 3] = g
         out.append(dict(aura=float(aura[i]), ghosts=ghosts, portal=P, speed=float(spd[i])))
     return out
+
+def glow_shell(Sc, blade_start, pad_w=0.065, pad_t=0.055, tip_ext=0.10, n_sec=40, ring=12):
+    """wide soft outer glow envelope around the blade (x edge, y blade, z flat): rounded sections, tapers in at the
+    guard and runs on past the tip, so the shader's view-angle falloff reads as a volumetric halo."""
+    y = Sc[:, 1]; m = y > blade_start
+    y0, y1 = blade_start, y[m].max()
+    ys = np.linspace(y0 - 0.02, y1 + tip_ext, n_sec)
+    def half_w(yy):
+        s = m & (np.abs(y - yy) < 0.02)
+        if s.sum() < 3: return 0.0, 0.0
+        return 0.5 * (Sc[s, 0].max() - Sc[s, 0].min()), 0.5 * (Sc[s, 0].max() + Sc[s, 0].min())
+    ang = np.linspace(0, 2 * np.pi, ring, endpoint=False); V = []; F = []
+    for k, yy in enumerate(ys):
+        w, xc = half_w(min(max(yy, y0 + 0.01), y1 - 0.01))
+        u = (yy - ys[0]) / (ys[-1] - ys[0])
+        taper = np.sin(np.clip(u / 0.06, 0, 1) * np.pi / 2) * np.clip((1 - u) / 0.14, 0, 1) ** 0.6
+        W = (w + pad_w) * taper; T = pad_t * taper
+        for a in ang: V.append((xc + np.cos(a) * W, yy, np.sin(a) * T))
+    for k in range(n_sec - 1):
+        for j in range(ring):
+            a = k * ring + j; b = k * ring + (j + 1) % ring; c = a + ring; d = b + ring
+            F += [(a, b, d), (a, d, c)]
+    return np.array(V, float), np.array(F, int)

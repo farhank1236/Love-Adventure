@@ -236,7 +236,24 @@ class HeroRig:
             # knee pole: forward along foot yaw + slight outward
             yaw = fc['yaw']; side = -1 if s == 'R' else 1
             kp = ypr(yaw + fc.get('knee_out', 8) * side, 0, 0) @ np.array([0, -1, 0])
+            wl = float(c.get('lfk_w', 0.0))
+            if wl > 1e-4:
+                # joint-space leg in the pelvis frame, blended with the ground IK (ankle target, knee pole, foot rotation)
+                down = Rh @ np.array([0, 0, -1.0]); fwd = Rh @ np.array([0, -1.0, 0]); out = Rh @ np.array([-side * 1.0, 0, 0]) * -1
+                out = Rh @ np.array([-1.0 if s == 'R' else 1.0, 0, 0])
+                fl = np.radians(c.get(f'lfk{s}_hip', 0.0)); kn_ = np.radians(c.get(f'lfk{s}_knee', 0.0)); ab = np.radians(c.get(f'lfk{s}_abd', 6.0))
+                def sag(a): return np.cos(a) * down + np.sin(a) * fwd
+                Rab = rot(fwd, np.degrees(ab) * (1 if s == 'L' else -1))
+                th_d = Rab @ sag(fl); sh_d = Rab @ sag(fl - kn_)
+                ank_fk = hipj + th_d * self.L[f'Thigh.{s}'] + sh_d * self.L[f'Shin.{s}'] * 0.999
+                ankle = (1 - wl) * ankle + wl * ank_fk
+                kp = nrm((1 - wl) * kp + wl * (Rab @ sag(fl + np.pi / 2)))
             Ra, Rb, kn, an = self.two_bone(f'Thigh.{s}', f'Shin.{s}', hipj, ankle, kp, 'leg' + s, warn)
+            if wl > 1e-4:
+                side_ax = nrm(np.cross(Rb @ np.array([0, 1.0, 0]), kp))
+                Rf_fk = rot(side_ax, c.get(f'lfk{s}_ank', 20.0)) @ Rb @ self.rest_rot[f'Shin.{s}'].T @ self.rest_rot[f'Foot.{s}']
+                Rt_fk = Rf_fk @ self.rest_rot[f'Foot.{s}'].T @ self.rest_rot[f'Toe.{s}']
+                Rf = self._slerp_rot(Rf, Rf_fk, wl); Rtoe = self._slerp_rot(Rtoe, Rt_fk, wl)
             self.set_world(f'Thigh.{s}', Ra)
             self.set_world(f'Shin.{s}', Rb)
             self.set_world(f'Foot.{s}', Rf)
