@@ -83,7 +83,7 @@
       portal: null, portalT: 0, emerge: null, target: null, approach: null, slowToDismount: false, phase: 0, loading: null, lastClip: '' };
     const root = new THREE.Group(); root.name = 'Horse'; root.visible = false; scene.add(root);
     const clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e6);
-    const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), q1 = new THREE.Quaternion();
+    const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), q1 = new THREE.Quaternion(), v1m = new THREE.Matrix4();
     // the summoning portal exists from the start (its light is always in the scene: no shader recompiles on first summon)
     H.portal = A.createPortalFX(THREE, scene, { radius: 1.75, aspect: 1.22, sparks: 140, light: false });   // its light is borrowed from the shared pool while open scene.add(H.portal.group); H.portalT = 99;
     function load() {
@@ -142,9 +142,10 @@
       const f = v1.set(Math.sin(H.yaw), 0, Math.cos(H.yaw));
       const p = root.position, hf = ground(p.x + f.x * 0.6, p.z + f.z * 0.6, p.y + 1), hb = ground(p.x - f.x * 0.75, p.z - f.z * 0.75, p.y + 1);
       const y = (hf + hb) / 2, pitch = Math.atan2(hb - hf, 1.35);
-      p.y = snap ? y : p.y + (y - p.y) * Math.min(1, dt * 14);
+      if (H.jump) p.y = y + H.jump.y; else p.y = snap ? y : p.y + (y - p.y) * Math.min(1, dt * 14);
       root.rotation.set(0, 0, 0); root.rotation.order = 'YXZ'; root.rotation.y = H.yaw;
-      root.rotation.x = snap ? pitch : root.rotation.x + (pitch - root.rotation.x) * Math.min(1, dt * 8);
+      H.basePitch = snap || H.basePitch === undefined ? pitch : H.basePitch + (pitch - H.basePitch) * Math.min(1, dt * 8);
+      root.rotation.x = H.basePitch + (H.jump ? H.jump.pitch : 0);
       root.rotation.z = H.lean || 0;
     }
     function blocked(x, z, y) {
@@ -165,6 +166,22 @@
       }
       const lim = world.terrain.size / 2 - 26; nx = Math.max(-lim, Math.min(lim, nx)); nz = Math.max(-lim, Math.min(lim, nz));
       const moved = Math.hypot(nx - p.x, nz - p.z); p.x = nx; p.z = nz; return moved;
+    }
+    function moveHorseFree(dist) { const f = v1.set(Math.sin(H.yaw), 0, Math.cos(H.yaw)); root.position.x += f.x * dist; root.position.z += f.z * dist; }
+    // ---------------------------------------------------------------- sounds: hooves on the beat of the gait, snorts, neighs
+    let lastPh = 0, snortT = 6;
+    const BEATS = { Walk: [0.0, 0.25, 0.5, 0.75], Gallop: [0.0, 0.1, 0.22, 0.32] };
+    const at = () => root.position;
+    function hoofSounds(dt) {
+      if (!ctx.sfx || !root.visible || !H.asset) return;
+      const act = H.actions[H.cur], beats = BEATS[H.cur];
+      if (act && beats && !H.jump) {
+        const d = act.getClip().duration, ph = ((act.time % d) + d) % d / d;
+        const hard = !!(world.terrain.roadAt(root.position.x, root.position.z) || (world.collide && world.collide.deckAt(root.position.x, root.position.z)));
+        for (const b of beats) if ((lastPh <= ph && b > lastPh && b <= ph) || (lastPh > ph && (b > lastPh || b <= ph))) ctx.sfx('hoof', { at: at(), vol: H.cur === 'Gallop' ? 0.9 : 0.6, arg: { hard, heavy: H.cur === 'Gallop' ? 1.2 : 0.9 } });
+        lastPh = ph;
+      }
+      if (H.state === 'idle' || H.state === 'ridden' && H.speed < 0.2) { snortT -= dt; if (snortT <= 0) { snortT = 7 + Math.random() * 9; ctx.sfx('snort', { at: at(), vol: 0.6 }); } }
     }
     // ---------------------------------------------------------------- animation by speed
     let stride = 0;
@@ -205,15 +222,59 @@
         H.yaw = Math.atan2(toHero.x, toHero.z);
         root.position.set(best.x - toHero.x * 4.2, best.y, best.z - toHero.z * 4.2); settle(0, true);
         clipPlane.setFromNormalAndCoplanarPoint(toHero, H.portal.group.position);
-        root.visible = false; H.state = 'summoning'; H.speed = 0;
+        root.visible = false; H.state = 'summoning'; H.speed = 0; H.portalHold = true; ctx.sfx && ctx.sfx('portal', { at: H.portal.group.position, arg: 1.3 });
         H.emerge = { normal: toHero.clone(), center: H.portal.group.position.clone() };
       }).catch(e => { console.error(e); showToast && showToast('Your horse could not come'); });
+    }
+    // ---------------------------------------------------------------- jump (Z while riding): arc, nose up then down, legs tucked
+    const JUMP_BONES = { Forearm_L: -0.75, Forearm_R: -0.8, FCannon_L: 1.75, FCannon_R: 1.7, Humerus_L: 0.25, Humerus_R: 0.25,
+      Thigh_L: -0.35, Thigh_R: -0.3, Gaskin_L: 0.55, Gaskin_R: 0.5, HCannon_L: -1.0, HCannon_R: -0.95 };
+    const qj = new THREE.Quaternion(), XA = new THREE.Vector3(1, 0, 0);
+    function jump() {
+      if (H.state !== 'ridden' || H.jump || H.slowToDismount) return false;
+      const fast = H.speed > 6, dur = fast ? 0.9 : 0.75, h = fast ? 1.35 : 0.9;
+      H.jump = { t: 0, dur, h, y: 0, pitch: 0, tuck: 0 }; H.speed = Math.max(H.speed, fast ? H.speed : 3.2);
+      ctx.sfx && ctx.sfx('horseJump', { at: root.position }); return true;
+    }
+    function updateJump(dt) {
+      const J = H.jump; if (!J) return;
+      J.t += dt; const u = Math.min(1, J.t / J.dur);
+      J.y = 4 * J.h * u * (1 - u); J.pitch = -0.26 * Math.sin(2 * Math.PI * u); J.tuck = Math.pow(Math.sin(Math.PI * u), 0.6);
+      if (u >= 1) { H.jump = null; ctx.sfx && ctx.sfx('horseLand', { at: root.position }); }
+    }
+    function applyJumpPose() {
+      const J = H.jump; if (!J || !H.asset) return;
+      for (const [n, a] of Object.entries(JUMP_BONES)) { const b = H.asset.byName[n]; if (b) b.quaternion.multiply(qj.setFromAxisAngle(XA, a * J.tuck)); }
+    }
+    // ---------------------------------------------------------------- H x3 while the horse is out: back into the pocket dimension
+    function leave() {
+      if (!H.asset || !root.visible || H.state === 'leaving' || H.state === 'summoning' || H.state === 'mounting' || H.state === 'dismounting') return;
+      const hp = root.position;
+      // the portal it came from, if that is still close; otherwise a new one ahead of it
+      let c = null;
+      if (H.emerge && H.emerge.center.distanceTo(hp) < 40) c = H.emerge.center.clone();
+      else { const f = v1.set(Math.sin(H.yaw), 0, Math.cos(H.yaw));
+        for (const [fw, sd] of [[10, 0], [9, 4], [9, -4], [-10, 0]]) { const x = hp.x + f.x * fw - f.z * sd, z = hp.z + f.z * fw + f.x * sd, y = ground(x, z, hp.y + 2);
+          if (!blocked(x, z, y) && !(world.collide && world.collide.resolve(x, z, 1.0, y, 2.5)[2])) { c = new THREE.Vector3(x, y + 1.95, z); break; } }
+        if (!c) c = new THREE.Vector3(hp.x + f.x * 10, ground(hp.x + f.x * 10, hp.z + f.z * 10, hp.y + 2) + 1.95, hp.z + f.z * 10); }
+      const n = v2.set(hp.x - c.x, 0, hp.z - c.z).normalize().clone();               // portal faces the horse
+      H.portal.group.position.copy(c); H.portal.group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+      const up = new THREE.Vector3(0, 0, 1).applyQuaternion(H.portal.group.quaternion);
+      H.portal.group.quaternion.premultiply(q1.setFromAxisAngle(n, Math.atan2(up.clone().cross(new THREE.Vector3(0, 1, 0)).dot(n), up.dot(new THREE.Vector3(0, 1, 0)))));
+      H.portalT = 0; H.portalHold = true; H.leaving = { center: c, normal: n }; H.state = 'leaving'; H.speed = Math.max(H.speed, 1);
+      clipPlane.setFromNormalAndCoplanarPoint(n, c);                                  // keeps the near side: what has gone through vanishes
+      ctx.sfx && (ctx.sfx('portal', { at: c, arg: 1.3 }), ctx.sfx('neigh', { at: root.position, vol: 0.8 }));
+      showToast && showToast('Your horse returns to the pocket dimension');
     }
     // ---------------------------------------------------------------- H key
     function pressH() {
       const now = performance.now() / 1000;
       H.presses = H.presses.filter(t => now - t < 3); H.presses.push(now);
-      if (H.presses.length >= 3) { H.presses = []; clearTimeout(H.pendingH); H.pendingH = null; summon(); return; }
+      if (H.presses.length >= 3) { H.presses = []; clearTimeout(H.pendingH); H.pendingH = null;
+        if (H.state === 'absent' || !root.visible) summon();
+        else if (H.state === 'ridden') { H.slowToDismount = true; H.leaveAfterDismount = true; }   // get off first, then it goes
+        else leave();
+        return; }
       clearTimeout(H.pendingH);
       // a single press acts after a short pause (so H-H-H isn't read as mount + dismount)
       H.pendingH = setTimeout(() => { H.pendingH = null; if (H.presses.length) { H.presses = []; single(); } }, 600);
@@ -238,6 +299,13 @@
       const hero = ctx.hero(); if (!hero) return;
       if (hero.controller.state.swordOut) hero.controller.stow && hero.controller.stow();
       H.state = 'approach'; H.approach = mountSpot(); H.speed = 0; play('Idle', 0.3);
+      // walk round the FRONT of the horse to its left side (never through it): waypoints in the horse's own frame (+x = its left, +z = forward)
+      root.updateMatrixWorld(true); const loc = player.position.clone().applyMatrix4(v1m.copy(root.matrixWorld).invert());
+      H.wp = [];
+      if (loc.x < 0.75) {
+        if (loc.z < -1.2 && loc.x > -0.4) H.wp = [[1.15, -2.1]];                                   // straight behind: round the back-left corner
+        else { if (loc.x < 0.2) H.wp.push([-1.15, Math.max(2.5, Math.min(loc.z, 3.5))]); H.wp.push([1.15, 2.5]); }
+      }
     }
     function beginMount() {
       const hero = ctx.hero(); const rig = hero; H.state = 'mounting';
@@ -253,6 +321,7 @@
         ctx.heroMount.add(hero.root); hero.root.position.set(0, 0, 0); hero.root.quaternion.identity();
         player.position.copy(s.p); player.rotation.y = s.yaw; H.rider = null; H.state = 'idle';
         ctx.onMount && ctx.onMount(false);
+        if (H.leaveAfterDismount) { H.leaveAfterDismount = false; setTimeout(leave, 400); }
       });
     }
     // ---------------------------------------------------------------- per frame
@@ -261,8 +330,9 @@
       const hero = ctx.hero();
       if (H.portal) {
         H.portalT += dt; H.portal.update(dt);
-        const t = H.portalT, open = H.state === 'summoning' || t < 3.4 ? Math.min(1, t / 0.7) * (1 - Math.max(0, (t - 2.9) / 0.6)) : 0;
-        H.portal.setOpen(Math.max(0, open));
+        H.portalOpen = H.portalOpen || 0;
+        H.portalOpen += Math.max(-dt / 0.6, Math.min(dt / 0.7, (H.portalHold ? 1 : 0) - H.portalOpen));
+        const open = H.portalOpen; H.portal.setOpen(Math.max(0, open));
         const pool = world.lightPool;
         if (pool && open > 0.02) { if (!H.portalLight) H.portalLight = pool.take();
           if (H.portalLight) { const L = H.portalLight; L.color.set(0x3a8cff); L.distance = 24; L.decay = 1.8; L.position.copy(H.portal.group.position); L.intensity = 40 * open; } }
@@ -270,23 +340,32 @@
       }
       if (H.state === 'summoning') {
         if (H.portalT > 0.75) {
-          if (!root.visible) { root.visible = true; H.speed = 11; play('Gallop', 0.05, { timeScale: 0.8 }); }
+          if (!root.visible) { root.visible = true; H.speed = 11; play('Gallop', 0.05, { timeScale: 0.8 }); ctx.sfx && ctx.sfx('neigh', { at: root.position, vol: 0.9 }); }
           moveHorse(H.speed * dt);
           // through the portal: stop clipping once the whole horse is out
           const out = v1.copy(root.position).sub(H.emerge.center).dot(H.emerge.normal);
-          if (out > 2.6) clipPlane.constant = 1e6;
+          if (out > 2.6) { clipPlane.constant = 1e6; H.portalHold = false; }
           // stop beside the hero, then rear up
           const toStop = v2.set(H.stopAt.x - root.position.x, 0, H.stopAt.z - root.position.z), d = toStop.length();
           if (out > 1.0 && d < 3.4) H.speed = Math.max(0, H.speed - 19 * dt);
           if (H.speed <= 0.2 && out > 1) {
-            H.speed = 0; H.state = 'rear'; play('Rear', 0.2, { once: true });
+            H.speed = 0; H.state = 'rear'; play('Rear', 0.2, { once: true }); ctx.sfx && ctx.sfx('neigh', { at: root.position });
             say && say('arrived');
           }
-          if (out > 14) { H.speed = 0; H.state = 'idle'; clipPlane.constant = 1e6; }
+          if (out > 14) { H.speed = 0; H.state = 'idle'; clipPlane.constant = 1e6; H.portalHold = false; }
         }
         animate(dt);
       } else if (H.state === 'rear') {
         const a = H.actions.Rear; if (!a || a.time >= a.getClip().duration - 0.05) { H.state = 'idle'; play('Idle', 0.4); }
+      } else if (H.state === 'leaving') {
+        const L = H.leaving, to = v2.set(L.center.x - root.position.x, 0, L.center.z - root.position.z);
+        let through = -v1.copy(root.position).sub(L.center).dot(L.normal);            // metres past the portal plane
+        if (through < -1.5) { const want = Math.atan2(to.x, to.z); H.yaw += Math.atan2(Math.sin(want - H.yaw), Math.cos(want - H.yaw)) * Math.min(1, dt * (H.portalT < 0.6 ? 2.5 : 5)); }
+        if (H.portalT > 0.5) H.speed = Math.min(11, H.speed + 9 * dt);
+        moveHorseFree(H.speed * dt);
+        through = -v1.copy(root.position).sub(L.center).dot(L.normal);
+        if (through > 3.4) { ctx.sfx && ctx.sfx('portalClose', { at: L.center }); root.visible = false; H.state = 'absent'; H.speed = 0; H.portalHold = false; clipPlane.constant = 1e6; play('Idle', 0); H.emerge = null; }
+        animate(dt);
       } else if (H.state === 'coming') {
         const to = v2.set(player.position.x - root.position.x, 0, player.position.z - root.position.z), d = to.length();
         const want = Math.atan2(to.x, to.z); H.yaw += Math.atan2(Math.sin(want - H.yaw), Math.cos(want - H.yaw)) * Math.min(1, dt * 2.5);
@@ -296,8 +375,13 @@
         animate(dt);
       } else if (H.state === 'approach') {
         // the hero walks to the stirrup on the horse's left side and turns to face it
-        const s = H.approach = mountSpot(), p = player.position, d = Math.hypot(s.p.x - p.x, s.p.z - p.z);
-        if (d > 0.08) {
+        let s = H.approach = mountSpot(); const p = player.position;
+        if (H.wp && H.wp.length) {                                                      // next waypoint round the front
+          root.updateMatrixWorld(true); const w = new THREE.Vector3(H.wp[0][0], 0, H.wp[0][1]).applyMatrix4(root.matrixWorld); w.y = ground(w.x, w.z, p.y + 1);
+          if (Math.hypot(w.x - p.x, w.z - p.z) < 0.3) H.wp.shift(); else s = { p: w, yaw: s.yaw, via: true };
+        }
+        const d = Math.hypot(s.p.x - p.x, s.p.z - p.z);
+        if (d > 0.08 || s.via) {
           const step = Math.min(d, 1.7 * dt); p.x += (s.p.x - p.x) / d * step; p.z += (s.p.z - p.z) / d * step; p.y = s.p.y;
           const want = d > 0.4 ? Math.atan2(s.p.x - p.x, s.p.z - p.z) : s.yaw;
           player.rotation.y += Math.atan2(Math.sin(want - player.rotation.y), Math.cos(want - player.rotation.y)) * Math.min(1, dt * 8);
@@ -324,7 +408,8 @@
         const accel = target > H.speed ? (target > 5 ? 7.5 : 3) : 10;
         H.speed += Math.sign(target - H.speed) * Math.min(Math.abs(target - H.speed), accel * dt);
         if (H.speed > 0.01) moveHorse(H.speed * dt);
-        if (H.slowToDismount && H.speed < 0.4) beginDismount();
+        updateJump(dt);
+        if (H.slowToDismount && H.speed < 0.4 && !H.jump) beginDismount();
         animate(dt);
         player.position.copy(root.position); player.rotation.y = H.yaw;
       } else if (H.state === 'mounting' || H.state === 'dismounting') {
@@ -333,16 +418,19 @@
       H.lean = H.lean || 0;
       settle(dt);
       H.mixer.update(dt);
+      applyJumpPose();
+      hoofSounds(dt);
       // rider clip follows the horse's gait
       if (hero && H.state === 'ridden') hero.controller.ride(H.speed < 0.15 ? 'idle' : H.speed < 4.5 ? 'walk' : 'gallop', H.actions[H.cur], H.cur);
       updateReins();
       // the unridden horse blocks the hero (two body circles)
       if (world.dynamic) { const f = v1.set(Math.sin(H.yaw), 0, Math.cos(H.yaw));
-        world.dynamic.horse = (root.visible && H.state !== 'ridden' && H.state !== 'mounting' && H.state !== 'dismounting' && H.state !== 'approach')
+        world.dynamic.horse = (root.visible && H.state !== 'leaving' && H.state !== 'ridden' && H.state !== 'mounting' && H.state !== 'dismounting' && H.state !== 'approach')
           ? [{ x: root.position.x + f.x * 0.7, z: root.position.z + f.z * 0.7, r: 0.5 }, { x: root.position.x - f.x * 0.7, z: root.position.z - f.z * 0.7, r: 0.5 }] : null; }
     }
     return {
-      root, load, summon, pressH, update, state: H,
+      root, load, summon, pressH, update, state: H, jump, leave,
+      get jumping() { return !!H.jump; },
       cancel() { if (H.state === 'approach' || H.state === 'coming') { H.state = 'idle'; H.heroMoving = false; H.speed = 0; } },
       get riding() { return H.state === 'ridden' || H.state === 'mounting' || H.state === 'dismounting'; },
       get approaching() { return H.state === 'approach'; },

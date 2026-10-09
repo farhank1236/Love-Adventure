@@ -37,7 +37,7 @@
   // ---------------------------------------------------------------- roads: width, surface ('cobble' | 'dirt' | 'royal')
   const ROADS = [
     { id: 'kings-way', name: "King's Way", width: 8, surface: 'cobble', pts: [[0, 350], [0, 270], [3, 200], [0, 142]] },
-    { id: 'royal-road', name: 'Royal Road', width: 11, surface: 'royal', grade: 10, pts: [[0, -142], [0, -190], [0, -222], [0, -258]] },
+    { id: 'royal-road', name: 'Royal Road', width: 11, surface: 'royal', grade: 10, profile: 'ramp', pts: [[0, -142], [0, -190], [0, -222], [0, -258]] },
     { id: 'west-road', name: 'Aldmere Road', width: 7, surface: 'cobble', pts: [[-142, 0], [-190, -8], [-250, -24], [-320, -40], [-356, -48]] },
     { id: 'farm-road', name: 'Harvest Road', width: 6, surface: 'dirt', pts: [[-20, 180], [-80, 190], [-150, 200], [-215, 222], [-262, 236]] },
     { id: 'brenmoor-road', name: 'Granary Lane', width: 6, surface: 'dirt', pts: [[-262, 236], [-290, 300], [-320, 360], [-342, 404]] },

@@ -36,7 +36,7 @@
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
   }
 
-  function createHeroExtras({ THREE, scene, rig, camera, root }) {
+  function createHeroExtras({ THREE, scene, rig, camera, root, sfx }) {
     const ctl = rig.controller, X = rig.extras, IB = X.idleBall;
     const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), q1 = new THREE.Quaternion();
     // ---------------------------------------------------------------- sword portal (left hip)
@@ -90,9 +90,13 @@
       bubble.style.left = ((v1.x * 0.5 + 0.5) * w).toFixed(1) + 'px'; bubble.style.top = ((-v1.y * 0.5 + 0.5) * h).toFixed(1) + 'px';
     }
 
-    const grip = rig.byName.Sword_Grip;
+    const grip = rig.byName.Sword_Grip, snd = { portal: false, grip: false, vy: 0 };
     function update(dt) {
-      if (sword && grip) sword.visible = grip.scale.y > 0.02;          // the stored 500k-triangle sword is not drawn at all
+      if (sword && grip) sword.visible = grip.scale.y > 0.02;          // a stored sword is not drawn at all
+      // sounds: the left-hip portal opening, the blade drawn out / pushed back in
+      if (sfx) { const op = spBone ? spBone.scale.x > 0.3 : false, gv = grip ? grip.scale.y > 0.5 : false;
+        if (op && !snd.portal) sfx('portal', null, { vol: 0.45 }); if (gv && !snd.grip && op) sfx('shing'); if (!gv && snd.grip && op) sfx('swordIn');
+        snd.portal = op; snd.grip = gv; }
       // sword portal: follow the clip's portal track, open amount = its scale
       if (spBone) {
         holder.position.copy(spBone.position); holder.quaternion.copy(spBone.quaternion);
@@ -110,6 +114,7 @@
         const prev = v2.copy(ball.position);
         ball.position.set(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u);
         ball.visible = !!IB.vis[Math.round(f) < IB.vis.length ? Math.round(f) : IB.vis.length - 1];
+        { const vy = (b[1] - a[1]); if (sfx && ball.visible && snd.vy < -1e-4 && vy > 1e-4) sfx('kick', null, { vol: 0.8 }); snd.vy = vy; }
         // roll / spin with the motion
         if (lastIdleT >= 0 && dt > 0) { const vel = prev.sub(ball.position).multiplyScalar(-1 / dt), sp_ = vel.length();
           if (sp_ > 0.05) { spin.set(vel.z, 0, -vel.x).normalize(); ball.rotateOnWorldAxis(spin.lengthSq() ? spin : v1.set(1, 0, 0), sp_ * dt / IB.radius * 0.35); } }

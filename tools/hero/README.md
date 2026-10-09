@@ -30,3 +30,11 @@ v6 (current game model, `HERO_V6`, build `v6-horse`):
 - `fun5.py`: Summon and Dismiss redone. The sword is drawn with the right hand out of a pocket portal that opens at the left hip; the `Sword_Portal` track (position, facing and open amount as scale) drives the game's portal effect and the clipping plane. `IdleBall` (240 frames) is the 30 s idle: a ball drops out of a small portal above him, keepy-uppy, a header back into a second portal. The ball path, both portals and the speech cues are exported in `extras.idleBall`.
 - `ride5.py`: `Mount` (left foot into the stirrup, step up, swing the right leg over the cantle, settle), `Dismount`, `RideIdle`, `RideWalk` (phase-locked to the horse's 1.0 s walk) and `RideGallop` (half-seat, two gallop strides). The hero is parented to the horse's `Saddle` bone while riding; `extras.ride` holds the frame offsets. The cape collides with the horse (`horse_colliders`).
 - `build6.py` makes `clips_v6.pkl`; `export_glb6.py OUT.glb clips_v6.pkl` writes the game GLB; `rsheet.py` renders hero + horse contact sheets.
+
+v7 clips (same model, `HERO_V6` revision):
+- `run7.py`: natural running arms. The upper arm swings about 40° forward and 25° back, the elbow is held near 90°, and the hands are relaxed closed fists with thumbs up, pumping close to the chest. The old run reached forward with an open, palm-up hand. The legs and body are unchanged.
+- `ride7.py`: the rider visibly rides.
+  - **Walk:** the pelvis sways and rocks with the horse's back, the upper body balances against it, and the hands follow the head nod.
+  - **Gallop:** two-point seat with knee absorption, torso pitch and hands travelling along the neck.
+  - **Idle:** breathing, weight shift, a look left and right, and a rein adjustment.
+- `build7.py` makes `clips_v7.pkl`; then `export_glb6.py OUT.glb clips_v7.pkl`, then `tools/lod` to reduce and chunk. `csheet.py` renders clip contact sheets.

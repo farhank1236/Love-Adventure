@@ -35,20 +35,32 @@ const URL = process.env.GAME_URL || 'http://127.0.0.1:8000/index.html', OUT = pr
   r = await run(0.9); expect(r.maxOpen > 0.9, 'summon portal opens', r); await shot('summon');
   r = await run(3.5); expect(r.st === 'idle' || r.st === 'rear', 'horse arrived', r); expect(r.seen.some(s => s.startsWith('rear')), 'horse rears on arrival', r);
   const gap = Math.hypot(r.p[0] - r.hp[0], r.p[1] - r.hp[1]); expect(gap > 1.5 && gap < 6, 'horse stops beside the hero', { gap });
-  // ---- mount
+  // ---- mount, starting from the horse's RIGHT side: he must walk round the front, never through the horse
+  await page.evaluate(() => { const D = KingdomDebug, h = D.horse.root; h.updateMatrixWorld(true); const p = new THREE.Vector3(-2.2, 0, -0.3).applyMatrix4(h.matrixWorld); D.teleport(p.x, p.z, 0); });
   await key(['KeyH'], ['KeyH']); await page.waitForTimeout(800);
   r = await run(0.2); expect(r.st === 'approach', 'single H walks to the horse', r);
-  for (let i = 0; i < 16 && r.st === 'approach'; i++) r = await run(0.5);
+  const inside = await page.evaluate(() => { const D = KingdomDebug, h = D.horse.root; let n = 0;
+    for (let i = 0; i < 450 && D.horse.state.state === 'approach'; i++) { D.tick(1 / 30); h.updateMatrixWorld(true); const l = D.player.position.clone().applyMatrix4(h.matrixWorld.clone().invert()); if (Math.abs(l.x) < 0.5 && l.z > -1.3 && l.z < 1.5) n++; }
+    return n; });
+  expect(inside === 0, 'walks round the front of the horse, not through it', { inside });
+  r = await run(0.1);
   expect(r.st === 'mounting' && r.mode === 'mount', 'mount clip plays', r);
   r = await run(2.4); expect(r.st === 'ridden' && r.mode === 'ride' && r.seated, 'seated on the saddle', r); await shot('seated');
   // ---- ride
   await key(['ArrowUp'], []); r = await run(2.5); expect(Math.abs(r.speed - 1.8) < 0.15, 'walk speed 1.8', r); expect(r.seen.some(s => s.endsWith(':walk')), 'RideWalk plays', r);
   await key(['KeyX'], []); r = await run(3.0); expect(r.maxSp > 14.5 && r.maxSp <= 15.01, 'gallop 15 m/s', r); expect(r.seen.some(s => s.endsWith(':gallop')), 'RideGallop plays', r); await shot('gallop');
+  await key(['KeyZ'], []); r = await run(0.3); await key([], ['KeyZ']); const jumped = await page.evaluate(() => KingdomDebug.horse.jumping || KingdomDebug.horse.state.jump !== null);
+  expect(jumped && r.seen.some(s => s.startsWith('ridden')), 'Z makes the horse jump', r); r = await run(1.0); expect(!(await page.evaluate(() => KingdomDebug.horse.jumping)), 'horse lands', r);
   await key([], ['KeyX', 'ArrowUp']); r = await run(3.0); expect(r.speed < 0.2, 'stops when released', r);
   // ---- dismount
   await key(['KeyH'], ['KeyH']); await page.waitForTimeout(800); r = await run(0.3); expect(r.st === 'dismounting' && r.mode === 'dismount', 'dismount clip plays', r);
   r = await run(2.0); expect(r.st === 'idle' && r.mode === 'free' && !r.seated, 'back on the ground', r);
   const g2 = Math.hypot(r.p[0] - r.hp[0], r.p[1] - r.hp[1]); expect(g2 > 0.6 && g2 < 1.6, 'standing at the horse\'s side', { g2 });
+  // ---- H x3 with the horse out: it gallops back into the pocket dimension
+  await key(['KeyH'], ['KeyH']); await key(['KeyH'], ['KeyH']); await key(['KeyH'], ['KeyH']);
+  r = await run(0.3); expect(r.st === 'leaving', 'H x3 sends the horse back', r);
+  for (let i = 0; i < 20 && r.st === 'leaving'; i++) r = await run(0.5);
+  expect(r.st === 'absent' && !(await page.evaluate(() => KingdomDebug.horse.root.visible)), 'horse gone through the portal', r);
   // ---- sword from the left portal
   await page.evaluate(() => KingdomDebug.teleport(0, 368, Math.PI)); await run(0.3);
   await key(['Space'], ['Space']); r = await run(0.5); expect(r.maxOpen > 0.9, 'sword portal opens', r); await run(7);

@@ -78,6 +78,25 @@
       // roads: dense centre lines + smoothed levels from the shaped (pre-road) terrain
       this.roads = layout.ROADS.map(R => ({ ...R, pts: densify(R.pts, 4, R.loop), reach: R.width / 2 + (R.shoulder || 9) }));
       for (const R of this.roads) R.level = boxSmooth(R.pts.map(([x, z]) => this.shaped(x, z)), R.grade || 5);   // grade: smoothing window (mountain roads use long, gentle grades)
+      for (const R of this.roads) {
+        const n = R.pts.length;
+        // 'ramp' roads (the Royal Road up to the palace) climb steadily from end to end: no dips and humps on the way
+        if (R.profile === 'ramp') { const a = this.shaped(...R.pts[0]), b = this.shaped(...R.pts[n - 1]);
+          for (let i = 0; i < n; i++) { const t = i / (n - 1), e = t * t * (3 - 2 * t); R.level[i] = a + (b - a) * (0.45 * t + 0.55 * e); } }
+        // river crossings: the road comes down to the bridge deck (water + 1.6 m) over 40 m on each side, so it never floats over the bank
+        const deck = R.pts.map(([x, z]) => { const w = this.riverIndex.nearest(x, z); if (!w) return null; const V = this.rivers[w.li];
+          return w.d < V.width / 2 + 1.5 ? V.level[w.s] + (V.level[w.s + 1] - V.level[w.s]) * w.t + 1.6 : null; });
+        const RAMP = 10;
+        for (let i = 0; i < n; i++) {
+          if (deck[i] === null || (i > 0 && deck[i - 1] !== null)) continue;
+          let j = i; while (j + 1 < n && deck[j + 1] !== null) j++;
+          let D = -Infinity; for (let k = i; k <= j; k++) D = Math.max(D, deck[k]);
+          for (let k = i; k <= j; k++) R.level[k] = D;
+          for (let k = 1; k <= RAMP; k++) { const t = k / RAMP, e = t * t * (3 - 2 * t);
+            if (i - k >= 0 && deck[i - k] === null) R.level[i - k] = D + (R.level[i - k] - D) * e;
+            if (j + k < n && deck[j + k] === null) R.level[j + k] = D + (R.level[j + k] - D) * e; }
+        }
+      }
       this.roadIndex = new LineIndex(this.roads);
       this.build();
     }
@@ -99,18 +118,19 @@
     }
     /* final height: shaped terrain, roads levelled into it, rivers carved */
     heightRaw(x, z) {
-      let h = this.shaped(x, z);
-      const r = this.roadIndex.nearest(x, z);
-      if (r) {
-        const R = this.roads[r.li], lv = R.level[r.s] + (R.level[r.s + 1] - R.level[r.s]) * r.t, w = R.width / 2;
-        h += (lv - h) * (1 - smooth(w + 0.5, w + (R.shoulder || 9), r.d));        // wide shoulders on mountain roads: a pass, not a trench
-      }
+      let h = this.shaped(x, z), inChannel = false;
       const w = this.riverIndex.nearest(x, z);
       if (w) {
         const R = this.rivers[w.li], lv = R.level[w.s] + (R.level[w.s + 1] - R.level[w.s]) * w.t, hw = R.width / 2, depth = 0.9 + R.width * 0.09;
         const bed = lv - depth * (1 - Math.pow(Math.min(1, w.d / hw), 2) * 0.75);
-        if (w.d < hw) h = Math.min(h, bed);
+        if (w.d < hw) { h = Math.min(h, bed); inChannel = true; }
         else h = Math.min(h, lv - 0.25 + (h - (lv - 0.25)) * smooth(hw, hw + 14, w.d));
+      }
+      // roads are levelled after the rivers are carved, so a road keeps its embankment right up to the water (bridges span the channel)
+      const r = this.roadIndex.nearest(x, z);
+      if (r && !inChannel) {
+        const R = this.roads[r.li], lv = R.level[r.s] + (R.level[r.s + 1] - R.level[r.s]) * r.t, rw = R.width / 2;
+        h += (lv - h) * (1 - smooth(rw + 0.5, rw + (R.shoulder || 9), r.d));      // wide shoulders on mountain roads: a pass, not a trench
       }
       return h;
     }

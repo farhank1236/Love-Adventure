@@ -6,7 +6,7 @@
      Jump JumpStart JumpAir JumpLand
    Sword visibility, blue aura, ghost trail and the pocket-dimension portal are animated joints in the clips. */
 (() => {
-  const HERO_PARTS = 2, CACHE = 'hero-v7';
+  const HERO_PARTS = 2, CACHE = 'hero-v8';
   const parts = () => (window.AethelosModelParts ||= {}).hero ||= [];
 
   function loadHeroBytes() {

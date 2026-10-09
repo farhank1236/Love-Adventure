@@ -1925,13 +1925,13 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 })();
 
 </script>
-<div style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">Arrows move · WASD camera · X run · Z jump · Space attack · C dodge</div>
+<div id="keyHintLine" style="position:fixed;bottom:4px;right:8px;z-index:90;color:#b8d6df;font:11px sans-serif;pointer-events:none">Arrows move · WASD camera · X run · Z jump · Space attack · C dodge</div>
 <script>window.AethelosModelParts={male:[],female:[]};window.LoveAdventureModelParts=window.AethelosModelParts;</script>
 <script src="assets/viewer/three-runtime.js?v=heroes-v14-1"></script>
 <script src="assets/viewer/female-warrior-rig.js?v=heroes-v14-1"></script>
-<script src="assets/viewer/hero-rig.js?v=hero-v7"></script>
-<script src="assets/world/kingdom-layout.js?v=kingdom-2"></script>
-<script src="assets/world/terrain.js?v=real-1"></script>
+<script src="assets/viewer/hero-rig.js?v=hero-v8"></script>
+<script src="assets/world/kingdom-layout.js?v=road-1"></script>
+<script src="assets/world/terrain.js?v=road-1"></script>
 <script src="assets/world/models.js?v=lod-1"></script>
 <script src="assets/world/kingdom-objects.js?v=kingdom-2"></script>
 <script src="assets/world/materials.js?v=real-1"></script>
@@ -1942,6 +1942,8 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 <script src="assets/world/world.js?v=lod-1"></script>
 <script src="assets/world/editor.js?v=real-1"></script>
 <script src="assets/world/sonic-skill.js?v=lod-1"></script>
+<script src="assets/world/audio.js?v=sfx-1"></script>
+<script src="assets/world/npcs.js?v=npc-1"></script>
 <script src="assets/world/portal.js?v=horse-1"></script>
 <script src="assets/world/hero-extras.js?v=perf-1"></script>
 <script src="assets/world/horse.js?v=lod-1"></script>
@@ -2208,6 +2210,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
     color: #dceeff;
     font-size: 13px;
   }
+  /* the controls text is not shown in the game any more (kept in the page for reference) */
+  #phase1Hud .phase1-controls, #phase1Hud .phase1-center { display: none !important; }
   #phase1Hud .phase1-controls {
     position: absolute;
     left: 14px;

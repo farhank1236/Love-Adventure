@@ -36,10 +36,10 @@
       const m = new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending, toneMapped: false });
       m.onBeforeCompile = sh => {
         Object.assign(sh.uniforms, { uTime: time, uI: intensity, uPush: { value: push }, uA: { value: alpha }, uErode: { value: erode }, uDeep: { value: C.deep }, uMid: { value: C.mid }, uHot: { value: C.hot } });
-        // the head and neck get only a thin glow (the fire would otherwise swallow his face)
+        // a thin glow over the whole body (it used to be heavy on the body and thin on the head; the thin look is kept everywhere)
         sh.vertexShader = 'uniform float uTime; uniform float uPush; uniform float uI; varying vec3 vFN; varying vec3 vFV; varying vec3 vFW; varying float vHead;\n' + sh.vertexShader
           .replace('#include <skinning_vertex>', `#include <skinning_vertex>
-            vHead = smoothstep(1.46, 1.70, position.y);
+            vHead = 1.0;                                     // the whole body now wears the thin head-style flame the player liked
             float wob = 0.65 + 0.35 * sin(uTime * 9.0 + position.y * 23.0 + position.x * 11.0);
             transformed += normalize(objectNormal) * uPush * uI * wob * (1.0 - 0.8 * vHead);`)
           .replace('#include <project_vertex>', `#include <project_vertex>
@@ -208,7 +208,9 @@
       }
       return best;
     }
-    function spawnBoom(origin, dir, scale = 1, target = null) {
+    const qInv = new THREE.Quaternion();
+    const setBoomQ = (q, dir, roll) => q.setFromEuler(new THREE.Euler(0, Math.atan2(dir.x, dir.z), 0)).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), roll));
+    function spawnBoom(origin, dir, scale = 1, target = null, roll = 0) {
       const g = new THREE.Group(), mats = [];
       const add = (geo, kind, order, k = 1) => { const m = new THREE.Mesh(geo, boomMat(kind)); m.renderOrder = order; m.frustumCulled = false; m.userData.k = k; mats.push(m.material); g.add(m); return m; };
       const halo = add(haloGeo, 'halo', 5); halo.position.z = -0.6; halo.rotation.y = 0;
@@ -216,14 +218,15 @@
       add(wing, 'core', 6); add(blade, 'core', 7); add(blade, 'fire', 8); add(wing, 'fire', 8, 0.6); add(profile, 'side', 8);
       const shock = add(shockGeo, 'shock', 9); shock.position.z = 0.25;
       const streak = [0.55, 0.32, 0.16].map((k, i) => { const m = add(blade, 'fire', 6, k); m.material.uniforms.uSeed.value = i * 7.3; return m; });
-      g.quaternion.setFromEuler(new THREE.Euler(0, Math.atan2(dir.x, dir.z), 0));
+      setBoomQ(g.quaternion, dir, roll);
       g.position.copy(origin); g.scale.setScalar(0.55 * scale); scene.add(g);
-      const b = { g, dir: dir.clone(), age: 0, dist: 0, scale, mats, streak, shock, light: takeLight(), hit: new Set(), dead: false, target, h: origin.y - world.terrain.heightAt(origin.x, origin.z) };
+      const b = { g, dir: dir.clone(), age: 0, dist: 0, scale, mats, streak, shock, light: takeLight(), hit: new Set(), dead: false, target, roll, cr: Math.abs(Math.cos(roll)), h: origin.y - world.terrain.heightAt(origin.x, origin.z) };
       S.booms.push(b); S.shake = Math.max(S.shake, 0.22);
       for (let i = 0; i < 40; i++) { const a = (Math.random() - 0.5) * 2 * ARC; v3.set((Math.random() - 0.5) * 0.4, Math.sin(a) * BR * 0.55 * scale, 0).applyQuaternion(g.quaternion).add(origin);
         embers.emit(v3.x, v3.y, v3.z, dir.x * 7 + (Math.random() - 0.5) * 3, (Math.random() - 0.3) * 2, dir.z * 7 + (Math.random() - 0.5) * 3, 0.4 + Math.random() * 0.3, 0.28); }
       // the release kicks up a ring of dust at his feet
       for (let i = 0; i < 14; i++) { const a = Math.random() * 6.283; smoke.emit(player.position.x + Math.cos(a) * 0.6, player.position.y + 0.15, player.position.z + Math.sin(a) * 0.6, Math.cos(a) * 2.5, 0.4 + Math.random() * 0.5, Math.sin(a) * 2.5, 0.8 + Math.random() * 0.5, 0.8, 1); }
+      ctx.sfx && ctx.sfx('boom', origin, { arg: scale });
       A.Combat.emit({ type: 'sonicBoom', origin: origin.clone(), dir: dir.clone(), target });
       return b;
     }
@@ -232,6 +235,7 @@
         embers.emit(at.x, at.y, at.z, Math.cos(a) * Math.cos(e) * s, Math.sin(e) * s + 1, Math.sin(a) * Math.cos(e) * s, 0.35 + Math.random() * 0.45, 0.3 + Math.random() * 0.25); }
       for (let i = 0; i < 16 * strength; i++) smoke.emit(at.x, at.y, at.z, (Math.random() - 0.5) * 3, 1 + Math.random() * 1.5, (Math.random() - 0.5) * 3, 0.9 + Math.random() * 0.6, 0.9, 1);
       rings.push({ at: at.clone(), age: 0, life: 0.45, size: 6 * strength, mesh: makeRing() }); flash(at, 90 * strength, 0.25);
+      ctx.sfx && ctx.sfx('impact', at, { vol: Math.min(1, strength) });
       S.shake = Math.max(S.shake, 0.3 * strength);
     }
     // expanding shock rings + light flashes
@@ -276,17 +280,18 @@
       S.shake = 0.55; showToast?.('Azure Tempest: 6 s');
     }
     function launch(d) {
-      // the boom always stands upright and flies straight along the facing line (or straight at the enemy in front)
+      // the boom flies straight along the facing line (or straight at the enemy in front)
       const fwd = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y));
       const start = player.position.clone().addScaledVector(fwd, 1.4), target = aimAt(start, fwd);
       let dir = fwd;
       if (target) { dir = v4.set(target.position.x - start.x, 0, target.position.z - start.z).normalize().clone(); player.rotation.y = Math.atan2(dir.x, dir.z); }
-      const big = d.clip === 'Attack5' && d.hit === 1, scale = big ? 1.25 : 1;
+      // the combo throws diagonal blades: 1 right, 2 left, 3 right, 4 left, 5 both at once as an X (the last hit bigger)
+      const TILT = 0.72, ROLL = { Attack1: TILT, Attack2: -TILT, Attack3: TILT, Attack4: -TILT };
+      const isX = d.clip === 'Attack5', scale = isX && d.hit === 1 ? 1.25 : 1;
       const ground = world.terrain.heightAt(start.x, start.z);
-      const origin = start.clone(); origin.y = ground + 0.25 + BR * Math.sin(ARC) * scale * 0.55;   // bottom tip just above the ground at launch size
-      if (big) {                                     // the finisher throws a pair, fanned slightly
-        for (const da of [-0.1, 0.1]) { const dd = dir.clone().applyAxisAngle(v3.set(0, 1, 0), da); spawnBoom(origin.clone().addScaledVector(new THREE.Vector3(-dd.z, 0, dd.x), da * 4), dd, scale, target); }
-      } else spawnBoom(origin, dir, scale, target);
+      const origin = start.clone(); origin.y = ground + 0.25 + BR * Math.sin(ARC) * scale * 0.55 * (isX || ROLL[d.clip] ? 0.75 : 1);
+      if (isX) { spawnBoom(origin, dir, scale, target, TILT); spawnBoom(origin, dir, scale, target, -TILT); }
+      else spawnBoom(origin, dir, scale, target, ROLL[d.clip] || 0);
     }
 
     // ============================================================ per frame
@@ -296,7 +301,8 @@
       if (S.state === 'cooldown' && S.now >= S.readyAt) S.state = 'ready';
       if (S.state === 'charging') S.chargeT += dt;
       const target = S.state === 'active' ? 1 : 0; S.fade += (target - S.fade) * Math.min(1, dt * (target ? 6 : 3)); intensity.value = S.fade;
-      const on = S.fade > 0.01; for (const m of shells) m.visible = on; sleeve.visible = on && grip.scale.y > 0.5;
+      const on = S.fade > 0.01; for (const m of shells) m.visible = on;
+      ctx.sfxLoop && ctx.sfxLoop('fire', S.fade > 0.05, { vol: 0.28 * S.fade }); sleeve.visible = on && grip.scale.y > 0.5;
       if (on && auraBone) { const k = 1 + 0.45 * S.fade; auraBone.scale.x = Math.max(auraBone.scale.x, k); auraBone.scale.y = Math.max(auraBone.scale.y, k); auraBone.scale.z = Math.max(auraBone.scale.z, 1); }   // x edge, y flat, z blade
 
       // body embers + dark wisps
@@ -306,7 +312,7 @@
           const b = BODY_BONES[(Math.random() * BODY_BONES.length) | 0]; b.getWorldPosition(v3);
           embers.emit(v3.x + (Math.random() - 0.5) * 0.45, v3.y + (Math.random() - 0.5) * 0.3, v3.z + (Math.random() - 0.5) * 0.45, (Math.random() - 0.5) * 0.6, 0.8 + Math.random() * 1.8, (Math.random() - 0.5) * 0.6, 0.45 + Math.random() * 0.5, 0.1 + Math.random() * 0.22);
         }
-        for (let i = 0; i < 150 * S.fade * dt; i++) {                    // flame wisps: big, fast, short-lived
+        for (let i = 0; i < 70 * S.fade * dt; i++) {                     // flame wisps: lighter, to match the thin body flame
           const b = BODY_BONES[(Math.random() * BODY_BONES.length) | 0]; b.getWorldPosition(v3);
           flames.emit(v3.x + (Math.random() - 0.5) * 0.35, v3.y + (Math.random() - 0.5) * 0.25, v3.z + (Math.random() - 0.5) * 0.35, (Math.random() - 0.5) * 0.5, 1.6 + Math.random() * 1.3, (Math.random() - 0.5) * 0.5, 0.22 + Math.random() * 0.2, 0.38 + Math.random() * 0.35);
         }
@@ -330,11 +336,11 @@
         b.age += dt; const step = BOOM_SPEED * dt; b.dist += step;
         // straight line; with a target it keeps its nose on the enemy (gentle correction, it never curls around)
         if (b.target && !b.target.dead && b.target.position) { v4.set(b.target.position.x - b.g.position.x, 0, b.target.position.z - b.g.position.z);
-          if (v4.lengthSq() > 0.5) { v4.normalize(); b.dir.lerp(v4, Math.min(1, dt * 4)).normalize(); b.g.quaternion.setFromEuler(new THREE.Euler(0, Math.atan2(b.dir.x, b.dir.z), 0)); } }
+          if (v4.lengthSq() > 0.5) { v4.normalize(); b.dir.lerp(v4, Math.min(1, dt * 4)).normalize(); setBoomQ(b.g.quaternion, b.dir, b.roll); } }
         const prev = b.g.position.clone(); b.g.position.addScaledVector(b.dir, step);
         const grow = 0.55 + 0.45 * Math.min(1, b.age / 0.22) + 0.15 * Math.min(1, b.dist / BOOM_RANGE); b.g.scale.setScalar(grow * b.scale);
         // ride over the terrain at the same height (bottom tip skims the ground) instead of bursting on every hill
-        const gy = world.terrain.heightAt(b.g.position.x, b.g.position.z), half = BR * Math.sin(ARC) * grow * b.scale;
+        const gy = world.terrain.heightAt(b.g.position.x, b.g.position.z), half = BR * Math.sin(ARC) * grow * b.scale * (0.35 + 0.65 * b.cr);   // a tilted blade sits lower
         b.g.position.y += ((gy + 0.25 + half) - b.g.position.y) * Math.min(1, dt * 10);
         const fade = Math.min(1, b.age / 0.05) * (1 - Math.max(0, (b.dist - BOOM_RANGE * 0.75) / (BOOM_RANGE * 0.25)));
         for (const m of b.mats) m.uniforms.uFade.value = fade;
@@ -355,8 +361,9 @@
         // damage: the blade slices through anything registered in its path (the whole height of the crescent)
         for (const t of A.Combat.targets) {
           if (b.hit.has(t) || !t.position || t.dead) continue;
-          v4.copy(t.position).sub(b.g.position); const along = v4.dot(b.dir), side = Math.abs(v4.x * b.dir.z - v4.z * b.dir.x), up = v4.y;
-          if (Math.abs(along) < 1.2 + (t.radius || 1) * 0.5 && side < BW * sc + (t.radius || 1) && up > -half - 1 && up < half + 0.5) {
+          v4.copy(t.position).sub(b.g.position).applyQuaternion(qInv.copy(b.g.quaternion).invert());   // boom frame: x across, y along the blade, z travel
+          const along = v4.z, side = Math.abs(v4.x), up = v4.y, bladeHalf = BR * Math.sin(ARC) * sc;
+          if (Math.abs(along) < 1.2 + (t.radius || 1) * 0.5 && side < BW * sc + (t.radius || 1) && up > -bladeHalf - 1 && up < bladeHalf + 1) {
             b.hit.add(t); try { t.onHit && t.onHit(40, b.dir.clone(), 'sonicBoom'); } catch (e) { console.error(e); } burst(t.position.clone().add(v3.set(0, 1, 0)), 0.8);
             if (t === b.target) { kill(b); break; }
           }

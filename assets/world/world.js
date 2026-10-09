@@ -179,6 +179,8 @@
     const clock = new THREE.Clock(), MU = A.Mat.U, timeU = MU.uTime; A.Mat.init(THREE);
     const texturesReady = A.Mat.load(THREE, renderer, { size: quality === 'low' ? 512 : 1024 }).catch(e => { console.warn('Aethelos textures:', e); return false; });
     const player = new THREE.Group(); player.name = 'Player Root'; scene.add(player);
+    const sfx = A.createAudio ? A.createAudio({ camera }) : null;                    // synthesised sound effects (M mutes)
+    const playAt = (name, at, o = {}) => sfx && sfx.play(name, { at: at || player.position, ...o });
     const heroMount = new THREE.Group(); player.add(heroMount);
     const world = { dynamic: {} };                       // dynamic: moving blockers (the horse) as circle lists
     const state = { keys: Object.create(null), camYaw: L.SPAWN.yaw, camPitch: 0.30, camZoom: 1, camDistance: 6, cameraTarget: new THREE.Vector3(), cameraVelocity: new THREE.Vector3(),
@@ -251,11 +253,19 @@
         const rig = await HeroRig.loadHero(THREE);
         rig.root.traverse(o => { if (o.isMesh) o.castShadow = !o.material.transparent; });   // body 44k + sword 5k triangles (tools/lod)
         state.heroRig = rig; heroMount.add(rig.root);
-        if (A.createSonicSkill) { world.skill = A.createSonicSkill({ THREE, scene, rig, player, world, camera, root: canvas.parentElement, showToast, lightPool: world.lightPool }); world.skill.setAim(() => inputDir()); }
+        if (A.createSonicSkill) { world.skill = A.createSonicSkill({ THREE, scene, rig, player, world, camera, root: canvas.parentElement, showToast, lightPool: world.lightPool, sfx: playAt, sfxLoop: (n, on, o) => sfx && sfx.loop(n, on, o) }); world.skill.setAim(() => inputDir()); }
+        // sound cues from the hero's own moves
+        rig.controller.on((type, d) => {
+          if (type === 'attackStart') playAt('swing', null, { arg: d.kind === 'combo' ? 0.85 + 0.1 * (d.index || 0) : d.kind === 'down' ? 0.75 : 1.2 });
+          else if (type === 'powerStart') playAt('powerUp');
+          else if (type === 'powerBurst') playAt('ignite');
+          else if (type === 'mountStart') playAt('saddle');
+          else if (type === 'dismountEnd') playAt('land', null, { arg: 0.7 });
+        });
         // the sword aura's own light is replaced by a pooled one that follows the blade while it glows
         const auraL = rig.fxMeshes.AuraLight; if (auraL && auraL.parent) { auraL.parent.remove(auraL); world.auraLight = { src: auraL, mesh: rig.fxMeshes.SwordAuraGlow, pooled: null }; }
-        if (A.createHeroExtras) world.extras = A.createHeroExtras({ THREE, scene, rig, camera, root: canvas.parentElement });
-        if (A.createHorse) world.horse = A.createHorse({ THREE, scene, world, player, camera, showToast, heroMount, hero: () => state.heroRig,
+        if (A.createHeroExtras) world.extras = A.createHeroExtras({ THREE, scene, rig, camera, root: canvas.parentElement, sfx: playAt });
+        if (A.createHorse) world.horse = A.createHorse({ THREE, scene, world, player, camera, showToast, heroMount, hero: () => state.heroRig, sfx: (n, o) => playAt(n, o && o.at, o || {}),
           say: k => world.extras && world.extras.say(k), onMount: on => { state.idleT = 0; if (!on) world.extras && setTimeout(() => world.extras.say('dismounted'), 250); } });
       } else {
         let rig = null;
@@ -320,12 +330,13 @@
     function turnTo(dir, rate) { const t = Math.atan2(dir.x, dir.z); player.rotation.y += Math.atan2(Math.sin(t - player.rotation.y), Math.cos(t - player.rotation.y)) * rate; }
 
     function updateRiding(dt, ctl, horse) {
+      const wantsJump = !!state.keys.KeyZ; if (wantsJump && !state.jumpLatch) horse.jump(); state.jumpLatch = wantsJump;   // Z: the horse jumps
       state.velocity.set(0, 0, 0); state.grounded = true; state.jumpVelocity = 0; state.currentSpeed = horse.speed; state.idleT = 0;
       ctl.update(dt, { moving: false, running: false, airborne: false, speed: 0 });
       world.skill && world.skill.update(dt); world.extras && world.extras.update(dt); updateAuraLight();
       const st = horse.state.state;
       stateLabel && (stateLabel.textContent = st === 'mounting' ? 'Mounting' : st === 'dismounting' || horse.state.slowToDismount ? 'Dismounting'
-        : horse.speed > 4.5 ? 'Galloping' : horse.speed > 0.15 ? 'Riding' : 'On horseback');
+        : horse.jumping ? 'Jumping' : horse.speed > 4.5 ? 'Galloping' : horse.speed > 0.15 ? 'Riding' : 'On horseback');
     }
     function updateAuraLight() {
       const a = world.auraLight; if (!a) return;
@@ -356,12 +367,16 @@
         state.velocity.x += (dir.x * target - state.velocity.x) * 0.18; state.velocity.z += (dir.z * target - state.velocity.z) * 0.18; turnTo(dir, 0.22);
       } else { state.velocity.x *= 0.78; state.velocity.z *= 0.78; }
       const wantsJump = !!k.KeyZ;
-      if (wantsJump && !state.jumpLatch && state.grounded && !ctl.busy) { state.jumpVelocity = 6.8; state.grounded = false; }
+      if (wantsJump && !state.jumpLatch && state.grounded && !ctl.busy) { state.jumpVelocity = 6.8; state.grounded = false; playAt('jump'); }
       state.jumpLatch = wantsJump;
       const before = player.position.clone();
       moveTo(state.velocity.x * dt, state.velocity.z * dt, dt);
       verticalStep(dt, 6.8, 24);
       const moved = Math.hypot(player.position.x - before.x, player.position.z - before.z) / Math.max(dt, 1e-4);
+      // footsteps by distance (a step every half stride), harder on roads and bridges; landing thud
+      if (state.grounded && !ctl.dodging) { state.stepAcc = (state.stepAcc || 0) + moved * dt; const stride = running ? 1.25 : 0.72;
+        if (state.stepAcc > stride) { state.stepAcc = 0; playAt('step', null, { vol: running ? 1 : 0.7, arg: !!(state.onDeck || world.terrain.roadAt(player.position.x, player.position.z)) }); } }
+      if (state.grounded && state.wasAir) playAt('land'); state.wasAir = !state.grounded;
       state.currentSpeed = Math.min(Math.hypot(state.velocity.x, state.velocity.z), moved + 0.05);
       if (moving && moved < 0.3 && !ctl.dodging) { state.velocity.x *= 0.5; state.velocity.z *= 0.5; }   // pressing into a wall: stop the run cycle
       // 30 s without doing anything: the pocket-dimension ball comes out (any move / action ends it)
@@ -458,11 +473,13 @@
     const HERO_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyF', 'KeyC', 'KeyZ', 'KeyX', 'KeyV', 'KeyH', 'ShiftLeft', 'ShiftRight']);
     const onKeyDown = e => {
       if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return;           // typing in the editor panel
+      sfx && sfx.unlock();                                    // browsers only start audio after a key or click
       if (e.code === 'KeyE' && !e.repeat && world.editor) { world.editor.toggle(); return; }
       if (e.code === 'KeyV' && !e.repeat && !state.editing) { state.idleT = 0; state.heroRig?.controller.cancelIdleFun(); if (world.horse && world.horse.riding) { showToast('Dismount first (H) to use Azure Tempest'); return; } if (world.skill) world.skill.activate(); else showToast('Azure Tempest is the Male Warrior\'s skill'); return; }
       if (e.code === 'KeyT') { world.sky && world.sky.fastForward(true); if (!e.repeat) showToast('Time passes quickly…'); return; }
       if (e.code === 'KeyG' && !e.repeat) { const order = ['low', 'medium', 'high']; setQuality(order[(order.indexOf(quality) + 1) % 3]); return; }
       if (state.editing) return;
+      if (e.code === 'KeyM' && !e.repeat && sfx) { sfx.setMuted(!sfx.muted); showToast(sfx.muted ? 'Sound off (M)' : 'Sound on (M)'); return; }
       if (HERO_KEYS.has(e.code)) { state.idleT = 0; state.heroRig?.controller.cancelIdleFun(); }
       if (e.code === 'KeyH') { if (!e.repeat) { if (world.horse) world.horse.pressH(); else showToast('The war horse rides with the Male Warrior'); } return; }
       if (GAME_KEYS.has(e.code) && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) e.preventDefault();
@@ -472,7 +489,7 @@
         const k = state.keys, dir = (k.ArrowDown && !k.ArrowUp) ? 'down' : undefined;          // Down+attack = low slash (no up attack)
         if (e.code === 'Space' || e.code === 'KeyF') ctl.attack(dir);
         else if (e.code === 'ArrowDown') ctl.direction('down');
-        else if (e.code === 'KeyC' && state.grounded && ctl.dodge()) showToast('Dodge roll');
+        else if (e.code === 'KeyC' && state.grounded && ctl.dodge()) { showToast('Dodge roll'); playAt('roll'); }
         return;
       }
       if (e.code === 'Space' || e.code === 'KeyF') state.attackTimer = 0.95;
@@ -480,6 +497,7 @@
     const onKeyUp = e => { state.keys[e.code] = false; if (e.code === 'KeyT') world.sky && world.sky.fastForward(false); };
     const onBlur = () => { for (const k in state.keys) state.keys[k] = false; };
     const onPointerDown = e => {
+      sfx && sfx.unlock();
       if (state.editing) return;
       state.pointerDown = true; state.lastPointerX = e.clientX; state.lastPointerY = e.clientY;
       if (e.pointerType === 'mouse' && document.pointerLockElement !== canvas) { try { const p = canvas.requestPointerLock?.(); if (p && p.catch) p.catch(() => {}); } catch (_) {} }
@@ -512,14 +530,15 @@
       if (state.editing && world.editor) {                 // gameplay paused: hero idles, editor drives the camera
         state.heroRig?.controller.update(dt, { moving: false, running: false, airborne: false, speed: 0 }); world.skill && world.skill.update(dt); world.extras && world.extras.update(dt);
         world.editor.update(dt);
-      } else { updateMovement(dt); updateCamera(dt); updateRegion(dt); }
+      } else { updateMovement(dt); updateCamera(dt); updateRegion(dt); world.npcs && world.npcs.update(dt); }
       world.layer.update(dt, camera.position.x, camera.position.z);
       world.sky.update(dt, camera, state.editing && world.editor ? world.editor.cam.focus : player.position);   // shadows follow whatever we look at
       world.grass.update(camera, player.position);
       updateLamps(dt);
+      sfx && sfx.ambient(dt, { day: A.Mat.U.uDay.value, night: MU.uNight.value });
       if (world.clockEl) { const t = world.sky.clockText(); if (world.clockEl.textContent !== t) world.clockEl.textContent = t; }
     }
-    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get horse() { return world.horse; }, get extras() { return world.extras; }, get rig() { return state.heroRig || state.rig; },
+    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get horse() { return world.horse; }, get extras() { return world.extras; }, get npcs() { return world.npcs; }, get audio() { return sfx; }, get rig() { return state.heroRig || state.rig; },
       tick: dt => step(dt), render: () => renderFrame(), setHour: h => world.sky.setHour(h), setQuality: q => setQuality(q), get quality() { return quality; }, texturesReady,
       teleport(x, z, yaw = player.rotation.y) { player.position.set(x, groundAt(x, z, 999).h, z); player.rotation.y = yaw; state.camYaw = yaw; state.cameraVelocity.copy(player.position).add(new THREE.Vector3(-Math.sin(yaw) * 5, 3, -Math.cos(yaw) * 5)); state.cameraTarget.copy(player.position); state.region = null; state.regionTimer = 0; } };
     window.Phase1Debug = debug; window.KingdomDebug = debug;
@@ -532,8 +551,10 @@
     return {
       async start() {
         loading && loading.classList.remove('hidden'); setupLighting(); resize(); bindInput();
+        const hint = document.getElementById('keyHintLine'); if (hint) hint.style.display = 'none';      // no controls text over the 3D world
         await nextFrame(); buildWorld(); await nextFrame();
         await loadHero(); spawn(); updateCamera(); updateRegion(0);
+        if (A.createTownsfolk) { say('Waking the townsfolk…'); world.npcs = A.createTownsfolk({ THREE, scene, world, player, camera, root: canvas.parentElement }); }
         say('Painting stone, soil and bark…'); await texturesReady;
         step(0); renderFrame();                          // compile every shader before the loading screen lifts
         if (A.createEditor) world.editor = A.createEditor({ THREE, scene, camera, renderer, canvas, world, player, state, showToast, root: canvas.parentElement,
@@ -542,7 +563,7 @@
         loading && loading.classList.add('hidden'); showToast(world.fromSave ? 'Saved kingdom loaded' : 'Welcome to Aethelos'); tick();
         if (world.horse) setTimeout(() => running && world.horse.load().catch(e => console.warn('Horse:', e)), 2500);   // stream the horse in the background
       },
-      stop() { running = false; unbindInput(); world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.horse && world.horse.dispose(); world.extras && world.extras.dispose(); world.layer && world.layer.dispose();
+      stop() { running = false; unbindInput(); sfx && sfx.dispose(); world.npcs && world.npcs.dispose(); const hint = document.getElementById('keyHintLine'); if (hint) hint.style.display = ''; world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.horse && world.horse.dispose(); world.extras && world.extras.dispose(); world.layer && world.layer.dispose();
         world.grass && world.grass.dispose(); world.water && world.water.dispose(); world.post && world.post.dispose(); world.sky && world.sky.dispose(); world.clockEl && world.clockEl.remove(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
       toggleEditor() { world.editor && world.editor.toggle(); },
       resetCamera() { state.camYaw = player.rotation.y; state.camPitch = 0.30; state.camZoom = 1; showToast('Camera reset'); }

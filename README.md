@@ -72,8 +72,10 @@ New Game → Begin Adventure opens the Phase 1 3D world. There, the **Male Warri
 | ↓ + Space | crouching straight horizontal slash |
 | C | forward dodge roll |
 | V | **Azure Tempest** (special skill) |
-| H ×3 (within 3 s) | summon the war horse through a blue portal |
-| H | walk to the horse and mount it / dismount |
+| H ×3 (within 3 s) | summon the war horse through a blue portal; again to send it back through the portal |
+| H | walk to the horse (round the front) and mount it / dismount |
+| Z (on horseback) | the horse jumps |
+| M | sound on / off |
 
 With no fighting, the sword stays stored, and he walks and runs normally. After 5 s without attacking, the sword vanishes into the pocket dimension. The run is authored for the game speed of 5 m/s and plays 1:1. Swings light a blue aura with a glow, a trail and a blue light. The sword is drawn with the right hand out of a blue pocket-dimension portal that tears open at his left hip, and pushed back into it when it is put away (the blade is clipped by the portal, so it really comes out of the hole). After 30 s without any input he gets bored: a leather ball drops out of a small portal above him, he plays keepy-uppy and heads it back in, and a speech bubble shows what he says (any move ends it). The pipeline that authored and exported this model is in `tools/hero/` (see `tools/hero/README.md`); the extras live in `assets/world/hero-extras.js` and `assets/world/portal.js`.
 
@@ -81,9 +83,15 @@ With no fighting, the sword stays stored, and he walks and runs normally. After 
 
 The user's armored horse (`assets/models/horse-01.js` … `horse-04.js`, revision `HORSE_V1`), rigged without changing its design (spine, neck, head, five tail bones, shoulder blades and four full legs) and given a fitted war saddle with stirrups. Press H three times within 3 s: a blue portal tears open ahead and to the side, the horse gallops out, pulls up beside the hero and rears. Press H once and he walks to its left side, puts his left foot in the stirrup, steps up and swings over into the saddle. On horseback the arrow keys steer (camera-relative); it walks at 1.8 m/s and gallops at 15 m/s (3× the hero's 5 m/s run) while X or Shift is held. The rider's clips are phase-locked to the horse's walk and gallop. Press H again to slow down and dismount. You can't attack or use Azure Tempest while riding. The pipeline is in `tools/horse/` (see `tools/horse/README.md`); the runtime is `assets/world/horse.js`; `node tests/hero-horse.cjs` checks summoning, mounting, speeds, dismounting, the sword portal, the idle and the sonic boom.
 
+### Townsfolk and sound
+
+26 named townsfolk (`assets/world/npcs.js`) walk the streets of Aethelgard. Among them are bakers, guards, a herbalist, a weaver and a fisherman. They rest now and then, turn their heads to watch the hero, step aside or wait when he is in the way, and greet him when he comes close. Their names and jobs appear above them when he is near. Each one is a single procedural mesh of about 1.5k triangles with a 13-bone walk.
+
+All sound is synthesised live with Web Audio (`assets/world/audio.js`, no sound files): neighs, snorts, hooves on the beat of the gait (knocks on roads, thuds on grass), the saddle creak, sword swings, the blade drawn from and returned to the portal, portals opening and closing, the power-up and ignition, the blue fire crackle, sonic booms and impacts, footsteps, jumps, landings and rolls, the ball kicks, plus wind, birdsong by day and crickets at night. M mutes it.
+
 ### Azure Tempest (V)
 
-V plays a full power-up pose (the sword is summoned and planted, then thrust out at the burst), then he burns with dark-cored blue fire over his whole body and sword for 6 s. During that window every attack also throws a sonic boom: an upright crescent of blue fire over 4 m tall that flies dead straight along the line he faces, skimming the ground and throwing up dust, embers and a flame wake (the X finisher throws two, fanned slightly). Hold an arrow key while attacking to aim. If an enemy is in front (within 45 m and 40°), the boom locks on and flies straight into it. Booms burst on walls and buildings. The fire on his head is kept thin so his face stays visible. V can be used again 12 s after ignition (6 s active, then a 6 s cooldown, shown by the V icon). Only the Male Warrior has the skill. Booms report hits through `Aethelos.Combat` (`register({position, radius, onHit})`), ready for enemies. The code is in `assets/world/sonic-skill.js`, and `node tests/hero-skill.cjs` checks it.
+V plays a full power-up pose (the sword is summoned and planted, then thrust out at the burst), then he burns with dark-cored blue fire over his whole body and sword for 6 s. During that window every attack also throws a sonic boom: a crescent of blue fire over 4 m tall that flies dead straight along the line he faces. Combo hits 1 and 3 throw it tilted right, 2 and 4 tilted left, and the finisher throws both at once as an X. Each boom skims the ground, throwing up dust, embers and a flame wake. Hold an arrow key while attacking to aim. If an enemy is in front (within 45 m and 40°), the boom locks on and flies straight into it. Booms burst on walls and buildings. The blue fire is a thin glow over his whole body, so his face and armour stay visible. V can be used again 12 s after ignition (6 s active, then a 6 s cooldown, shown by the V icon). Only the Male Warrior has the skill. Booms report hits through `Aethelos.Combat` (`register({position, radius, onHit})`), ready for enemies. The code is in `assets/world/sonic-skill.js`, and `node tests/hero-skill.cjs` checks it.
 
 `node tests/hero-game.cjs` starts the game through `startGame()` and checks the warrior with real key events.
 
