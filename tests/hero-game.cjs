@@ -1,7 +1,7 @@
 // Browser check for the v4 sword warrior (Male Warrior) in the Phase 1 3D world, started through the real
 // startGame() flow. Steps the Phase 1 game loop at a fixed 30 Hz (deterministic, works on slow
 // software GPUs) and drives it with real keyboard events. Verifies: model revision, textures, all clips, sword stored
-// while idle/walking/running, Space summons the sword, the 5-hit combo chains, Up+Space (and Space then Up) = rising
+// while idle/walking/running, Space summons the sword, the 5-hit combo chains, Up+Space stays a normal attack (no up attack); rising
 // stab, Down+Space = low slash, combat walk / battle run, auto-dismiss after 5 s, C dodge roll (distance + sword kept),
 // Z jump (Space no longer jumps), X run at 1:1 clip speed. Screenshots go to QA_DIR (default /tmp/hero-qa).
 // Usage: python -m http.server 8000 --bind 127.0.0.1 &  node tests/hero-game.cjs
@@ -99,9 +99,9 @@ const OUT = process.env.QA_DIR || '/tmp/hero-qa';
   p = await run(4.5); expect(p.mode === 'free' && p.swordOut && p.combo === -1, 'full 5-hit combo finished, sword still out', p);
   p = await run(0.3, ['ArrowDown'], ['Space']); expect(p.log.some(l => l.includes(':down')), 'Down + Space = low horizontal slash', p); await shot('04-low-slash');
   p = await run(1.6); expect(p.mode === 'free', 'low slash finishes', p);
-  p = await run(0.35, ['ArrowUp'], ['Space']); expect(p.log.some(l => l.includes(':up')), 'Up + Space = rising vertical stab', p); await shot('05-up-stab');
-  p = await run(1.6); expect(p.mode === 'free', 'up stab finishes', p);
-  p = await run(0.04, [], ['Space']); p = await run(0.3, [], ['ArrowUp']); expect(p.log.some(l => l.includes(':up')), 'Space then Up = rising stab', p);
+  p = await run(0.35, ['ArrowUp'], ['Space']); expect(!p.log.some(l => l.includes(':up')) && p.log.some(l => l.includes(':combo')), 'Up + Space is a normal attack (no up attack)', p); await shot('05-up-stab');
+  p = await run(1.6); expect(p.mode === 'free', 'attack finishes', p);
+  p = await run(0.04, [], ['Space']); p = await run(0.3, [], ['ArrowUp']); expect(!p.log.some(l => l.includes(':up')), 'Space then Up stays a normal attack', p);
   p = await run(1.6);
   p = await run(1.0, ['ArrowUp']); expect(p.swordOut && p.swordScale > .9 && p.moved > .6, 'arrows walk (combat walk with sword)', p); await shot('06-combat-walk');
   p = await run(1.0, ['ArrowUp', 'KeyX']); expect(p.swordOut && p.acts.some(a => a.startsWith('BattleRun') && Math.abs(parseFloat(a.split('@')[1]) - 1) < .05), 'X = battle run at 1:1 clip speed', p); expect(p.moved > 3, 'battle run covers ground', p); await shot('07-battle-run');

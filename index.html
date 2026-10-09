@@ -1934,7 +1934,7 @@ drawWeapon=function(){};drawStage2Weapon=function(){};
 <script src="assets/world/terrain.js?v=kingdom-2"></script>
 <script src="assets/world/models.js?v=kingdom-2"></script>
 <script src="assets/world/kingdom-objects.js?v=kingdom-2"></script>
-<script src="assets/world/world.js?v=kingdom-3"></script>
+<script src="assets/world/world.js?v=kingdom-4"></script>
 <script src="assets/world/editor.js?v=kingdom-2"></script>
 <script>
 let WARRIOR_MODEL='',FEMALE_WARRIOR_MODEL='';
@@ -2323,8 +2323,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
         </div>
         <div id="phase1Toast">Ready</div>
         <div id="phase1Banner" aria-live="polite"><b></b><span></span></div>
-        <div class="phase1-center">Arrows move | WASD / mouse camera | X run | Z jump | Space attack (↑+Space stab up, ↓+Space low slash) | C dodge | E editor</div>
-        <div class="phase1-controls phase1-panel"><b>Controls:</b> Arrow keys move relative to the camera. W/A/S/D control the camera: A and D swing it left and right, W moves it in closer and straight ahead, S pulls it back. Hold X (or Shift) to run. Z jumps. Space attacks: the first press summons the sword from the pocket dimension and presses chain a 5-hit combo; ↑ + Space (or Space then ↑) is a rising vertical stab and ↓ + Space a low horizontal slash. C is a forward dodge roll. The sword vanishes after 5 s without attacking. Move the mouse to turn the camera (click the world once to lock the mouse for unlimited turning, Esc releases); mouse wheel zooms; on touch, drag.</div>
+        <div class="phase1-center">Arrows move | WASD / mouse camera | X run | Z jump | Space attack (↓+Space low slash) | C dodge | E editor</div>
+        <div class="phase1-controls phase1-panel"><b>Controls:</b> Arrow keys move relative to the camera. W/A/S/D control the camera: A and D swing it left and right, W moves it in closer and straight ahead, S pulls it back. Hold X (or Shift) to run. Z jumps. Space attacks: the first press summons the sword from the pocket dimension and presses chain a 5-hit combo; ↓ + Space is a low horizontal slash. C is a forward dodge roll. The sword vanishes after 5 s without attacking. Move the mouse to turn the camera (click the world once to lock the mouse for unlimited turning, Esc releases); mouse wheel zooms; on touch, drag.</div>
         <div class="phase1-actions phase1-panel">
           <button type="button" id="phase1BackToMenu">Main Menu</button>
           <button type="button" id="phase1ResetCamera">Reset Camera</button>
@@ -2756,9 +2756,8 @@ function createMaleWarriorAsset(THREE,encoded,options={}){return createWarriorAs
       const ctl = state.heroRig?.controller;
       if (ctl) {
         const k = state.keys;
-        const dir = (k.ArrowUp && !k.ArrowDown) ? 'up' : (k.ArrowDown && !k.ArrowUp) ? 'down' : undefined;
+        const dir = (k.ArrowDown && !k.ArrowUp) ? 'down' : undefined;
         if (event.code === 'Space' || event.code === 'KeyF') ctl.attack(dir);
-        else if (event.code === 'ArrowUp') ctl.direction('up');
         else if (event.code === 'ArrowDown') ctl.direction('down');
         else if (event.code === 'KeyC' && state.grounded && ctl.dodge()) showToast('Dodge roll');
         return;

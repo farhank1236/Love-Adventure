@@ -369,9 +369,9 @@
       state.keys[e.code] = true; if (e.repeat) return;
       const ctl = state.heroRig?.controller;
       if (ctl) {
-        const k = state.keys, dir = (k.ArrowUp && !k.ArrowDown) ? 'up' : (k.ArrowDown && !k.ArrowUp) ? 'down' : undefined;
+        const k = state.keys, dir = (k.ArrowDown && !k.ArrowUp) ? 'down' : undefined;          // Down+attack = low slash (no up attack)
         if (e.code === 'Space' || e.code === 'KeyF') ctl.attack(dir);
-        else if (e.code === 'ArrowUp') ctl.direction('up'); else if (e.code === 'ArrowDown') ctl.direction('down');
+        else if (e.code === 'ArrowDown') ctl.direction('down');
         else if (e.code === 'KeyC' && state.grounded && ctl.dodge()) showToast('Dodge roll');
         return;
       }

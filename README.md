@@ -50,7 +50,6 @@ New Game → Begin Adventure opens the Phase 1 3D world. There, the **Male Warri
 | X (or Shift) | run |
 | Z | jump |
 | Space (or F) | attack: the first press summons the sword from the pocket dimension, and presses chain a 5-hit combo |
-| ↑ + Space, or Space then ↑ | rising vertical stab |
 | ↓ + Space | crouching straight horizontal slash |
 | C | forward dodge roll |
 
