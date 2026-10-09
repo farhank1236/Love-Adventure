@@ -6,7 +6,7 @@
      Jump JumpStart JumpAir JumpLand
    Sword visibility, blue aura, ghost trail and the pocket-dimension portal are animated joints in the clips. */
 (() => {
-  const HERO_PARTS = 8, CACHE = 'hero-v4-1';
+  const HERO_PARTS = 8, CACHE = 'hero-v4-2';
   const parts = () => (window.AethelosModelParts ||= {}).hero ||= [];
 
   function loadHeroBytes() {
@@ -185,24 +185,46 @@
     const playFull = (name, o) => { play('lower', name, o); return play('upper', name, o); };
     const S = { swordOut: false, mode: 'free', modeAction: null, modeUpperOnly: false, timer: 0, combo: -1, queued: 0, queuedDir: null,
       lastAttackEnd: -9, now: 0, airborne: false, wasAirborne: false, landing: 0, pendingAttack: false, pendingDir: null,
-      attackKind: '', attackStart: -9, dodgeT: 0, dodgeClip: '' };
+      attackKind: '', attackStart: -9, dodgeT: 0, dodgeClip: '', hitIdx: 0, attackClip: '', pendingPower: false, burstFired: false, holdSword: false };
+    const listeners = [], emit = (type, data = {}) => { for (const f of listeners) try { f(type, data); } catch (e) { console.error(e); } };
     const SWORD_TIMEOUT = 5, COMBO_GAP = 1.0, ATTACK_SPEED = 1.5, SUMMON_SPEED = 1.9, DISMISS_SPEED = 1.6, DIR_WINDOW = .16, DODGE_SPEED = 1.0;
     const DIR_CLIP = { up: 'AttackUp', down: 'AttackLow' };
     const curve = (X.dodge && X.dodge.curve) || [0];
     function startAttack(i) {
       S.mode = 'attack'; S.combo = i; S.timer = SWORD_TIMEOUT; S.attackKind = 'combo'; S.attackStart = S.now;
       S.modeAction = playFull('Attack' + (i + 1), { once: true, timeScale: ATTACK_SPEED, fade: i === 0 ? .12 : .06, restart: true });
-      S.modeUpperOnly = false;
+      S.modeUpperOnly = false; S.hitIdx = 0; S.attackClip = 'Attack' + (i + 1); emit('attackStart', { kind: 'combo', index: i, clip: S.attackClip });
     }
     function startDirAttack(dir) {
       S.mode = 'attack'; S.combo = -1; S.queued = 0; S.queuedDir = null; S.timer = SWORD_TIMEOUT; S.attackKind = dir; S.attackStart = S.now;
       S.modeAction = playFull(DIR_CLIP[dir], { once: true, timeScale: ATTACK_SPEED, fade: .1, restart: true });
-      S.modeUpperOnly = false;
+      S.modeUpperOnly = false; S.hitIdx = 0; S.attackClip = DIR_CLIP[dir]; emit('attackStart', { kind: dir, index: -1, clip: S.attackClip });
+    }
+    /* V skill: the power-up pose (summons the sword first if it is stored). 'powerBurst' fires at the pose's burst frame. */
+    function startPower() {
+      S.mode = 'power'; S.queued = 0; S.queuedDir = null; S.combo = -1; S.timer = SWORD_TIMEOUT; S.modeUpperOnly = false; S.burstFired = false; S.pendingPower = false;
+      S.modeAction = playFull('PowerUp', { once: true, timeScale: 1, fade: .14, restart: true }); emit('powerStart');
+    }
+    function power() {
+      if (!rig.clips.PowerUp || S.airborne || S.mode === 'dodge' || S.mode === 'power' || S.mode === 'attack') return false;
+      S.pendingAttack = false; S.pendingDir = null;
+      if (S.mode === 'summon' && !S.modeUpperOnly) { S.pendingPower = true; return true; }
+      if (!S.swordOut || S.mode === 'dismiss' || S.mode === 'summon') {
+        S.mode = 'summon'; S.pendingPower = true; S.modeUpperOnly = false;
+        S.modeAction = playFull('Summon', { once: true, timeScale: SUMMON_SPEED, restart: true }); return true;
+      }
+      startPower(); return true;
     }
     /* attack(dir): dir = 'up' | 'down' | undefined.  Up+attack = rising vertical stab, Down+attack = low horizontal slash. */
     function attack(dir) {
       S.timer = SWORD_TIMEOUT;
       if (S.mode === 'dodge') return;
+      if (S.mode === 'power') {                                     // after the burst an attack cuts the settle-back short; earlier it is queued
+        const burstT = (X.power && X.power.burst) || .67;
+        if (S.burstFired && S.modeAction && S.modeAction.time > burstT + .12) { emit('powerEnd'); S.mode = 'free'; startAttack(0); }
+        else S.pendingAttack = true;
+        return;
+      }
       if (S.mode === 'summon') { S.pendingAttack = true; S.pendingDir = dir || S.pendingDir; return; }
       if (S.mode === 'dismiss' || !S.swordOut) {
         S.mode = 'summon'; S.pendingAttack = true; S.pendingDir = dir || null; S.modeUpperOnly = S.moving || S.airborne;
@@ -224,7 +246,7 @@
       if (S.mode === 'attack' && S.attackKind === 'combo' && S.now - S.attackStart < DIR_WINDOW) startDirAttack(dir);
     }
     function dodge() {
-      if (S.airborne || S.mode === 'dodge' || S.mode === 'summon' && !S.modeUpperOnly || S.mode === 'dismiss' && !S.modeUpperOnly) return false;
+      if (S.airborne || S.mode === 'dodge' || S.mode === 'power' || S.mode === 'summon' && !S.modeUpperOnly || S.mode === 'dismiss' && !S.modeUpperOnly) return false;
       if (S.mode === 'summon' || S.mode === 'dismiss') { S.swordOut = S.mode === 'summon' ? S.swordOut : false; }
       S.pendingAttack = false; S.pendingDir = null; S.queued = 0; S.queuedDir = null; if (S.mode === 'attack') { S.combo = -1; S.lastAttackEnd = S.now; }
       S.mode = 'dodge'; S.modeUpperOnly = false; S.dodgeT = 0; S.dodgeClip = S.swordOut ? 'DodgeSword' : 'Dodge';
@@ -262,8 +284,11 @@
         const a = S.modeAction, done = a.time >= a.getClip().duration - 1e-3 || !a.isRunning();
         if (S.mode === 'summon') {
           if (done) { S.swordOut = true; S.mode = 'free';
-            if (S.pendingAttack) { S.pendingAttack = false; const d = S.pendingDir; S.pendingDir = null; d ? startDirAttack(d) : startAttack(0); } }
+            if (S.pendingPower) startPower();
+            else if (S.pendingAttack) { S.pendingAttack = false; const d = S.pendingDir; S.pendingDir = null; d ? startDirAttack(d) : startAttack(0); } }
         } else if (S.mode === 'attack') {
+          const hits = (X.hits && X.hits[S.attackClip]) || [];
+          while (S.hitIdx < hits.length && (a.time >= hits[S.hitIdx] || done)) emit('hit', { clip: S.attackClip, kind: S.attackKind, index: S.combo, hit: S.hitIdx++, of: hits.length });
           if (done) {
             if (S.queuedDir) { const d = S.queuedDir; S.queuedDir = null; startDirAttack(d); }
             else if (S.queued > 0 && S.combo >= 0) { S.queued--; startAttack(S.combo + 1); }
@@ -273,10 +298,13 @@
           if (done) { S.swordOut = false; S.mode = 'free'; }
         } else if (S.mode === 'dodge') {
           if (done) { S.mode = 'free'; }
+        } else if (S.mode === 'power') {
+          if (!S.burstFired && a.time >= ((X.power && X.power.burst) || .67)) { S.burstFired = true; emit('powerBurst'); }
+          if (done) { S.mode = 'free'; S.timer = SWORD_TIMEOUT; emit('powerEnd'); if (S.pendingAttack) { S.pendingAttack = false; startAttack(0); } }
         }
       }
       if (S.mode === 'free' && S.swordOut) {
-        S.timer -= dt;
+        S.timer = S.holdSword ? SWORD_TIMEOUT : S.timer - dt;                 // an active skill keeps the sword out
         if (S.timer <= 0) {
           S.mode = 'dismiss'; S.modeUpperOnly = moving || airborne;
           S.modeAction = S.modeUpperOnly ? play('upper', 'Dismiss', { once: true, timeScale: DISMISS_SPEED, restart: true })
@@ -288,9 +316,10 @@
     }
     const speedFor = (moving, running) => !moving ? 0 : running ? X.speeds.Run : (S.swordOut ? 1.25 : 1.7);
     playFull('Idle', { fade: 0 });
-    return { mixer, update, attack, direction, dodge, dodgeSpeed, speedFor, state: S,
+    return { mixer, update, attack, direction, dodge, dodgeSpeed, speedFor, power, state: S, on: fn => { listeners.push(fn); return () => listeners.splice(listeners.indexOf(fn), 1); },
              get attacking() { return S.mode === 'attack'; }, get dodging() { return S.mode === 'dodge'; },
-             get busy() { return S.mode === 'attack' || S.mode === 'dodge' || (S.mode !== 'free' && !S.modeUpperOnly); } };
+             get powering() { return S.mode === 'power' || (S.mode === 'summon' && S.pendingPower); },
+             get busy() { return S.mode === 'attack' || S.mode === 'dodge' || S.mode === 'power' || (S.mode !== 'free' && !S.modeUpperOnly); } };
   }
 
   async function loadHero(THREE) {

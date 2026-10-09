@@ -218,6 +218,7 @@
         const rig = await HeroRig.loadHero(THREE);
         rig.root.traverse(o => { if (o.isMesh) o.castShadow = !o.material.transparent && o.name !== 'HeroSword'; });   // the 500k-tri sword skips the shadow pass
         state.heroRig = rig; heroMount.add(rig.root);
+        if (A.createSonicSkill) { world.skill = A.createSonicSkill({ THREE, scene, rig, player, world, camera, root: canvas.parentElement, showToast }); world.skill.setAim(() => inputDir()); }
       } else {
         const rig = await HeroSystem.createRig(THREE, hero); await rig.textureReady;
         rig.root.scale.setScalar(1.75); rig.root.rotation.y = Math.PI; rig.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
@@ -275,7 +276,7 @@
     function turnTo(dir, rate) { const t = Math.atan2(dir.x, dir.z); player.rotation.y += Math.atan2(Math.sin(t - player.rotation.y), Math.cos(t - player.rotation.y)) * rate; }
 
     function updateWarriorV4(dt) {
-      const k = state.keys, ctl = state.heroRig.controller, dir = inputDir(), moving = !!dir, running = !!(k.KeyX || k.ShiftLeft || k.ShiftRight);
+      const k = state.keys, ctl = state.heroRig.controller, dir = ctl.powering ? null : inputDir(), moving = !!dir, running = !!(k.KeyX || k.ShiftLeft || k.ShiftRight);   // the power-up pose roots him in place
       if (ctl.dodging) { const v = ctl.dodgeSpeed(); state.velocity.set(Math.sin(player.rotation.y) * v, 0, Math.cos(player.rotation.y) * v); }
       else if (moving) {
         const target = ctl.speedFor(true, running) * (ctl.attacking ? 0.15 : 1);
@@ -291,6 +292,7 @@
       state.currentSpeed = Math.min(Math.hypot(state.velocity.x, state.velocity.z), moved + 0.05);
       if (moving && moved < 0.3 && !ctl.dodging) { state.velocity.x *= 0.5; state.velocity.z *= 0.5; }   // pressing into a wall: stop the run cycle
       ctl.update(dt, { moving: moving && moved > 0.25, running, airborne: !state.grounded, speed: state.currentSpeed });
+      world.skill && world.skill.update(dt);                 // after the mixer: the skill overrides the sword aura
       const S = ctl.state;
       stateLabel && (stateLabel.textContent = S.mode === 'dodge' ? 'Dodge roll' : S.mode === 'attack' ? (S.attackKind === 'up' ? 'Rising stab' : S.attackKind === 'down' ? 'Low slash' : 'Attack ' + (S.combo + 1))
         : S.mode === 'summon' ? 'Summoning sword' : S.mode === 'dismiss' ? 'Sword vanishing' : !state.grounded ? 'Jumping' : moving ? (running ? 'Running' : 'Walking') : S.swordOut ? 'Guard' : 'Idle');
@@ -332,6 +334,8 @@
       const desired = player.position.clone().add(new THREE.Vector3(-Math.sin(state.camYaw) * horizontal, Math.sin(state.camPitch) * state.camDistance + 0.9, -Math.cos(state.camYaw) * horizontal));
       const floor = world.terrain.heightAt(desired.x, desired.z) + 0.6; if (desired.y < floor) desired.y = floor;
       state.cameraVelocity.lerp(desired, 0.14); camera.position.copy(state.cameraVelocity);
+      const shake = world.skill ? world.skill.shake : 0;
+      if (shake > 0.002) camera.position.add(new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).multiplyScalar(shake * 0.35));
       state.cameraTarget.lerp(player.position.clone().add(new THREE.Vector3(0, state.heroRig ? 1.45 : 1.3, 0)), 0.2);
       camera.lookAt(state.cameraTarget);
       const s = world.sun, d = world.sunDir;
@@ -364,6 +368,7 @@
     const onKeyDown = e => {
       if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return;           // typing in the editor panel
       if (e.code === 'KeyE' && !e.repeat && world.editor) { world.editor.toggle(); return; }
+      if (e.code === 'KeyV' && !e.repeat && !state.editing) { if (world.skill) world.skill.activate(); else showToast('Azure Tempest is the Male Warrior\'s skill'); return; }
       if (state.editing) return;
       if (GAME_KEYS.has(e.code) && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) e.preventDefault();
       state.keys[e.code] = true; if (e.repeat) return;
@@ -410,12 +415,12 @@
     function step(dt) {
       timeU.value += dt;
       if (state.editing && world.editor) {                 // gameplay paused: hero idles, editor drives the camera
-        state.heroRig?.controller.update(dt, { moving: false, running: false, airborne: false, speed: 0 });
+        state.heroRig?.controller.update(dt, { moving: false, running: false, airborne: false, speed: 0 }); world.skill && world.skill.update(dt);
         world.editor.update(dt);
       } else { updateMovement(dt); updateCamera(dt); updateRegion(dt); }
       world.layer.update(dt, player.position.x, player.position.z);
     }
-    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get rig() { return state.heroRig || state.rig; },
+    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get rig() { return state.heroRig || state.rig; },
       tick: dt => step(dt), render: () => renderer.render(scene, camera),
       teleport(x, z, yaw = player.rotation.y) { player.position.set(x, groundAt(x, z, 999).h, z); player.rotation.y = yaw; state.camYaw = yaw; state.cameraVelocity.copy(player.position).add(new THREE.Vector3(-Math.sin(yaw) * 5, 3, -Math.cos(yaw) * 5)); state.cameraTarget.copy(player.position); state.region = null; state.regionTimer = 0; } };
     window.Phase1Debug = debug; window.KingdomDebug = debug;
@@ -435,7 +440,7 @@
           resumeCamera: () => { state.cameraVelocity.copy(camera.position); updateCamera(); } });
         loading && loading.classList.add('hidden'); showToast(world.fromSave ? 'Saved kingdom loaded' : 'Welcome to Aethelos'); tick();
       },
-      stop() { running = false; unbindInput(); world.editor && world.editor.dispose(); world.layer && world.layer.dispose(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
+      stop() { running = false; unbindInput(); world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.layer && world.layer.dispose(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
       toggleEditor() { world.editor && world.editor.toggle(); },
       resetCamera() { state.camYaw = player.rotation.y; state.camPitch = 0.30; state.camZoom = 1; showToast('Camera reset'); }
     };

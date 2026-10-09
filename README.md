@@ -52,8 +52,13 @@ New Game → Begin Adventure opens the Phase 1 3D world. There, the **Male Warri
 | Space (or F) | attack: the first press summons the sword from the pocket dimension, and presses chain a 5-hit combo |
 | ↓ + Space | crouching straight horizontal slash |
 | C | forward dodge roll |
+| V | **Azure Tempest** (special skill) |
 
-With no fighting, the sword stays stored, and he walks and runs normally. After 5 s without attacking, the sword vanishes into the pocket dimension. The run is authored for the game speed of 5 m/s and plays 1:1. Swings light a blue aura with a glow, a trail and a blue light. The pipeline that authored and exported this model is in `tools/hero/` (see `tools/hero/README.md`). `node tests/hero-game.cjs` starts the game through `startGame()` and checks the warrior with real key events.
+With no fighting, the sword stays stored, and he walks and runs normally. After 5 s without attacking, the sword vanishes into the pocket dimension. The run is authored for the game speed of 5 m/s and plays 1:1. Swings light a blue aura with a glow, a trail and a blue light. The pipeline that authored and exported this model is in `tools/hero/` (see `tools/hero/README.md`). ### Azure Tempest (V)
+
+V plays a full power-up pose (the sword is summoned and planted, then thrust out at the burst), then he burns with dark-cored blue fire over his whole body and sword for 6 s. During that window every attack also throws a blue-fire sonic boom (the X finisher throws two). Hold an arrow key while attacking to aim the boom in that direction. Booms burst on walls and buildings. V can be used again 12 s after ignition (6 s active, then a 6 s cooldown, shown by the V icon). Only the Male Warrior has the skill. Booms report hits through `Aethelos.Combat` (`register({position, radius, onHit})`), ready for enemies. The code is in `assets/world/sonic-skill.js`, and `node tests/hero-skill.cjs` checks it.
+
+`node tests/hero-game.cjs` starts the game through `startGame()` and checks the warrior with real key events.
 
 ## Stages and V14 warriors
 

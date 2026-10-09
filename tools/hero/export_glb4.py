@@ -28,7 +28,7 @@ RENAME = {'Hero_Idle': 'Idle', 'Hero_Walk': 'Walk', 'Hero_Run': 'Run', 'Hero_Swo
           'Hero_Sword_Dismiss': 'Dismiss', 'Hero_Attack1': 'Attack1', 'Hero_Attack2': 'Attack2', 'Hero_Attack3': 'Attack3',
           'Hero_Attack4': 'Attack4', 'Hero_Attack5': 'Attack5', 'Hero_Attack_Combo': 'Combo', 'Hero_Jump': 'Jump',
           'Hero_Jump_Start': 'JumpStart', 'Hero_Jump_Air': 'JumpAir', 'Hero_Jump_Land': 'JumpLand',
-          'Hero_Attack_Low': 'AttackLow', 'Hero_Attack_Up': 'AttackUp', 'Hero_Dodge': 'Dodge', 'Hero_Dodge_Sword': 'DodgeSword'}
+          'Hero_Attack_Low': 'AttackLow', 'Hero_Attack_Up': 'AttackUp', 'Hero_Dodge': 'Dodge', 'Hero_Dodge_Sword': 'DodgeSword', 'Hero_Power_Up': 'PowerUp'}
 LOOPS = {'Idle', 'Walk', 'Run', 'SwordIdle', 'CombatWalk', 'BattleRun', 'JumpAir'}
 
 # ------------------------------------------------------------------ joints
@@ -322,7 +322,7 @@ def build(out_path, jpeg_q=86, tex_size=4096, sword_tex=2048):
                 scenes=[dict(nodes=[0, body_node])], nodes=nodes, meshes=meshes, materials=materials, textures=textures,
                 images=images, samplers=[dict(magFilter=9729, minFilter=9987)], skins=[skin], animations=anims,
                 accessors=g.acc, bufferViews=g.views, buffers=[dict(byteLength=len(g.bin))],
-                extras=dict(revision='HERO_V4', fps=30, clips=clipinfo, dodge=dict(curve=META['dodge_curve']),
+                extras=dict(revision='HERO_V4', build='v4.2-power', fps=30, clips=clipinfo, dodge=dict(curve=META['dodge_curve']), power=dict(burst=META.get('power_burst', 20) / 30.0),
                             hits={RENAME[k]: [h / 30.0 for h in v] for k, v in META['hits'].items()},
                             comboBounds=[b / 30.0 for b in META['bounds']],
                             speeds=dict(Walk=META['speeds']['walk'], Run=META['speeds']['run'], CombatWalk=META['speeds']['combat_walk'],
