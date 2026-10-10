@@ -229,6 +229,9 @@
       say('Raising the city, the palace and the noble houses…');
       const saved = MapStore.load();
       world.objects = saved ? saved.objects : A.KingdomObjects.generate(terrain);
+      // the Earth Dragon's clearing (Heart of the Grove): no trees, bushes or rocks inside it, even in older saved maps
+      if (A.DRAGON_ARENA) { const G = A.DRAGON_ARENA, wild = /^(tree_|bush|rock|log|boulder|cliff_rock)/;
+        world.objects = world.objects.filter(o => !(wild.test(o.type) && Math.hypot(o.position.x - G.x, o.position.z - G.z) < G.r + 7)); }
       world.fromSave = !!saved;
       world.layer = new ObjectLayer(THREE, scene, world.objects);
       world.collide = new CollisionWorld(world.objects);
@@ -261,7 +264,7 @@
           else if (type === 'powerBurst') playAt('ignite');
           else if (type === 'mountStart') playAt('saddle');
           else if (type === 'dismountEnd') playAt('land', null, { arg: 0.7 });
-          else if (type === 'hit') world.birds && world.birds.swordHit(d);          // sword hit frames cut down red birds
+          else if (type === 'hit') { world.birds && world.birds.swordHit(d); world.boss && world.boss.swordHit(d); }   // sword hit frames: red birds, the dragon
         });
         // the sword aura's own light is replaced by a pooled one that follows the blade while it glows
         const auraL = rig.fxMeshes.AuraLight; if (auraL && auraL.parent) { auraL.parent.remove(auraL); world.auraLight = { src: auraL, mesh: rig.fxMeshes.SwordAuraGlow, pooled: null }; }
@@ -429,7 +432,8 @@
       }
       const fast = state.currentSpeed > (state.heroRig ? 4.2 : 7), riding = !!(world.horse && world.horse.riding);
       const want = riding ? (state.currentSpeed > 6 ? 10.5 : 8.6) : fast ? 6.8 : 5.8;
-      state.camDistance += (want * state.camZoom - state.camDistance) * 0.08;
+      const skyBoss = world.boss && world.boss.fighting && world.boss.flying ? 1 : 0;     // the dragon in the air: pull back and look up
+      state.camDistance += ((want + skyBoss * 4) * state.camZoom - state.camDistance) * 0.08;
       const horizontal = Math.cos(state.camPitch) * state.camDistance;
       const desired = player.position.clone().add(new THREE.Vector3(-Math.sin(state.camYaw) * horizontal, Math.sin(state.camPitch) * state.camDistance + 0.9, -Math.cos(state.camYaw) * horizontal));
       const floor = world.terrain.heightAt(desired.x, desired.z) + 0.6; if (desired.y < floor) desired.y = floor;
@@ -437,7 +441,7 @@
       state.hurtShake = Math.max(0, (state.hurtShake || 0) - dt * 2.2);
       const shake = Math.max(world.skill ? world.skill.shake : 0, state.hurtShake);
       if (shake > 0.002) camera.position.add(new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).multiplyScalar(shake * 0.35));
-      state.cameraTarget.lerp(player.position.clone().add(new THREE.Vector3(0, riding ? 2.45 : state.heroRig ? 1.45 : 1.3, 0)), 0.2);
+      state.cameraTarget.lerp(player.position.clone().add(new THREE.Vector3(0, (riding ? 2.45 : state.heroRig ? 1.45 : 1.3) + skyBoss * 3.2, 0)), 0.2);
       camera.lookAt(state.cameraTarget);
     }
     // ------------------------------------------------ location banner
@@ -453,7 +457,7 @@
       const g = regionAt(player.position.x, player.position.z);
       if (!state.region || g.id !== state.region.id) {
         const first = !state.region; state.region = g;
-        if (banner && (first || g.id !== 'river')) {
+        if (banner && (first || g.id !== 'river') && !(world.boss && world.boss.fighting)) {      // no place names over a boss fight
           banner.querySelector('b').textContent = g.name; banner.querySelector('span').textContent = g.sub || '';
           banner.classList.remove('show'); void banner.offsetWidth; banner.classList.add('show');
           clearTimeout(updateRegion.t); updateRegion.t = setTimeout(() => banner.classList.remove('show'), 3600);
@@ -497,12 +501,17 @@
         else if (e.code === 'KeyC' && state.grounded && ctl.dodge()) { showToast('Dodge roll'); playAt('roll'); }
         return;
       }
-      if (e.code === 'Space' || e.code === 'KeyF') { faceEnemy(); state.attackTimer = 0.95; setTimeout(() => world.birds && world.birds.swordHit({ kind: 'combo' }), 280); }
+      if (e.code === 'Space' || e.code === 'KeyF') { faceEnemy(); state.attackTimer = 0.95; setTimeout(() => { world.birds && world.birds.swordHit({ kind: 'combo' }); world.boss && world.boss.swordHit({ kind: 'combo' }); }, 280); }
     };
     // attacks turn him toward the nearest enemy in reach (a diving bird first), and keep tracking it through the swing
     function faceEnemy() {
       if (!world.birds || (world.horse && world.horse.riding)) return;
-      const b = world.birds.aimTarget(player.position, player.rotation.y); if (!b) { state.faceT = null; return; }
+      let b = world.birds.aimTarget(player.position, player.rotation.y);
+      const bp = world.boss && world.boss.aimPoint(), p = player.position;
+      if (bp && Math.hypot(bp.x - p.x, bp.z - p.z) < 11) {                 // the dragon, unless a bird is diving at him or is much closer
+        const dB = b ? Math.hypot(b.pos.x - p.x, b.pos.z - p.z) : Infinity, dD = Math.hypot(bp.x - p.x, bp.z - p.z) - 2.5;
+        if (!b || (b.state !== 'dash' && dB > dD - 1)) b = { pos: bp, alive: true, state: 'boss' }; }
+      if (!b) { state.faceT = null; return; }
       player.rotation.y = Math.atan2(b.pos.x - player.position.x, b.pos.z - player.position.z); state.faceT = { b, t: 0.6 };
     }
     const onKeyUp = e => { state.keys[e.code] = false; if (e.code === 'KeyT') world.sky && world.sky.fastForward(false); };
@@ -551,15 +560,17 @@
     }
 
     // ------------------------------------------------ damage (red birds) and defeat
-    function heroHit(frac, dir, at) {
+    function heroHit(frac, dir, at, knock = 7, o = {}) {
       if (!world.health || world.health.dead) return;
-      world.health.damage(frac, { at });
-      state.hurtShake = 0.7; state.idleT = 0; state.heroRig && state.heroRig.controller.cancelIdleFun && state.heroRig.controller.cancelIdleFun();
-      if (!(world.horse && world.horse.riding) && dir) { state.velocity.x += dir.x * 7; state.velocity.z += dir.z * 7; }
-      if (!state.birdTip && !world.health.dead) { state.birdTip = true; setTimeout(() => showToast(world.touch && world.touch.enabled ? 'Tap Roll as a red bird dives: if it misses, it crashes' : 'Roll (C) as a red bird dives: if it misses, it crashes'), 900); }
+      world.health.damage(frac, { at, quiet: o.dot });
+      if (o.dot) return;                                   // damage over time (spore clouds): no shove
+      state.hurtShake = Math.max(state.hurtShake || 0, 0.4 + knock * 0.04);
+      if (o.launch && !(world.horse && world.horse.riding)) { state.jumpVelocity = o.launch; state.grounded = false; } state.idleT = 0; state.heroRig && state.heroRig.controller.cancelIdleFun && state.heroRig.controller.cancelIdleFun();
+      if (!(world.horse && world.horse.riding) && dir) { state.velocity.x += dir.x * knock; state.velocity.z += dir.z * knock; }
+      if (!state.birdTip && !o.boss && !world.health.dead) { state.birdTip = true; setTimeout(() => showToast(world.touch && world.touch.enabled ? 'Tap Roll as a red bird dives: if it misses, it crashes' : 'Roll (C) as a red bird dives: if it misses, it crashes'), 900); }
     }
     function heroDefeated() {
-      world.birds && world.birds.resetHunts();
+      world.birds && world.birds.resetHunts(); world.boss && world.boss.onHeroDefeated();
       showToast('You were defeated…');
       let fade = document.getElementById('heroFade');
       if (!fade) { fade = document.createElement('div'); fade.id = 'heroFade'; Object.assign(fade.style, { position: 'absolute', inset: '0', background: '#000', opacity: '0', transition: 'opacity .9s', pointerEvents: 'none', zIndex: '45' }); canvas.parentElement.appendChild(fade); }
@@ -578,7 +589,7 @@
       if (state.editing && world.editor) {                 // gameplay paused: hero idles, editor drives the camera
         state.heroRig?.controller.update(dt, { moving: false, running: false, airborne: false, speed: 0 }); world.skill && world.skill.update(dt); world.extras && world.extras.update(dt);
         world.editor.update(dt);
-      } else { updateMovement(dt); updateCamera(dt); updateRegion(dt); world.npcs && world.npcs.update(dt); world.birds && world.birds.update(dt); world.health && world.health.update(dt); }
+      } else { updateMovement(dt); updateCamera(dt); updateRegion(dt); world.npcs && world.npcs.update(dt); world.birds && world.birds.update(dt); world.boss && world.boss.update(dt); world.health && world.health.update(dt); }
       world.layer.update(dt, camera.position.x, camera.position.z);
       world.sky.update(dt, camera, state.editing && world.editor ? world.editor.cam.focus : player.position);   // shadows follow whatever we look at
       world.grass.update(camera, player.position);
@@ -586,7 +597,7 @@
       sfx && sfx.ambient(dt, { day: A.Mat.U.uDay.value, night: MU.uNight.value });
       if (world.clockEl) { const t = world.sky.clockText(); if (world.clockEl.textContent !== t) world.clockEl.textContent = t; }
     }
-    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get horse() { return world.horse; }, get extras() { return world.extras; }, get npcs() { return world.npcs; }, get touch() { return world.touch; }, get birds() { return world.birds; }, get health() { return world.health; }, get audio() { return sfx; }, get rig() { return state.heroRig || state.rig; },
+    const debug = { state, player, camera, world, renderer, paused: false, get editor() { return world.editor; }, get skill() { return world.skill; }, get horse() { return world.horse; }, get extras() { return world.extras; }, get npcs() { return world.npcs; }, get touch() { return world.touch; }, get birds() { return world.birds; }, get boss() { return world.boss; }, get health() { return world.health; }, get audio() { return sfx; }, get rig() { return state.heroRig || state.rig; },
       tick: dt => step(dt), render: () => renderFrame(), setHour: h => world.sky.setHour(h), setQuality: q => setQuality(q), get quality() { return quality; }, texturesReady,
       teleport(x, z, yaw = player.rotation.y) { player.position.set(x, groundAt(x, z, 999).h, z); player.rotation.y = yaw; state.camYaw = yaw; state.cameraVelocity.copy(player.position).add(new THREE.Vector3(-Math.sin(yaw) * 5, 3, -Math.cos(yaw) * 5)); state.cameraTarget.copy(player.position); state.region = null; state.regionTimer = 0; } };
     window.Phase1Debug = debug; window.KingdomDebug = debug;
@@ -613,6 +624,14 @@
           onKill: k => { if (k.counter) { state.slowT = 0.5; state.slowK = 0.3; world.health && world.health.heal(world.health.max * 0.03); state.hurtShake = 0.35; }   // perfect counter: slow motion + a little health
                          else if (k.src === 'sword') { state.slowT = 0.07; state.slowK = 0.12; } } });                                                  // hit-stop on a sword kill
           world.birds.load().catch(e => console.warn('Red birds:', e)); }
+        // the Earth Dragon boss in Moonpine Forest (his model streams in after a few seconds)
+        if (A.createEarthDragon) { world.boss = A.createEarthDragon({ THREE, scene, world, player, camera, sfx: fx, showToast, health: world.health, root: canvas.parentElement,
+          controller: () => state.heroRig && state.heroRig.controller, female: !state.heroRig, heroVel: () => state.velocity,
+          tempest: () => !!(world.skill && world.skill.state.state === 'active'),
+          hitHero: (frac, dir, at, knock, o) => heroHit(frac, dir, at, knock, o), shake: a => { state.hurtShake = Math.max(state.hurtShake || 0, a); },
+          onFight: on => { if (world.health) world.health.noRegen = on; },
+          onVictory: () => { world.health && world.health.heal(world.health.max); setTimeout(() => showToast('Heart of the Grove claimed'), 4200); } });
+          setTimeout(() => running && world.boss && world.boss.load().catch(e => console.warn('Earth dragon:', e)), 3500); }
         if (A.createTownsfolk) { say('Waking the townsfolk…'); world.npcs = A.createTownsfolk({ THREE, scene, world, player, camera, root: canvas.parentElement }); }
         say('Painting stone, soil and bark…'); await texturesReady;
         step(0); renderFrame();                          // compile every shader before the loading screen lifts
@@ -622,7 +641,7 @@
         loading && loading.classList.add('hidden'); showToast(world.fromSave ? 'Saved kingdom loaded' : 'Welcome to Aethelos'); tick();
         if (world.horse) setTimeout(() => running && world.horse.load().catch(e => console.warn('Horse:', e)), 2500);   // stream the horse in the background
       },
-      stop() { running = false; unbindInput(); world.birds && world.birds.dispose(); world.birds = null; world.health && world.health.dispose(); world.health = null; document.getElementById('heroFade')?.remove(); world.touch && world.touch.dispose(); world.touch = null; sfx && sfx.dispose(); world.npcs && world.npcs.dispose(); const hint = document.getElementById('keyHintLine'); if (hint) hint.style.display = ''; world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.horse && world.horse.dispose(); world.extras && world.extras.dispose(); world.layer && world.layer.dispose();
+      stop() { running = false; unbindInput(); world.boss && world.boss.dispose(); world.boss = null; world.birds && world.birds.dispose(); world.birds = null; world.health && world.health.dispose(); world.health = null; document.getElementById('heroFade')?.remove(); world.touch && world.touch.dispose(); world.touch = null; sfx && sfx.dispose(); world.npcs && world.npcs.dispose(); const hint = document.getElementById('keyHintLine'); if (hint) hint.style.display = ''; world.editor && world.editor.dispose(); world.skill && world.skill.dispose(); world.horse && world.horse.dispose(); world.extras && world.extras.dispose(); world.layer && world.layer.dispose();
         world.grass && world.grass.dispose(); world.water && world.water.dispose(); world.post && world.post.dispose(); world.sky && world.sky.dispose(); world.clockEl && world.clockEl.remove(); renderer.dispose(); if (window.Phase1Debug === debug) { delete window.Phase1Debug; delete window.KingdomDebug; } },
       toggleEditor() { world.editor && world.editor.toggle(); },
       resetCamera() { state.camYaw = player.rotation.y; state.camPitch = 0.30; state.camZoom = 1; showToast('Camera reset'); }

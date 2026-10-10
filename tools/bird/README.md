@@ -33,3 +33,13 @@ There are no baked animation clips. `assets/world/redbird-rig.js` poses the bone
 - a limp death pose
 
 States blend continuously this way, and nothing extra is downloaded.
+
+## Earth Dragon (same tool)
+
+`earth-dragon-rigged.blend`: 499,906 triangles, 211 bones, a 4K texture. Reduced to 8,000 triangles, with the head, jaw and horns weighted ×7 and the claws ×3, and baked onto a 2048² atlas. The GLB is 2.1 MB, chunked into `assets/models/dragon-01..02.js`.
+
+```sh
+./simplify in.bin out_8000.bin 8000
+python3 -I tools/bird/build_bird.py work mesh.pkl rig.json tex.png work/out_8000.bin dragon.glb 2048
+python3 tools/lod/chunk.py dragon.glb dragon 2
+```

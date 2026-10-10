@@ -56,7 +56,7 @@
   }
 
   // ------------------------------------------------------------------------------------------------ one bird
-  function makeBird(THREE, asset, { ownMaterial = true } = {}) {
+  function makeBird(THREE, asset, { ownMaterial = true, poser = true } = {}) {
     const B = asset.bones.map(b => { const o = new THREE.Bone(); o.name = b.name; o.position.fromArray(b.t); return o; });
     asset.bones.forEach((b, i) => { if (b.parent >= 0) B[b.parent].add(B[i]); });
     const by = {}; B.forEach(b => by[b.name] = b);
@@ -65,7 +65,7 @@
     const mesh = new THREE.SkinnedMesh(asset.geometry, mat); mesh.frustumCulled = false;
     root.add(mesh); mesh.bind(new THREE.Skeleton(B, asset.ibm), new THREE.Matrix4());
     const rig = { root, mesh, bones: B, by, material: mat };
-    rig.pose = makePoser(THREE, rig);
+    rig.pose = poser ? makePoser(THREE, rig) : null;
     return rig;
   }
 

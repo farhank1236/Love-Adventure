@@ -17,6 +17,7 @@
     { id: 'varkhold', name: 'House Varkhold', sub: 'Mountain Bastion', x: 318, z: -318, r: 84 },
     { id: 'farms', name: 'Farm Valley', sub: 'Fields of the Realm', x: -265, z: 235, r: 150 },
     { id: 'arena', name: 'The Shattered Crown', sub: 'Boss Arena', x: 410, z: -492, r: 46 },
+    { id: 'grove', name: 'Heart of the Grove', sub: 'Lair of the Earth Dragon', x: 378, z: 232, r: 40 },
     { id: 'forest', name: 'Moonpine Forest', sub: 'Wildwood', x: 330, z: 190, r: 230 },
     { id: 'mountains', name: 'Ironpeak Mountains', sub: 'The Northern Teeth', x: 180, z: -470, r: 330 },
     { id: 'river', name: 'Silvermere River', sub: '', river: 'silvermere' }
@@ -64,7 +65,8 @@
     { x: -352, z: 432, r: 62, edge: 36, h: 3 },      // Brenmoor
     { x: 318, z: -318, r: 60, edge: 34, h: 34 },     // Varkhold shelf
     { x: 410, z: -492, r: 40, edge: 26, h: 62 },     // boss arena shelf
-    { x: 250, z: -470, r: 26, edge: 22, h: 46 }      // mine mouth
+    { x: 250, z: -470, r: 26, edge: 22, h: 46 },     // mine mouth
+    { x: 378, z: 232, r: 36, edge: 22, h: 5 }        // Heart of the Grove: the Earth Dragon's clearing
   ];
   // mountain massifs: ridged peaks inside a soft mask
   const MASSIFS = [

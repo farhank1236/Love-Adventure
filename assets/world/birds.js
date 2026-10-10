@@ -31,7 +31,7 @@
     { id: 'pass-foothills', kind: 'air', x: 135, z: -330, r: 60, n: 14 },
     { id: 'pass-meadow', kind: 'ground', x: 185, z: -205, r: 8, n: 9 }
   ];
-  const SAFE = ['dawnmeadow', 'palace', 'city', 'aldmere', 'brenmoor', 'varkhold'];
+  const SAFE = ['dawnmeadow', 'palace', 'city', 'aldmere', 'brenmoor', 'varkhold', 'grove'];
   const SEE = 40, LEASH = 120, ACTIVE_R = 175, DASH_SPEED = 21, DAMAGE = 0.10, RESPAWN_H = 24;
 
   function createRedBirds(ctx) {

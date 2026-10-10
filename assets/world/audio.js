@@ -104,6 +104,28 @@
       dash(o, t0) { hiss(o, t0, 'bandpass', 500, 1.2, 0.08, 0.5, 0.45, 2600); hiss(o, t0 + 0.05, 'highpass', 3500, 0.8, 0.05, 0.12, 0.35); },
       birdHit(o, t0) { S.squawk(o, t0, 1.3); thump(o, t0, 220, 90, 0.08, 0.6); hiss(o, t0, 'bandpass', 1500, 1, 0.003, 0.5, 0.18); },          // struck: squawk + feathers
       birdCrash(o, t0) { thump(o, t0, 130, 45, 0.18, 0.9); hiss(o, t0, 'lowpass', 1600, 0.8, 0.004, 0.6, 0.25); S.squawk(o, t0 + 0.02, 0.7); },
+      // ---- earth dragon
+      roar(o, t0, big = 1) {                              // a huge, grinding roar: low saws through formants + rumble + breath
+        const dur = 1.6 * big, f0 = 70 / Math.sqrt(big);
+        for (const [m, a] of [[1, 1], [1.5, 0.6], [2.02, 0.4]]) { const s = osc('sawtooth', f0 * m, t0, dur), g = ctx.createGain(), vib = osc('sine', 7, t0, dur), vg = ctx.createGain(); vg.gain.value = 6 * m; vib.connect(vg); vg.connect(s.frequency);
+          s.frequency.setValueAtTime(f0 * m, t0); s.frequency.linearRampToValueAtTime(f0 * m * 1.6, t0 + dur * 0.35); s.frequency.linearRampToValueAtTime(f0 * m * 0.8, t0 + dur);
+          const b = filt('bandpass', 420 * m, 1.6); env(g, t0, 0.12, 0.35 * a, dur - 0.1); s.connect(b); b.connect(g); g.connect(o); }
+        hiss(o, t0, 'bandpass', 900, 0.7, 0.15, 0.4, dur, 500); thump(o, t0, 55, 30, dur * 0.8, 0.6);
+      },
+      growl(o, t0) { const s = osc('sawtooth', 55, t0, 0.9), g = ctx.createGain(), b = filt('lowpass', 500, 2); s.frequency.linearRampToValueAtTime(80, t0 + 0.8); env(g, t0, 0.1, 0.35, 0.8); s.connect(b); b.connect(g); g.connect(o); hiss(o, t0, 'bandpass', 600, 0.8, 0.1, 0.2, 0.8); },
+      stomp(o, t0) { thump(o, t0, 70, 22, 0.9, 1.3); hiss(o, t0, 'lowpass', 900, 0.7, 0.005, 1.0, 0.8, 120); hiss(o, t0 + 0.02, 'bandpass', 2400, 1, 0.003, 0.4, 0.25); },
+      claw(o, t0) { hiss(o, t0, 'bandpass', 900, 1.1, 0.05, 0.6, 0.25, 3200); hiss(o, t0 + 0.08, 'highpass', 4000, 1, 0.01, 0.2, 0.1); },
+      tailWhoosh(o, t0) { hiss(o, t0, 'bandpass', 260, 1, 0.12, 0.7, 0.45, 1100); },
+      vineCreak(o, t0) { for (let i = 0; i < 6; i++) { const t = t0 + i * 0.08, s = osc('square', 120 + Math.random() * 90, t, 0.07), g = ctx.createGain(), b = filt('bandpass', 700, 4); env(g, t, 0.005, 0.08, 0.06); s.connect(b); b.connect(g); g.connect(o); } },
+      vineWhip(o, t0) { for (let i = 0; i < 3; i++) hiss(o, t0 + i * 0.38, 'bandpass', 380, 1.2, 0.08, 0.55, 0.3, 1700); },
+      rockRise(o, t0, v = 1) { thump(o, t0, 90, 40, 0.4, 0.6 * v); for (let i = 0; i < 5; i++) hiss(o, t0 + Math.random() * 0.25, 'bandpass', 1500 + Math.random() * 1500, 3, 0.003, 0.25 * v, 0.05); },
+      spear(o, t0) { hiss(o, t0, 'bandpass', 1300, 2, 0.02, 0.3, 0.22, 600); },
+      rockBreak(o, t0) { thump(o, t0, 160, 60, 0.12, 0.5); for (let i = 0; i < 4; i++) hiss(o, t0 + i * 0.03, 'bandpass', 2000 + Math.random() * 2000, 3, 0.002, 0.3, 0.04); },
+      inhale(o, t0) { hiss(o, t0, 'bandpass', 500, 0.8, 0.5, 0.3, 0.2, 1500); },
+      breath(o, t0) { hiss(o, t0, 'lowpass', 1400, 0.7, 0.15, 0.55, 2.0, 500); hiss(o, t0, 'bandpass', 3000, 1, 0.2, 0.15, 1.9); },
+      rumble(o, t0) { thump(o, t0, 40, 28, 7.0, 0.7); hiss(o, t0, 'lowpass', 200, 0.7, 0.5, 0.5, 6.8); },
+      rumbleHit(o, t0) { thump(o, t0 + 0.9, 65, 25, 0.5, 0.8); hiss(o, t0 + 0.9, 'lowpass', 1200, 0.7, 0.01, 0.5, 0.4); },
+      bossHit(o, t0) { thump(o, t0, 120, 50, 0.14, 0.9); hiss(o, t0, 'bandpass', 1100, 1.2, 0.002, 0.5, 0.1); ring(o, t0, 420, [[1, 1, 1], [2.4, 0.4, 0.5]], 0.25, 0.12); },
       counter(o, t0) { ring(o, t0, 1320, [[1, 1, 1], [1.5, 0.7, 0.8], [2.01, 0.5, 0.6], [3.03, 0.3, 0.4]], 0.9, 0.3); hiss(o, t0, 'highpass', 3500, 0.8, 0.003, 0.5, 0.12); thump(o, t0, 180, 60, 0.2, 0.7); },
       pickup(o, t0) { for (const [f, dt] of [[880, 0], [1320, 0.08], [1760, 0.16]]) { const s = osc('sine', f, t0 + dt, 0.3), g = ctx.createGain(); env(g, t0 + dt, 0.005, 0.12, 0.28); s.connect(g); g.connect(o); } },
       dizzy(o, t0) { for (let i = 0; i < 4; i++) { const t = t0 + i * 0.16, s = osc('sine', 2400, t, 0.12), g = ctx.createGain(); s.frequency.setValueAtTime(2000 + (i % 2) * 700, t); s.frequency.exponentialRampToValueAtTime(3000 - (i % 2) * 700, t + 0.1); env(g, t, 0.01, 0.05, 0.1); s.connect(g); g.connect(o); } },

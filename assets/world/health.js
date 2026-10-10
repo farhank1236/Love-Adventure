@@ -34,8 +34,8 @@
       get hp() { return H.hp; }, get max() { return H.max; }, get frac() { return H.hp / H.max; }, get dead() { return H.dead; },
       damage(frac, info = {}) {
         if (H.dead || frac <= 0) return false;
-        H.chip = Math.max(H.chip, H.hp); H.hp = Math.max(0, H.hp - H.max * frac); H.sinceHit = 0; H.flash = 1;
-        sfx && sfx('hurt', info.at ? { at: info.at } : {});
+        H.chip = Math.max(H.chip, H.hp); H.hp = Math.max(0, H.hp - H.max * frac); H.sinceHit = 0;
+        if (!info.quiet) sfx && sfx('hurt', info.at ? { at: info.at } : {}); H.flash = info.quiet ? Math.max(H.flash, 0.35) : 1;
         draw(); setTimeout(() => { H.chip = H.hp; draw(); }, 30);
         if (H.hp <= 0) { H.dead = true; onDefeat && onDefeat(info); }
         return true;
@@ -43,7 +43,7 @@
       heal(n) { if (H.dead) return; H.hp = Math.min(H.max, H.hp + n); H.chip = H.hp; draw(); },
       update(dt) {
         H.sinceHit += dt;
-        if (!H.dead && H.sinceHit > 8 && H.hp < H.max) { H.hp = Math.min(H.max, H.hp + H.max * 0.03 * dt); H.chip = H.hp; draw(); }
+        if (!H.dead && !api.noRegen && H.sinceHit > 8 && H.hp < H.max) { H.hp = Math.min(H.max, H.hp + H.max * 0.03 * dt); H.chip = H.hp; draw(); }
         if (H.flash > 0) { H.flash = Math.max(0, H.flash - dt * 2.2); hurt.style.opacity = (H.flash * 0.9).toFixed(3); }
       },
       reset() { H.hp = H.chip = H.max; H.dead = false; H.sinceHit = 99; H.flash = 0; hurt.style.opacity = 0; draw(); },

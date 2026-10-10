@@ -228,7 +228,7 @@
     // ================================================================= countryside: scattered trees, rocks, riverbanks
     for (let k = 0; k < 2400; k++) {
       const x = -590 + R() * 1180, z = -590 + R() * 1180, reg = regionOf(x, z);
-      if (['city', 'palace', 'forest', 'farms', 'aldmere', 'brenmoor', 'dawnmeadow', 'mountains', 'varkhold', 'arena'].includes(reg)) continue;
+      if (['city', 'palace', 'forest', 'grove', 'farms', 'aldmere', 'brenmoor', 'dawnmeadow', 'mountains', 'varkhold', 'arena'].includes(reg)) continue;
       if (terrain.roadDist(x, z) < 5 || terrain.riverDist(x, z) < 4 || terrain.slopeAt(x, z) > 0.8) continue;
       const clump = 0.5 + 0.5 * A.Noise.fbm(x / 70, z / 70, 3); if (R() > clump * 0.9) continue;
       const t = R(); put(t < 0.35 ? 'tree_oak' : t < 0.6 ? 'tree_pine' : t < 0.75 ? 'tree_birch' : t < 0.92 ? 'bush' : 'rock', x, z, { yaw: R() * 6.28, scale: 0.8 + R() * 0.5, pad: 0.4 });

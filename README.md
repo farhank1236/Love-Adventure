@@ -127,6 +127,34 @@ The weakest enemy: one hit kills them. They live in flocks of 6–18 across the 
 - **Model:** 3,000 triangles, baked from the 500,000-triangle sculpt with the same design; see `tools/bird/README.md`.
 - **Test:** `node tests/red-birds.cjs`.
 
+### Boss: Gaiavor, the Earth Dragon (Heart of the Grove)
+
+A clearing in Moonpine Forest at (378, 232), about 72 m across. The ground is levelled, and the trees and rocks are removed at load, even from older saved maps (`assets/world/boss-dragon.js`; the model and poser are in `assets/world/dragon-rig.js`).
+
+- **The fight**
+  - He sleeps curled in the middle until the hero walks in. Then he rises and roars, and a ring of thorns closes the arena.
+  - A boss bar shows his health (2,400) and the 4:00 enrage timer.
+  - Natural healing is off during the fight. Three Moonpetal flowers at the edge heal 25 each and regrow after 45 s.
+  - If the hero falls, he wakes in Dawnmeadow and the dragon goes back to sleep at full health.
+  - When the dragon falls, he turns to moss and stone and the thorns sink. He returns one game day later.
+- **Attacks** (damage is % of the hero's 100 health; a dodge roll avoids every direct hit):
+
+  | Attack | What it does | Damage |
+  |---|---|---|
+  | Claw Swipes | Left then right, in wide arcs in front | 12 each |
+  | Tail Slap | Twists and sweeps everything behind him | 15 |
+  | Seismic Stomp | Rears up and slams; a line of jagged rocks races at you (sidestep, roll or jump it) | 18 + launch |
+  | Vine-Whip Tail (phase 2) | A green ring shows its 12 m reach; vines burst out of his tail as he spins (roll, jump, or be outside the ring) | 20 |
+  | Stone Spears | 10 spears rise and fly in pairs, 2-2-2-2-2, aimed where you are heading | 7 each |
+  | Purple Blight Breath (phase 2) | A sweeping cone of spores; the clouds linger 9 s | 6/s, 4/s inside a cloud |
+  | **Wrath of the Ancient Grove** (ultimate, at 65% and 30%) | Horns plunged into the earth while the arena shakes. Waves of roots and stone pillars erupt in marked squares (checkerboard), rings and tracking circles, and rocks fall where shadows grow. He takes only 30% damage while his horns are down, then is **exhausted** (×1.5 damage) | 22 per pillar, 10 per rock |
+  | **Enrage** (after 4:00) | He flies, fires barrages of 20 stone spears, then dives at you. When he crashes down he is exhausted for a few seconds | 6 per spear, swoop 18 |
+
+  Phase 2 starts at 55% health.
+- **Hero damage to him:** sword combo 24 (finisher 42), low slash 28, rising stab 32, sonic boom 60. Damage is ×1.5 while Azure Tempest burns or while he is exhausted. Attacks auto-aim at him within 11 m.
+- **Model:** 8,000 triangles baked from the 500,000-triangle sculpt with all 211 bones (`tools/bird/build_bird.py`, 2048 atlas). The animation is procedural: body pitch and twist, spine, neck and head, jaw, both arms, a four-legged walk, wing fold, spread and flap, and the tail curve, lift and uncurl. Moves are timelines of key poses with eased blending.
+- **Test:** `node tests/earth-dragon.cjs`.
+
 ### Azure Tempest (V)
 
 V plays a full power-up pose (the sword is summoned and planted, then thrust out at the burst), then he burns with dark-cored blue fire over his whole body and sword for 6 s. During that window every attack also throws a sonic boom: a crescent of blue fire over 4 m tall that flies dead straight along the line he faces. Combo hits 1 and 3 throw it tilted right, 2 and 4 tilted left, and the finisher throws both at once as an X. Each boom skims the ground, throwing up dust, embers and a flame wake. Hold an arrow key while attacking to aim. If an enemy is in front (within 45 m and 40°), the boom locks on and flies straight into it. Booms burst on walls and buildings. The blue fire is a thin glow over his whole body, so his face and armour stay visible. V can be used again 12 s after ignition (6 s active, then a 6 s cooldown, shown by the V icon). Only the Male Warrior has the skill. Booms report hits through `Aethelos.Combat` (`register({position, radius, onHit})`), ready for enemies. The code is in `assets/world/sonic-skill.js`, and `node tests/hero-skill.cjs` checks it.
